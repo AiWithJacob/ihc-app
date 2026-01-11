@@ -1,4 +1,6 @@
 // Vercel Serverless Function - Endpoint do odbierania leadów z Zapier/Facebook
+import { addLead } from './shared-storage.js';
+
 export default async function handler(req, res) {
   // Obsługa CORS - DODANE
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -65,29 +67,13 @@ export default async function handler(req, res) {
     
     console.log('Przetworzony lead:', newLead);
     
-    // Zapisz lead bezpośrednio do /api/leads (używając wewnętrznego wywołania)
-    // W Vercel możemy użyć fetch do własnego API
+    // Zapisz lead bezpośrednio używając wspólnego modułu
     try {
-      // Użyj pełnego URL Vercel lub localhost dla dev
-      const baseUrl = process.env.VERCEL_URL 
-        ? `https://${process.env.VERCEL_URL}` 
-        : (process.env.VERCEL ? `https://${process.env.VERCEL}` : 'https://ihc-app.vercel.app');
-      
-      const saveUrl = `${baseUrl}/api/leads?chiropractor=${encodeURIComponent(chiropractor)}`;
-      console.log('Zapisywanie leada do:', saveUrl);
-      
-      const saveResponse = await fetch(saveUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newLead)
-      });
-      
-      if (saveResponse && saveResponse.ok) {
-        const saveData = await saveResponse.json();
-        console.log('✅ Lead zapisany do /api/leads:', saveData);
+      const saveResult = addLead(newLead);
+      if (saveResult.isNew) {
+        console.log('✅ Lead zapisany bezpośrednio:', saveResult.lead.name);
       } else {
-        const errorText = await saveResponse.text();
-        console.error('❌ Błąd zapisywania leada:', saveResponse?.status, saveResponse?.statusText, errorText);
+        console.log('⚠️ Lead już istniał, pominięto:', saveResult.lead.name);
       }
     } catch (saveError) {
       console.error('❌ Błąd podczas zapisywania leada:', saveError.message);
