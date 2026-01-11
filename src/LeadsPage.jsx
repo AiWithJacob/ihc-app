@@ -1191,18 +1191,19 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
               </button>
             </div>
 
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: 600, minWidth: 0, overflowY: "hidden", overflowX: "hidden", maxHeight: "100%" }}>
-              <h3
-                style={{
-                  marginTop: 0,
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  marginBottom: 12,
-                  color: themeData.text,
-                }}
-              >
-                Notatki / opis pacjenta
-              </h3>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: 600, minWidth: 0, overflowY: "hidden", overflowX: "hidden", maxHeight: "100%", justifyContent: "space-between" }}>
+              <div>
+                <h3
+                  style={{
+                    marginTop: 0,
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    marginBottom: 12,
+                    color: themeData.text,
+                  }}
+                >
+                  Notatki / opis pacjenta
+                </h3>
 
               {/* Podgląd notatki jeśli jest długa */}
               {noteDraft.length > 300 && (
@@ -1302,11 +1303,12 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                 }}
               />
 
-              <div style={{ marginTop: 12 }}>
+              </div>
+              <div style={{ marginTop: "auto", paddingTop: 12 }}>
                 <button
                   onClick={saveNotes}
                   style={{
-                    padding: "8px 16px",
+                    padding: "8px 12px",
                     width: "100%",
                     background: `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`,
                     color: "white",
@@ -1314,17 +1316,17 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                     borderRadius: 6,
                     cursor: "pointer",
                     fontSize: "12px",
-                    fontWeight: 700,
+                    fontWeight: 500,
                     transition: "all 0.3s ease",
-                    boxShadow: `0 4px 16px ${themeData.glow}`,
+                    boxShadow: `0 4px 12px ${themeData.glow}`,
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-2px) scale(1.02)";
-                    e.currentTarget.style.boxShadow = `0 6px 24px ${themeData.glow}`;
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = `0 6px 16px ${themeData.glow}`;
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0) scale(1)";
-                    e.currentTarget.style.boxShadow = `0 4px 16px ${themeData.glow}`;
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = `0 4px 12px ${themeData.glow}`;
                   }}
                 >
                   💾 Zapisz notatki
