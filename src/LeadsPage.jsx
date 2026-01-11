@@ -417,11 +417,11 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                       cursor: "grab",
                       border: `2px solid ${themeData.border}`,
                       borderRadius: 10,
-                      padding: "8px 12px",
+                      padding: "12px 16px",
                       marginBottom: 8,
-                      height: "70px",
-                      minHeight: "70px",
-                      maxHeight: "70px",
+                      height: "auto",
+                      minHeight: "90px",
+                      maxHeight: "none",
                       background: draggedLead?.id === l.id 
                         ? themeData.surfaceElevated 
                         : themeData.cardBackground,
