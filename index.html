@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ihc-app</title>
+  </head>
+  <body>
+    <div id="root">
+      <div style="color: #00ff00; padding: 20px; background: #000; min-height: 100vh; font-size: 18px;">
+        <h1 style="color: #00ff00;">🔄 Ładowanie aplikacji...</h1>
+        <p>Jeśli widzisz ten tekst, HTML się ładuje.</p>
+        <p>Sprawdź konsolę przeglądarki (F12) dla szczegółów.</p>
+        <p style="color: #ffaa00;">Jeśli ten tekst nie zniknie, JavaScript się nie załadował.</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      console.log("📄 index.html script executed!");
+      console.log("Root element exists:", !!document.getElementById("root"));
+    </script>
+  </body>
+</html>

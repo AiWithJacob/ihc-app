@@ -1,0 +1,682 @@
+import { useState, useEffect, useRef } from "react";
+import { Routes, Route, Link, useLocation, Navigate, useNavigate } from "react-router-dom";
+import { useTheme } from "./ThemeContext.jsx";
+import LeadsPage from "./LeadsPage.jsx";
+import CalendarPage from "./CalendarPage.jsx";
+import StatisticsPage from "./StatisticsPage.jsx";
+import LoginPage from "./LoginPage.jsx";
+import ChiropractorSelection from "./ChiropractorSelection.jsx";
+import WelcomeAnimation from "./WelcomeAnimation.jsx";
+import GoodbyeAnimation from "./GoodbyeAnimation.jsx";
+
+const INITIAL_LEADS = [
+  {
+    id: 1,
+    name: "Jan Testowy",
+    phone: "123456789",
+    description: "Ból pleców",
+    notes: "",
+    status: "Nowy kontakt",
+  },
+  {
+    id: 2,
+    name: "Anna Nowak",
+    phone: "987654321",
+    description: "Ból szyi",
+    notes: "",
+    status: "Sam się skontaktuje",
+  },
+];
+
+export default function App() {
+  console.log("✅ App component rendering...");
+  const { themeData, toggleTheme, theme } = useTheme();
+  const navigate = useNavigate();
+  
+  // Stan użytkownika
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem("user");
+    const parsed = stored ? JSON.parse(stored) : null;
+    console.log("User from localStorage:", parsed);
+    return parsed;
+  });
+  
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
+  const [showChiropractorSelection, setShowChiropractorSelection] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showGoodbye, setShowGoodbye] = useState(false);
+  const [isChiropractorSelectionClosing, setIsChiropractorSelectionClosing] = useState(false);
+
+  // Stan globalny - leads i bookings przypisane do chiropraktyków
+  const [leadsByChiropractor, setLeadsByChiropractor] = useState(() => {
+    const stored = localStorage.getItem("leadsByChiropractor");
+    return stored ? JSON.parse(stored) : {};
+  });
+
+  const [bookingsByChiropractor, setBookingsByChiropractor] = useState(() => {
+    const stored = localStorage.getItem("bookingsByChiropractor");
+    return stored ? JSON.parse(stored) : {};
+  });
+
+  // Pobierz leads i bookings dla aktualnego chiropraktyka
+  const currentLeads = user?.chiropractor ? (leadsByChiropractor[user.chiropractor] || []) : [];
+  const currentBookings = user?.chiropractor ? (bookingsByChiropractor[user.chiropractor] || []) : [];
+
+  // Funkcje do aktualizacji leads i bookings dla aktualnego chiropraktyka
+  // Obsługują zarówno bezpośrednią wartość, jak i funkcję (jak setState)
+  const setLeads = (newLeadsOrFunction) => {
+    if (!user?.chiropractor) return;
+    
+    setLeadsByChiropractor(prev => {
+      const currentLeads = prev[user.chiropractor] || [];
+      const newLeads = typeof newLeadsOrFunction === 'function' 
+        ? newLeadsOrFunction(currentLeads)
+        : newLeadsOrFunction;
+      
+      const updated = {
+        ...prev,
+        [user.chiropractor]: newLeads,
+      };
+      localStorage.setItem("leadsByChiropractor", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const setBookings = (newBookingsOrFunction) => {
+    if (!user?.chiropractor) return;
+    
+    setBookingsByChiropractor(prev => {
+      const currentBookings = prev[user.chiropractor] || [];
+      const newBookings = typeof newBookingsOrFunction === 'function'
+        ? newBookingsOrFunction(currentBookings)
+        : newBookingsOrFunction;
+      
+      const updated = {
+        ...prev,
+        [user.chiropractor]: newBookings,
+      };
+      localStorage.setItem("bookingsByChiropractor", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Zapis do localStorage przy zmianie chiropraktyka
+  useEffect(() => {
+    if (user?.chiropractor) {
+      // Inicjalizuj puste listy dla nowego chiropraktyka, jeśli nie istnieją
+      setTimeout(() => {
+        setLeadsByChiropractor(prev => {
+          if (!prev[user.chiropractor]) {
+            const updated = {
+              ...prev,
+              [user.chiropractor]: [],
+            };
+            localStorage.setItem("leadsByChiropractor", JSON.stringify(updated));
+            return updated;
+          }
+          return prev;
+        });
+      
+        setBookingsByChiropractor(prev => {
+          if (!prev[user.chiropractor]) {
+            const updated = {
+              ...prev,
+              [user.chiropractor]: [],
+            };
+            localStorage.setItem("bookingsByChiropractor", JSON.stringify(updated));
+            return updated;
+          }
+          return prev;
+        });
+      }, 0);
+    }
+  }, [user?.chiropractor]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("user", JSON.stringify(user));
+      
+      // Synchronizuj dane użytkownika w liście zarejestrowanych użytkowników
+      const registeredUsers = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
+      const userIndex = registeredUsers.findIndex((u) => u.id === user.id);
+      
+      if (userIndex !== -1) {
+        // Aktualizuj istniejącego użytkownika
+        const updatedUsers = [...registeredUsers];
+        updatedUsers[userIndex] = user;
+        localStorage.setItem("registeredUsers", JSON.stringify(updatedUsers));
+      } else if (user.id) {
+        // Jeśli użytkownik nie istnieje w liście, ale ma ID, dodaj go
+        const updatedUsers = [...registeredUsers, user];
+        localStorage.setItem("registeredUsers", JSON.stringify(updatedUsers));
+      }
+    }
+  }, [user]);
+
+  const handleLogin = (userData) => {
+    console.log("handleLogin called with:", userData);
+    setUser(userData);
+    // Zawsze pokazuj ekran wyboru chiropraktyka po zalogowaniu
+    setShowChiropractorSelection(true);
+    setJustLoggedIn(false);
+    setShowWelcome(false);
+  };
+
+  const handleChiropractorSelect = (chiropractor, image) => {
+    const updatedUser = {
+      ...user,
+      chiropractor: chiropractor,
+      chiropractorImage: image,
+    };
+    
+    // Sprawdź czy to pierwszy wybór czy zmiana chiropraktyka
+    const isChangingChiropractor = user?.chiropractor !== null && user?.chiropractor !== chiropractor;
+    
+    setUser(updatedUser);
+    // useEffect automatycznie zsynchronizuje dane z localStorage (registeredUsers)
+    
+    // Animacja zamykania panelu wyboru
+    setIsChiropractorSelectionClosing(true);
+    
+    setTimeout(() => {
+      setShowChiropractorSelection(false);
+      setIsChiropractorSelectionClosing(false);
+      
+      if (isChangingChiropractor) {
+        // Jeśli zmieniamy chiropraktyka, pominąć welcome animation i płynnie wrócić
+        setIsTransitioning(false);
+        setShowWelcome(false);
+        setJustLoggedIn(false);
+      } else {
+        // Jeśli to pierwszy wybór, pokaż welcome animation
+        setIsTransitioning(false);
+        setShowWelcome(true);
+        setJustLoggedIn(true);
+      }
+      
+      // Automatyczne przekierowanie na stronę kontakty
+      navigate("/");
+    }, 400);
+  };
+
+  const handleWelcomeComplete = () => {
+    setShowWelcome(false);
+    setIsTransitioning(true);
+    // Płynne przejście do aplikacji
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setJustLoggedIn(false);
+      // Automatyczne przekierowanie na stronę kontakty
+      navigate("/");
+    }, 500);
+  };
+
+  const openAddLeadModalRef = useRef(null);
+
+  const handleLogout = () => {
+    if (window.confirm("Czy na pewno chcesz się wylogować?")) {
+      setShowGoodbye(true);
+    }
+  };
+
+  const handleGoodbyeComplete = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    setShowChiropractorSelection(false);
+    setShowWelcome(false);
+    setJustLoggedIn(false);
+    setIsTransitioning(false);
+    setShowGoodbye(false);
+  };
+
+  // Aktywna ścieżka dla podświetlenia linku
+  const location = useLocation();
+  const isLeadsActive = location.pathname === "/";
+  const isCalendarActive = location.pathname === "/calendar";
+  const isStatisticsActive = location.pathname === "/statistics";
+
+  // Debug logi
+  console.log("App render state:", {
+    hasUser: !!user,
+    isLoggedIn: user?.isLoggedIn,
+    chiropractor: user?.chiropractor,
+    showGoodbye,
+    showWelcome,
+    justLoggedIn,
+    showChiropractorSelection,
+    isTransitioning
+  });
+
+  // Jeśli użytkownik nie jest zalogowany, pokaż stronę logowania
+  if (!user || !user.isLoggedIn) {
+    console.log("Rendering LoginPage");
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
+  // Jeśli użytkownik jest zalogowany, zawsze pokaż ekran wyboru chiropraktyka
+  if (showChiropractorSelection) {
+    console.log("Rendering ChiropractorSelection");
+    return (
+      <div
+        key="chiropractor-selection"
+        style={{
+          opacity: isChiropractorSelectionClosing ? 0 : 1,
+          transform: isChiropractorSelectionClosing ? "scale(0.95) translateY(20px)" : "scale(1) translateY(0)",
+          transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        }}
+      >
+        <ChiropractorSelection
+          key={`chiropractor-${showChiropractorSelection}`}
+          onSelect={handleChiropractorSelect}
+          currentChiropractor={user?.chiropractor}
+          currentImage={user?.chiropractorImage}
+        />
+      </div>
+    );
+  }
+
+  console.log("Rendering main app");
+  return (
+    <>
+      {showGoodbye && (
+        <GoodbyeAnimation
+          onComplete={handleGoodbyeComplete}
+        />
+      )}
+      {showWelcome && justLoggedIn && !showGoodbye && user?.chiropractor && (
+        <WelcomeAnimation
+          chiropractor={user.chiropractor}
+          onComplete={handleWelcomeComplete}
+        />
+      )}
+      {!showGoodbye && !showWelcome && user?.chiropractor && (
+      <div
+        style={{
+          background: themeData.background,
+          minHeight: "100vh",
+          color: themeData.text,
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          overflow: "hidden",
+          width: "100%",
+          margin: 0,
+          padding: 0,
+          opacity: isTransitioning ? 0 : 1,
+          transform: isTransitioning ? "translateY(20px)" : "translateY(0)",
+          transition: "all 0.5s ease-out",
+        }}
+      >
+        {/* Górny pasek nawigacji */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "12px 20px",
+            borderBottom: `2px solid ${themeData.border}`,
+            background: themeData.gradient,
+            flexShrink: 0,
+            boxShadow: `0 4px 16px ${themeData.shadow}`,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Efekt świetlny na górze */}
+          <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "3px",
+            background: `linear-gradient(90deg, transparent 0%, ${themeData.accent} 50%, transparent 100%)`,
+            opacity: 0.7,
+            filter: `blur(2px) drop-shadow(0 0 8px ${themeData.accent})`,
+            pointerEvents: "none",
+            zIndex: 0,
+          }} />
+          
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            gap: "12px",
+            position: "relative",
+            zIndex: 1,
+          }}>
+            <div style={{ 
+              fontSize: "24px", 
+              fontWeight: 800, 
+              letterSpacing: "-1px",
+              color: themeData.text,
+              textShadow: theme === 'light' ? 'none' : `0 0 20px ${themeData.glow}`,
+            }}>
+              Pracujesz dla {user.chiropractor}
+            </div>
+            {user.chiropractorImage && (
+              <div style={{
+                position: "relative",
+                padding: "2px",
+                borderRadius: "50%",
+                background: `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`,
+                boxShadow: `0 4px 16px ${themeData.glow}`,
+              }}>
+                <img
+                  src={user.chiropractorImage}
+                  alt={user.chiropractor}
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: `2px solid ${themeData.surface}`,
+                    display: "block",
+                  }}
+                />
+              </div>
+            )}
+            <button
+              onClick={() => {
+                setIsTransitioning(true);
+                setTimeout(() => {
+                  setIsTransitioning(false);
+                  setIsChiropractorSelectionClosing(false);
+                  setShowChiropractorSelection(true);
+                }, 300);
+              }}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "8px",
+                border: `2px solid ${themeData.accent}`,
+                background: "transparent",
+                color: themeData.text,
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: 600,
+                transition: "all 0.3s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                opacity: 0.8,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = themeData.accent;
+                e.currentTarget.style.color = "white";
+                e.currentTarget.style.opacity = "1";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = `0 4px 16px ${themeData.glow}`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = themeData.text;
+                e.currentTarget.style.opacity = "0.8";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+              title="Zmień chiropraktyka"
+            >
+              <span>🔄</span>
+              <span>Zmień</span>
+            </button>
+          </div>
+
+          <div style={{ 
+            display: "flex", 
+            gap: 8, 
+            alignItems: "center",
+            position: "relative",
+            zIndex: 1,
+          }}>
+            {isLeadsActive && (
+              <button
+                onClick={() => {
+                  if (openAddLeadModalRef.current) {
+                    openAddLeadModalRef.current();
+                  }
+                }}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  border: `2px solid ${themeData.accent}`,
+                  background: `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`,
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  transition: "all 0.3s ease",
+                  boxShadow: `0 4px 16px ${themeData.glow}`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
+                  e.currentTarget.style.boxShadow = `0 6px 20px ${themeData.glow}`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0) scale(1)";
+                  e.currentTarget.style.boxShadow = `0 4px 16px ${themeData.glow}`;
+                }}
+              >
+                ➕ Dodaj nowy lead
+              </button>
+            )}
+            
+            <button
+              onClick={() => navigate("/")}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 8,
+                border: isLeadsActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
+                background: isLeadsActive 
+                  ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
+                  : themeData.surfaceElevated,
+                color: isLeadsActive ? "white" : themeData.text,
+                fontWeight: isLeadsActive ? 700 : 500,
+                transition: "all 0.3s ease",
+                boxShadow: isLeadsActive ? `0 4px 16px ${themeData.glow}` : "none",
+                cursor: "pointer",
+                position: "relative",
+                zIndex: 10,
+                display: "inline-block",
+                fontFamily: "inherit",
+                fontSize: "14px",
+              }}
+              onMouseEnter={(e) => {
+                if (!isLeadsActive) {
+                  e.currentTarget.style.background = themeData.surfaceHover;
+                  e.currentTarget.style.color = themeData.text;
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLeadsActive) {
+                  e.currentTarget.style.background = themeData.surfaceElevated;
+                  e.currentTarget.style.color = themeData.text;
+                  e.currentTarget.style.transform = "translateY(0)";
+                }
+              }}
+            >
+              Kontakty
+            </button>
+
+            <Link
+              to="/calendar"
+              style={{
+                padding: "8px 14px",
+                borderRadius: 8,
+                textDecoration: "none",
+                background: isCalendarActive 
+                  ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
+                  : themeData.surfaceElevated,
+                color: isCalendarActive ? "white" : themeData.text,
+                fontWeight: isCalendarActive ? 700 : 500,
+                transition: "all 0.3s ease",
+                fontSize: "14px",
+                border: isCalendarActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
+                boxShadow: isCalendarActive ? `0 4px 16px ${themeData.glow}` : "none",
+              }}
+              onMouseEnter={(e) => {
+                if (!isCalendarActive) {
+                  e.currentTarget.style.background = themeData.surfaceHover;
+                  e.currentTarget.style.color = themeData.text;
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isCalendarActive) {
+                  e.currentTarget.style.background = themeData.surfaceElevated;
+                  e.currentTarget.style.color = themeData.text;
+                  e.currentTarget.style.transform = "translateY(0)";
+                }
+              }}
+            >
+              Kalendarz
+            </Link>
+
+            <Link
+              to="/statistics"
+              style={{
+                padding: "8px 14px",
+                borderRadius: 8,
+                textDecoration: "none",
+                background: isStatisticsActive 
+                  ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
+                  : themeData.surfaceElevated,
+                color: isStatisticsActive ? "white" : themeData.text,
+                fontWeight: isStatisticsActive ? 700 : 500,
+                transition: "all 0.3s ease",
+                border: isStatisticsActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
+                boxShadow: isStatisticsActive ? `0 4px 16px ${themeData.glow}` : "none",
+                fontSize: "14px",
+              }}
+              onMouseEnter={(e) => {
+                if (!isStatisticsActive) {
+                  e.currentTarget.style.background = themeData.surfaceHover;
+                  e.currentTarget.style.color = themeData.text;
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isStatisticsActive) {
+                  e.currentTarget.style.background = themeData.surfaceElevated;
+                  e.currentTarget.style.color = themeData.text;
+                  e.currentTarget.style.transform = "translateY(0)";
+                }
+              }}
+            >
+              📊 Statystyki
+            </Link>
+
+            {/* Przycisk zmiany motywu */}
+            <button
+              onClick={toggleTheme}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: `2px solid ${themeData.border}`,
+                background: themeData.surfaceElevated,
+                color: themeData.text,
+                cursor: "pointer",
+                fontSize: "18px",
+                fontWeight: 500,
+                transition: "all 0.3s ease",
+                minWidth: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                position: "relative",
+                boxShadow: `0 2px 8px ${themeData.shadow}`,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = themeData.surface;
+                e.currentTarget.style.borderColor = themeData.accent;
+                e.currentTarget.style.transform = "scale(1.1) rotate(15deg)";
+                e.currentTarget.style.boxShadow = `0 4px 16px ${themeData.glow}`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = themeData.surfaceElevated;
+                e.currentTarget.style.borderColor = themeData.border;
+                e.currentTarget.style.transform = "scale(1) rotate(0deg)";
+                e.currentTarget.style.boxShadow = `0 2px 8px ${themeData.shadow}`;
+              }}
+              title={`Tryb: ${themeData.name} (Kliknij aby zmienić)`}
+            >
+              {themeData.icon}
+            </button>
+
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 8,
+                border: "2px solid #991b1b",
+                background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                color: "white",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.3s ease",
+                boxShadow: "0 4px 12px rgba(220, 38, 38, 0.3)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 16px rgba(220, 38, 38, 0.5)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(220, 38, 38, 0.3)";
+              }}
+            >
+              <span>🚪</span>
+              Wyloguj
+            </button>
+          </div>
+        </div>
+
+        {/* Widoki stron */}
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", width: "100%", minHeight: 0 }}>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <LeadsPage
+                  leads={currentLeads}
+                  setLeads={setLeads}
+                  bookings={currentBookings}
+                  setBookings={setBookings}
+                  onOpenAddLeadModal={(fn) => (openAddLeadModalRef.current = fn)}
+                />
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <CalendarPage
+                  bookings={currentBookings}
+                  setBookings={setBookings}
+                  leads={currentLeads}
+                  setLeads={setLeads}
+                />
+              }
+            />
+            <Route
+              path="/statistics"
+              element={
+                <StatisticsPage
+                  leads={currentLeads}
+                  bookings={currentBookings}
+                />
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </div>
+      )}
+    </>
+  );
+}
