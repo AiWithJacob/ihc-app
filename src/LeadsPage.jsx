@@ -915,7 +915,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
               padding: "27px 24px",
               background: themeData.surface,
               borderRadius: 12,
-              width: "900px",
+              width: "1000px",
               height: "600px",
               display: "flex",
               flexWrap: "wrap",
@@ -947,8 +947,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
             
             <div
               style={{
-                width: 260,
-                minWidth: 260,
+                width: 300,
+                minWidth: 300,
                 borderTop: "none",
                 borderBottom: "none",
                 borderLeft: "none",
