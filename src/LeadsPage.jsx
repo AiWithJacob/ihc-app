@@ -495,6 +495,19 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                       }}>
                         📞 {l.phone}
                       </div>
+                      {l.email ? (
+                        <div style={{ 
+                          fontSize: "11px", 
+                          color: themeData.textSecondary, 
+                          marginBottom: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          lineHeight: "1.3",
+                        }}>
+                          ✉️ {l.email}
+                        </div>
+                      ) : null}
                       {l.description ? (
                         <div style={{ 
                           fontSize: "10px", 
