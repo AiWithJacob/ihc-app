@@ -1191,7 +1191,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
               </button>
             </div>
 
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: 500, minWidth: 0, overflowY: "hidden", overflowX: "hidden", maxHeight: "100%" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: 600, minWidth: 0, overflowY: "hidden", overflowX: "hidden", maxHeight: "100%" }}>
               <h3
                 style={{
                   marginTop: 0,
@@ -1276,11 +1276,11 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                 style={{
                   width: "100%",
                   flex: 1,
-                  minHeight: 250,
-                  maxHeight: "calc(80vh - 320px)",
+                  minHeight: 300,
+                  maxHeight: "calc(85vh - 320px)",
                   background: themeData.surfaceElevated,
                   color: themeData.text,
-                  padding: 10,
+                  padding: 12,
                   borderRadius: 8,
                   border: `1px solid ${themeData.border}`,
                   resize: "none",
