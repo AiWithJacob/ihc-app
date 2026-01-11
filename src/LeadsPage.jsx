@@ -1000,6 +1000,15 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
               }}>
                 📞 {selectedLead.phone}
               </div>
+              {selectedLead.email ? (
+                <div style={{ 
+                  fontSize: "16px", 
+                  marginBottom: 12,
+                  color: themeData.textSecondary,
+                }}>
+                  ✉️ {selectedLead.email}
+                </div>
+              ) : null}
               
               {/* Przycisk do pokazania opisu */}
               {selectedLead.description && selectedLead.description.length > 0 && (

@@ -56,7 +56,7 @@ export default async function handler(req, res) {
       name: fullName,
       phone: phone,
       description: description,
-      notes: `Źródło: Facebook Ads\nData: ${new Date().toLocaleString('pl-PL')}\nEmail: ${email || 'Brak'}\nID Lead: ${leadData.lead_id || leadData.id || 'N/A'}`,
+      notes: '', // Puste notes - email i źródło są w osobnych polach
       status: "Nowy kontakt",
       createdAt: new Date().toISOString(),
       source: 'facebook',
