@@ -1,6 +1,6 @@
 // Vercel Serverless Function - Endpoint do pobierania leadów
 // W przyszłości można podłączyć bazę danych (Supabase, MongoDB)
-import { getLeads, addLead } from './shared-storage.js';
+import { getLeads, addLead, getAllLeads } from './shared-storage.js';
 
 export default async function handler(req, res) {
   // Obsługa CORS
@@ -17,10 +17,17 @@ export default async function handler(req, res) {
     try {
       const { chiropractor, since } = req.query;
       
+      // Pobierz wszystkie leady dla debugowania
+      const allLeads = getAllLeads();
+      console.log(`📊 Wszystkie leady w pamięci: ${allLeads.length}`);
+      if (allLeads.length > 0) {
+        console.log(`📋 Chiropraktycy w leadach:`, [...new Set(allLeads.map(l => l.chiropractor))]);
+      }
+      
       const leads = getLeads(chiropractor, since);
       
       if (chiropractor) {
-        console.log(`🔍 Filtrowanie leadów dla chiropraktyka "${chiropractor}": znaleziono ${leads.length}`);
+        console.log(`🔍 Filtrowanie leadów dla chiropraktyka "${chiropractor}": znaleziono ${leads.length} z ${allLeads.length} wszystkich`);
       }
       
       if (since) {
@@ -32,7 +39,12 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         leads: leads,
-        count: leads.length
+        count: leads.length,
+        debug: {
+          totalLeads: allLeads.length,
+          chiropractors: [...new Set(allLeads.map(l => l.chiropractor))],
+          requestedChiropractor: chiropractor
+        }
       });
     } catch (error) {
       console.error('Błąd pobierania leadów:', error);
