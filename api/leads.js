@@ -25,13 +25,18 @@ export default async function handler(req, res) {
       // Filtruj po chiropraktyku jeśli podano
       if (chiropractor) {
         leads = leads.filter(l => l.chiropractor === chiropractor);
+        console.log(`🔍 Filtrowanie leadów dla chiropraktyka "${chiropractor}": znaleziono ${leads.length} z ${storedLeads.length} wszystkich`);
       }
       
       // Filtruj po dacie jeśli podano (pobierz tylko nowe)
       if (since) {
         const sinceDate = new Date(since);
+        const beforeFilter = leads.length;
         leads = leads.filter(l => new Date(l.createdAt) > sinceDate);
+        console.log(`📅 Filtrowanie po dacie (od ${since}): ${beforeFilter} -> ${leads.length} leadów`);
       }
+      
+      console.log(`📤 Zwracam ${leads.length} leadów dla chiropraktyka "${chiropractor || 'wszystkie'}"`);
       
       return res.status(200).json({
         success: true,
@@ -61,13 +66,14 @@ export default async function handler(req, res) {
       
       if (!existingLead) {
         storedLeads.push(leadData);
-        console.log('Zapisano nowy lead:', leadData.name);
+        console.log('✅ Zapisano nowy lead:', leadData.name, 'dla chiropraktyka:', leadData.chiropractor || 'brak');
+        console.log('📊 Wszystkie leady w pamięci:', storedLeads.length);
         // Ogranicz do ostatnich 1000 leadów (żeby nie rosło w nieskończoność)
         if (storedLeads.length > 1000) {
           storedLeads = storedLeads.slice(-1000);
         }
       } else {
-        console.log('Lead już istnieje, pomijam:', leadData.name);
+        console.log('⚠️ Lead już istnieje, pomijam:', leadData.name);
       }
       
       return res.status(200).json({
