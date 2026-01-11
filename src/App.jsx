@@ -148,15 +148,28 @@ export default function App() {
         // Pobierz czas ostatniego sprawdzenia
         const lastCheckTime = localStorage.getItem('lastLeadsCheck') || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // Ostatnie 24h
         
-        const response = await fetch(`${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}&since=${encodeURIComponent(lastCheckTime)}`);
+        const apiUrl = `${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}&since=${encodeURIComponent(lastCheckTime)}`;
+        console.log('🔍 Sprawdzam nowe leady:', {
+          url: apiUrl,
+          chiropractor: user.chiropractor,
+          since: lastCheckTime
+        });
+        
+        const response = await fetch(apiUrl);
         
         if (!response.ok) {
           // API może nie być dostępne w dev mode - to OK
-          console.log('API nie jest dostępne (może być w trybie dev):', response.status, response.statusText);
+          console.log('⚠️ API nie jest dostępne (może być w trybie dev):', response.status, response.statusText);
           return;
         }
 
         const data = await response.json();
+        console.log('📥 Otrzymano dane z API:', {
+          success: data.success,
+          count: data.count,
+          leads: data.leads?.length || 0,
+          chiropractor: user.chiropractor
+        });
         
         if (data.success && data.leads && data.leads.length > 0) {
           // Dodaj nowe leady do aplikacji
@@ -171,18 +184,22 @@ export default function App() {
               }));
             
             if (newLeads.length > 0) {
-              console.log(`✅ Dodano ${newLeads.length} nowych leadów z Facebook Ads`);
+              console.log(`✅ Dodano ${newLeads.length} nowych leadów z Facebook Ads:`, newLeads.map(l => l.name));
               // Zaktualizuj czas ostatniego sprawdzenia
               const newCheckTime = new Date().toISOString();
               localStorage.setItem('lastLeadsCheck', newCheckTime);
               return [...newLeads, ...prev];
+            } else {
+              console.log('ℹ️ Brak nowych leadów (wszystkie już istnieją)');
             }
             return prev;
           });
+        } else {
+          console.log('ℹ️ Brak nowych leadów w API dla chiropraktyka:', user.chiropractor);
         }
       } catch (error) {
         // Loguj błędy dla debugowania
-        console.log('Sprawdzanie leadów z API (może nie być dostępne w dev):', error.message);
+        console.error('❌ Błąd sprawdzania leadów z API:', error.message);
       }
     };
 
@@ -191,6 +208,10 @@ export default function App() {
     
     // Sprawdź od razu przy załadowaniu (z małym opóźnieniem)
     const timeout = setTimeout(checkForNewLeads, 2000);
+    
+    // Dodaj funkcję do ręcznego sprawdzenia (dla debugowania)
+    window.checkForNewLeads = checkForNewLeads;
+    console.log('💡 Możesz ręcznie sprawdzić leady wpisując w konsoli: checkForNewLeads()');
     
     return () => {
       clearInterval(interval);
