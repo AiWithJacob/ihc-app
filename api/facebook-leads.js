@@ -1,5 +1,14 @@
 // Vercel Serverless Function - Endpoint do odbierania leadów z Zapier/Facebook
 export default async function handler(req, res) {
+  // Obsługa CORS - DODANE
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   // Tylko POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -33,8 +42,9 @@ export default async function handler(req, res) {
                        leadData.additional_info ||
                        'Lead z Facebook Ads';
     
-    // Pobierz chiropraktyka z query string lub body (jeśli Zapier go przekazuje)
-    const chiropractor = req.query.chiropractor || leadData.chiropractor || null;
+    // Pobierz chiropraktyka z query string, body lub użyj domyślnego
+    // UWAGA: W Zapier musisz dodać pole "chiropractor" do danych
+    const chiropractor = req.query.chiropractor || leadData.chiropractor || 'default';
     
     // Utwórz obiekt leada zgodny ze strukturą aplikacji
     const newLead = {
@@ -47,7 +57,7 @@ export default async function handler(req, res) {
       createdAt: new Date().toISOString(),
       source: 'facebook',
       email: email || undefined, // Dodaj email jeśli jest dostępny
-      chiropractor: chiropractor // Przypisz chiropraktyka jeśli dostępny
+      chiropractor: chiropractor // WAŻNE: Przypisz chiropraktyka
     };
 
     // W przyszłości tutaj możesz zapisać do bazy danych (Supabase, MongoDB, itp.)
@@ -55,35 +65,32 @@ export default async function handler(req, res) {
     
     console.log('Przetworzony lead:', newLead);
     
-    // Zapisz lead do endpointu /api/leads
-    // Uwaga: W produkcji użyj bazy danych (Supabase, MongoDB) zamiast przechowywania w pamięci
-    // W Vercel serverless functions każda instancja ma własną pamięć, więc to rozwiązanie
-    // działa tylko dla małych projektów. Dla produkcji użyj bazy danych.
+    // Zapisz lead bezpośrednio do /api/leads (używając wewnętrznego wywołania)
+    // W Vercel możemy użyć fetch do własnego API
     try {
-      // Pobierz URL aplikacji
+      // Użyj pełnego URL Vercel lub localhost dla dev
       const baseUrl = process.env.VERCEL_URL 
         ? `https://${process.env.VERCEL_URL}` 
-        : (process.env.VERCEL ? `https://${process.env.VERCEL}` : 'http://localhost:3000');
+        : (process.env.VERCEL ? `https://${process.env.VERCEL}` : 'https://ihc-app.vercel.app');
       
-      // Zapisz lead (wywołanie wewnętrzne)
-      // W Vercel możemy użyć fetch do własnego API
-      const saveUrl = `${baseUrl}/api/leads${chiropractor ? `?chiropractor=${encodeURIComponent(chiropractor)}` : ''}`;
+      const saveUrl = `${baseUrl}/api/leads?chiropractor=${encodeURIComponent(chiropractor)}`;
+      console.log('Zapisywanie leada do:', saveUrl);
+      
       const saveResponse = await fetch(saveUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newLead)
-      }).catch(err => {
-        // W dev mode może nie działać, to OK
-        console.log('Nie można zapisać do /api/leads (może być w trybie dev)');
-        return null;
       });
       
       if (saveResponse && saveResponse.ok) {
-        console.log('Lead zapisany do /api/leads');
+        const saveData = await saveResponse.json();
+        console.log('✅ Lead zapisany do /api/leads:', saveData);
+      } else {
+        const errorText = await saveResponse.text();
+        console.error('❌ Błąd zapisywania leada:', saveResponse?.status, saveResponse?.statusText, errorText);
       }
     } catch (saveError) {
-      // Cicho ignoruj - w dev mode może nie działać
-      console.log('Lead otrzymany, zapisywanie pominięte (normalne w niektórych trybach)');
+      console.error('❌ Błąd podczas zapisywania leada:', saveError.message);
     }
     
     // Zwróć sukces - Zapier będzie wiedział, że lead został odebrany

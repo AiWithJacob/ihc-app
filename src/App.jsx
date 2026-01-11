@@ -133,6 +133,71 @@ export default function App() {
     }
   }, [user?.chiropractor]);
 
+  // Sprawdzanie nowych leadów z Facebook Ads (przez API)
+  useEffect(() => {
+    if (!user?.chiropractor) return;
+
+    // Użyj URL Vercel w produkcji lub localhost w dev
+    const API_URL = import.meta.env.VITE_API_URL || 
+                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                      ? 'https://ihc-app.vercel.app'  // W dev mode używaj Vercel API
+                      : window.location.origin);
+
+    const checkForNewLeads = async () => {
+      try {
+        // Pobierz czas ostatniego sprawdzenia
+        const lastCheckTime = localStorage.getItem('lastLeadsCheck') || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // Ostatnie 24h
+        
+        const response = await fetch(`${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}&since=${encodeURIComponent(lastCheckTime)}`);
+        
+        if (!response.ok) {
+          // API może nie być dostępne w dev mode - to OK
+          console.log('API nie jest dostępne (może być w trybie dev):', response.status, response.statusText);
+          return;
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.leads && data.leads.length > 0) {
+          // Dodaj nowe leady do aplikacji
+          setLeads(prev => {
+            const existingIds = prev.map(l => l.id);
+            const newLeads = data.leads
+              .filter(l => !existingIds.includes(l.id))
+              .map(lead => ({
+                ...lead,
+                // Upewnij się, że lead ma przypisanego chiropraktyka
+                chiropractor: lead.chiropractor || user.chiropractor
+              }));
+            
+            if (newLeads.length > 0) {
+              console.log(`✅ Dodano ${newLeads.length} nowych leadów z Facebook Ads`);
+              // Zaktualizuj czas ostatniego sprawdzenia
+              const newCheckTime = new Date().toISOString();
+              localStorage.setItem('lastLeadsCheck', newCheckTime);
+              return [...newLeads, ...prev];
+            }
+            return prev;
+          });
+        }
+      } catch (error) {
+        // Loguj błędy dla debugowania
+        console.log('Sprawdzanie leadów z API (może nie być dostępne w dev):', error.message);
+      }
+    };
+
+    // Sprawdzaj co 30 sekund
+    const interval = setInterval(checkForNewLeads, 30000);
+    
+    // Sprawdź od razu przy załadowaniu (z małym opóźnieniem)
+    const timeout = setTimeout(checkForNewLeads, 2000);
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [user?.chiropractor, setLeads]);
+
   useEffect(() => {
     if (user) {
       localStorage.setItem("user", JSON.stringify(user));
