@@ -484,17 +484,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                       }}>
                         {l.name}
                       </b>
-                      <div style={{ 
-                        fontSize: "11px", 
-                        color: themeData.textSecondary, 
-                        marginBottom: 2,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
-                        lineHeight: "1.3",
-                      }}>
-                        📞 {l.phone}
-                      </div>
                       {l.email ? (
                         <div style={{ 
                           fontSize: "11px", 
@@ -508,6 +497,17 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                           ✉️ {l.email}
                         </div>
                       ) : null}
+                      <div style={{ 
+                        fontSize: "11px", 
+                        color: themeData.textSecondary, 
+                        marginBottom: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        lineHeight: "1.3",
+                      }}>
+                        📞 {l.phone}
+                      </div>
                       {l.description ? (
                         <div style={{ 
                           fontSize: "10px", 
