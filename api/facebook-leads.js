@@ -1,8 +1,7 @@
 // Vercel Serverless Function - Endpoint do odbierania leadów z Zapier/Facebook
-// UWAGA: Leady są zapisywane w shared-storage, ale aplikacja sprawdza je i zapisuje w localStorage
-// To częściowo rozwiązuje problem z różnymi instancjami Vercel
+// Leady są zapisywane bezpośrednio w Supabase - działa między wszystkimi instancjami Vercel
 
-import { addLead } from './shared-storage.js';
+import { supabase } from './supabase.js';
 
 export default async function handler(req, res) {
   // Obsługa CORS - DODANE
@@ -70,27 +69,89 @@ export default async function handler(req, res) {
     
     console.log('Przetworzony lead:', newLead);
     
-    // Zapisz lead do shared-storage (działa w obrębie tej instancji)
-    // Aplikacja będzie sprawdzać /api/leads i zapisywać leady w localStorage
-    try {
-      const saveResult = addLead(newLead);
-      if (saveResult.isNew) {
-        console.log('✅ Lead zapisany w shared-storage:', saveResult.lead.name, 'dla chiropraktyka:', saveResult.lead.chiropractor);
-      } else {
-        console.log('⚠️ Lead już istniał w shared-storage, pominięto:', saveResult.lead.name);
-      }
-    } catch (saveError) {
-      console.error('❌ Błąd podczas zapisywania leada:', saveError.message);
+    // Zapisz lead do Supabase
+    if (!supabase) {
+      console.error('❌ Supabase client nie jest zainicjalizowany! Sprawdź zmienne środowiskowe.');
+      return res.status(500).json({ 
+        error: 'Database not configured',
+        message: 'Supabase client not initialized. Check environment variables.'
+      });
     }
     
-    // Zwróć lead - Zapier będzie wiedział, że lead został odebrany
-    // Aplikacja sprawdzi /api/leads i zapisze lead w localStorage
-    return res.status(200).json({ 
-      success: true, 
-      lead: newLead,
-      message: 'Lead received successfully',
-      timestamp: new Date().toISOString()
-    });
+    try {
+      // Sprawdź, czy lead już istnieje (po telefonie i chiropraktyku)
+      const { data: existingLeads, error: checkError } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('phone', newLead.phone || '')
+        .eq('chiropractor', newLead.chiropractor)
+        .limit(1);
+      
+      if (checkError) {
+        console.error('❌ Błąd sprawdzania istniejących leadów:', checkError);
+      }
+      
+      if (existingLeads && existingLeads.length > 0) {
+        console.log('⚠️ Lead już istnieje w bazie, pominięto:', newLead.name);
+        return res.status(200).json({ 
+          success: true, 
+          lead: newLead,
+          message: 'Lead already exists',
+          isNew: false,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // Zapisz nowy lead do Supabase
+      // Mapuj pola z aplikacji na strukturę bazy danych
+      const leadToInsert = {
+        name: newLead.name,
+        phone: newLead.phone || null,
+        email: newLead.email || null,
+        description: newLead.description || null,
+        notes: newLead.notes || null,
+        status: newLead.status || 'Nowy kontakt',
+        chiropractor: newLead.chiropractor,
+        source: newLead.source || 'facebook',
+        created_at: newLead.createdAt || new Date().toISOString()
+      };
+      
+      const { data: insertedLead, error: insertError } = await supabase
+        .from('leads')
+        .insert([leadToInsert])
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('❌ Błąd zapisywania leada do Supabase:', insertError);
+        return res.status(500).json({ 
+          error: 'Database error',
+          message: insertError.message
+        });
+      }
+      
+      console.log('✅ Lead zapisany w Supabase:', insertedLead.name, 'dla chiropraktyka:', insertedLead.chiropractor);
+      console.log('📊 ID leada w bazie:', insertedLead.id);
+      
+      // Zwróć lead z ID z bazy danych
+      return res.status(200).json({ 
+        success: true, 
+        lead: {
+          ...newLead,
+          id: insertedLead.id, // Użyj ID z bazy danych
+          dbId: insertedLead.id // Dodatkowe pole dla kompatybilności
+        },
+        message: 'Lead saved to Supabase successfully',
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('❌ Błąd podczas zapisywania leada:', error);
+      return res.status(500).json({ 
+        error: 'Internal server error',
+        message: error.message 
+      });
+    }
     
   } catch (error) {
     console.error('Błąd przetwarzania leada:', error);

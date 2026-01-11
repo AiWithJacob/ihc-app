@@ -133,8 +133,8 @@ export default function App() {
     }
   }, [user?.chiropractor]);
 
-  // Sprawdzanie nowych leadów z Facebook Ads (przez API)
-  // NOWE: Sprawdzamy endpoint, który zwraca leady zapisane w localStorage aplikacji
+  // Synchronizacja leadów z Supabase
+  // Pobiera leady z bazy danych i synchronizuje z localStorage
   useEffect(() => {
     if (!user?.chiropractor) return;
 
@@ -144,15 +144,15 @@ export default function App() {
                       ? 'https://ihc-app.vercel.app'  // W dev mode używaj Vercel API
                       : window.location.origin);
 
-    const checkForNewLeads = async () => {
+    // Funkcja do pobierania leadów z Supabase
+    const syncLeadsFromSupabase = async () => {
       try {
         // Pobierz czas ostatniego sprawdzenia
         const lastCheckTime = localStorage.getItem('lastLeadsCheck') || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // Ostatnie 24h
         
-        // Sprawdź endpoint, który zwraca leady zapisane w localStorage aplikacji
-        // Endpoint /api/leads-storage zwraca leady z localStorage (jeśli są)
+        // Pobierz leady z Supabase przez API
         const apiUrl = `${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}&since=${encodeURIComponent(lastCheckTime)}`;
-        console.log('🔍 Sprawdzam nowe leady:', {
+        console.log('🔍 Synchronizuję leady z Supabase:', {
           url: apiUrl,
           chiropractor: user.chiropractor,
           since: lastCheckTime
@@ -167,12 +167,12 @@ export default function App() {
         }
 
         const data = await response.json();
-        console.log('📥 Otrzymano dane z API:', {
+        console.log('📥 Otrzymano dane z Supabase:', {
           success: data.success,
           count: data.count,
           leads: data.leads?.length || 0,
           chiropractor: user.chiropractor,
-          debug: data.debug
+          source: data.source
         });
         
         if (data.success && data.leads && data.leads.length > 0) {
@@ -188,7 +188,7 @@ export default function App() {
               }));
             
             if (newLeads.length > 0) {
-              console.log(`✅ Dodano ${newLeads.length} nowych leadów z Facebook Ads:`, newLeads.map(l => l.name));
+              console.log(`✅ Dodano ${newLeads.length} nowych leadów z Supabase:`, newLeads.map(l => l.name));
               // Zaktualizuj czas ostatniego sprawdzenia
               const newCheckTime = new Date().toISOString();
               localStorage.setItem('lastLeadsCheck', newCheckTime);
@@ -199,26 +199,56 @@ export default function App() {
             return prev;
           });
         } else {
-          console.log('ℹ️ Brak nowych leadów w API dla chiropraktyka:', user.chiropractor);
-          if (data.debug) {
-            console.log('🔍 Debug info:', data.debug);
-          }
+          console.log('ℹ️ Brak nowych leadów w Supabase dla chiropraktyka:', user.chiropractor);
         }
       } catch (error) {
         // Loguj błędy dla debugowania
-        console.error('❌ Błąd sprawdzania leadów z API:', error.message);
+        console.error('❌ Błąd synchronizacji leadów z Supabase:', error.message);
       }
     };
 
-    // Sprawdzaj co 30 sekund
-    const interval = setInterval(checkForNewLeads, 30000);
+    // Funkcja do zapisywania leada w Supabase
+    const saveLeadToSupabase = async (lead) => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 
+                        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                          ? 'https://ihc-app.vercel.app'
+                          : window.location.origin);
+        
+        const response = await fetch(`${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...lead,
+            chiropractor: lead.chiropractor || user.chiropractor
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Lead zapisany w Supabase:', data.lead?.name);
+          return data.lead;
+        } else {
+          console.error('❌ Błąd zapisywania leada w Supabase:', response.statusText);
+        }
+      } catch (error) {
+        console.error('❌ Błąd zapisywania leada w Supabase:', error.message);
+      }
+      return null;
+    };
+
+    // Sprawdzaj co 30 sekund nowe leady z Supabase
+    const interval = setInterval(syncLeadsFromSupabase, 30000);
     
     // Sprawdź od razu przy załadowaniu (z małym opóźnieniem)
-    const timeout = setTimeout(checkForNewLeads, 2000);
+    const timeout = setTimeout(syncLeadsFromSupabase, 2000);
     
-    // Dodaj funkcję do ręcznego sprawdzenia (dla debugowania)
-    window.checkForNewLeads = checkForNewLeads;
-    console.log('💡 Możesz ręcznie sprawdzić leady wpisując w konsoli: checkForNewLeads()');
+    // Dodaj funkcje do ręcznego użycia (dla debugowania)
+    window.syncLeadsFromSupabase = syncLeadsFromSupabase;
+    window.saveLeadToSupabase = saveLeadToSupabase;
+    console.log('💡 Możesz ręcznie synchronizować leady wpisując w konsoli: syncLeadsFromSupabase()');
     
     return () => {
       clearInterval(interval);
