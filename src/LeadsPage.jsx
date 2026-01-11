@@ -1276,8 +1276,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                 style={{
                   width: "100%",
                   flex: 1,
-                  minHeight: 300,
-                  maxHeight: "calc(85vh - 320px)",
+                  minHeight: 400,
+                  maxHeight: "calc(90vh - 350px)",
                   background: themeData.surfaceElevated,
                   color: themeData.text,
                   padding: 12,
