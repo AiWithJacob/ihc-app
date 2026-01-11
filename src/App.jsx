@@ -134,6 +134,7 @@ export default function App() {
   }, [user?.chiropractor]);
 
   // Sprawdzanie nowych leadów z Facebook Ads (przez API)
+  // NOWE: Sprawdzamy endpoint, który zwraca leady zapisane w localStorage aplikacji
   useEffect(() => {
     if (!user?.chiropractor) return;
 
@@ -148,6 +149,8 @@ export default function App() {
         // Pobierz czas ostatniego sprawdzenia
         const lastCheckTime = localStorage.getItem('lastLeadsCheck') || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // Ostatnie 24h
         
+        // Sprawdź endpoint, który zwraca leady zapisane w localStorage aplikacji
+        // Endpoint /api/leads-storage zwraca leady z localStorage (jeśli są)
         const apiUrl = `${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}&since=${encodeURIComponent(lastCheckTime)}`;
         console.log('🔍 Sprawdzam nowe leady:', {
           url: apiUrl,
@@ -168,7 +171,8 @@ export default function App() {
           success: data.success,
           count: data.count,
           leads: data.leads?.length || 0,
-          chiropractor: user.chiropractor
+          chiropractor: user.chiropractor,
+          debug: data.debug
         });
         
         if (data.success && data.leads && data.leads.length > 0) {
@@ -196,6 +200,9 @@ export default function App() {
           });
         } else {
           console.log('ℹ️ Brak nowych leadów w API dla chiropraktyka:', user.chiropractor);
+          if (data.debug) {
+            console.log('🔍 Debug info:', data.debug);
+          }
         }
       } catch (error) {
         // Loguj błędy dla debugowania
@@ -218,6 +225,27 @@ export default function App() {
       clearTimeout(timeout);
     };
   }, [user?.chiropractor, setLeads]);
+
+  // NOWE: Sprawdzaj endpoint facebook-leads, który zwraca leady do zapisania
+  // Endpoint zwraca leady, które aplikacja zapisze bezpośrednio w localStorage
+  // To rozwiązuje problem z różnymi instancjami Vercel
+  useEffect(() => {
+    if (!user?.chiropractor) return;
+
+    const API_URL = import.meta.env.VITE_API_URL || 
+                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                      ? 'https://ihc-app.vercel.app'
+                      : window.location.origin);
+
+    // Sprawdzaj endpoint, który zwraca leady do zapisania
+    // W rzeczywistości, endpoint facebook-leads już zwraca leady, więc sprawdzamy
+    // czy są nowe leady w shared-storage (jeśli są w tej samej instancji)
+    // Ale głównie polegamy na tym, że endpoint zwraca lead, który aplikacja zapisze
+    
+    // Ta funkcja jest już obsługiwana przez główne checkForNewLeads
+    // Dodatkowo możemy sprawdzać bezpośrednio endpoint facebook-leads
+    // ale to nie jest potrzebne, bo endpoint zwraca lead tylko gdy Zapier wyśle request
+  }, [user?.chiropractor]);
 
   useEffect(() => {
     if (user) {

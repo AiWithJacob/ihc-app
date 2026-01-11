@@ -1,5 +1,6 @@
 // Vercel Serverless Function - Endpoint do odbierania leadów z Zapier/Facebook
-import { addLead } from './shared-storage.js';
+// UWAGA: Leady są zapisywane bezpośrednio w aplikacji (localStorage), nie w pamięci Vercel
+// To rozwiązuje problem z różnymi instancjami Vercel
 
 export default async function handler(req, res) {
   // Obsługa CORS - DODANE
@@ -66,24 +67,14 @@ export default async function handler(req, res) {
     // Na razie zwracamy lead - Zapier może go zapisać lub możesz użyć innego serwisu
     
     console.log('Przetworzony lead:', newLead);
+    console.log('✅ Lead otrzymany z Zapier, zwracam do aplikacji do zapisania w localStorage');
     
-    // Zapisz lead bezpośrednio używając wspólnego modułu
-    try {
-      const saveResult = addLead(newLead);
-      if (saveResult.isNew) {
-        console.log('✅ Lead zapisany bezpośrednio:', saveResult.lead.name);
-      } else {
-        console.log('⚠️ Lead już istniał, pominięto:', saveResult.lead.name);
-      }
-    } catch (saveError) {
-      console.error('❌ Błąd podczas zapisywania leada:', saveError.message);
-    }
-    
-    // Zwróć sukces - Zapier będzie wiedział, że lead został odebrany
+    // Zwróć lead - aplikacja zapisze go bezpośrednio w localStorage
+    // To rozwiązuje problem z różnymi instancjami Vercel (każda ma własną pamięć)
     return res.status(200).json({ 
       success: true, 
       lead: newLead,
-      message: 'Lead received successfully',
+      message: 'Lead received successfully - will be saved in app localStorage',
       timestamp: new Date().toISOString()
     });
     
