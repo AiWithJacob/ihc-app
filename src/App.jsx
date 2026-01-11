@@ -226,26 +226,6 @@ export default function App() {
     };
   }, [user?.chiropractor, setLeads]);
 
-  // NOWE: Sprawdzaj endpoint facebook-leads, który zwraca leady do zapisania
-  // Endpoint zwraca leady, które aplikacja zapisze bezpośrednio w localStorage
-  // To rozwiązuje problem z różnymi instancjami Vercel
-  useEffect(() => {
-    if (!user?.chiropractor) return;
-
-    const API_URL = import.meta.env.VITE_API_URL || 
-                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                      ? 'https://ihc-app.vercel.app'
-                      : window.location.origin);
-
-    // Sprawdzaj endpoint, który zwraca leady do zapisania
-    // W rzeczywistości, endpoint facebook-leads już zwraca leady, więc sprawdzamy
-    // czy są nowe leady w shared-storage (jeśli są w tej samej instancji)
-    // Ale głównie polegamy na tym, że endpoint zwraca lead, który aplikacja zapisze
-    
-    // Ta funkcja jest już obsługiwana przez główne checkForNewLeads
-    // Dodatkowo możemy sprawdzać bezpośrednio endpoint facebook-leads
-    // ale to nie jest potrzebne, bo endpoint zwraca lead tylko gdy Zapier wyśle request
-  }, [user?.chiropractor]);
 
   useEffect(() => {
     if (user) {

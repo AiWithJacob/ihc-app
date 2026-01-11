@@ -67,14 +67,26 @@ export default async function handler(req, res) {
     // Na razie zwracamy lead - Zapier może go zapisać lub możesz użyć innego serwisu
     
     console.log('Przetworzony lead:', newLead);
-    console.log('✅ Lead otrzymany z Zapier, zwracam do aplikacji do zapisania w localStorage');
     
-    // Zwróć lead - aplikacja zapisze go bezpośrednio w localStorage
-    // To rozwiązuje problem z różnymi instancjami Vercel (każda ma własną pamięć)
+    // Zapisz lead do shared-storage (działa w obrębie tej instancji)
+    // Aplikacja będzie sprawdzać /api/leads i zapisywać leady w localStorage
+    try {
+      const saveResult = addLead(newLead);
+      if (saveResult.isNew) {
+        console.log('✅ Lead zapisany w shared-storage:', saveResult.lead.name, 'dla chiropraktyka:', saveResult.lead.chiropractor);
+      } else {
+        console.log('⚠️ Lead już istniał w shared-storage, pominięto:', saveResult.lead.name);
+      }
+    } catch (saveError) {
+      console.error('❌ Błąd podczas zapisywania leada:', saveError.message);
+    }
+    
+    // Zwróć lead - Zapier będzie wiedział, że lead został odebrany
+    // Aplikacja sprawdzi /api/leads i zapisze lead w localStorage
     return res.status(200).json({ 
       success: true, 
       lead: newLead,
-      message: 'Lead received successfully - will be saved in app localStorage',
+      message: 'Lead received successfully',
       timestamp: new Date().toISOString()
     });
     
