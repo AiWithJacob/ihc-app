@@ -26,11 +26,92 @@ export default async function handler(req, res) {
     
     // Przetwórz dane z Zapier/Facebook Lead Ads
     // Zapier może wysłać różne formaty, więc obsługujemy różne warianty
-    const firstName = leadData.first_name || leadData.firstName || '';
-    const lastName = leadData.last_name || leadData.lastName || '';
-    const fullName = leadData.full_name || leadData.fullName || 
-                     `${firstName} ${lastName}`.trim() || 
-                     leadData.name || 'Brak imienia';
+    // UWAGA: Zapier czasami dodaje białe znaki (taby, spacje) na końcu nazw pól!
+    
+    // Funkcja pomocnicza do znajdowania wartości z różnymi wariantami nazw pól
+    const getFieldValue = (data, possibleNames) => {
+      // Najpierw sprawdź dokładne nazwy
+      for (const name of possibleNames) {
+        if (data[name] !== undefined && data[name] !== null && data[name] !== '') {
+          return data[name];
+        }
+      }
+      // Sprawdź również pola z białymi znakami na końcu (taby, spacje)
+      const keys = Object.keys(data);
+      for (const key of keys) {
+        const trimmedKey = key.trim();
+        for (const name of possibleNames) {
+          if (trimmedKey === name && data[key] !== undefined && data[key] !== null && data[key] !== '') {
+            return data[key];
+          }
+        }
+      }
+      return '';
+    };
+
+    const firstName = getFieldValue(leadData, [
+      'first_name', 
+      'firstName', 
+      'First_Name', 
+      'First Name',
+      'firstname'
+    ]);
+
+    const lastName = getFieldValue(leadData, [
+      'last_name', 
+      'lastName', 
+      'Last_Name', 
+      'Last Name',
+      'lastname'
+    ]);
+    
+    // PRIORYTET: Jeśli mamy osobno firstName i lastName, zawsze je łączymy
+    let fullName = '';
+    if (firstName && lastName) {
+      // Mamy oba - połącz je (to jest najlepszy przypadek)
+      fullName = `${String(firstName).trim()} ${String(lastName).trim()}`.trim();
+    } else if (firstName) {
+      // Tylko imię
+      fullName = String(firstName).trim();
+    } else if (lastName) {
+      // Tylko nazwisko - sprawdź czy w innych polach jest pełne imię
+      const nameField = leadData.full_name || leadData.fullName || leadData.name || '';
+      if (nameField && String(nameField).includes(' ') && String(nameField).trim() !== String(lastName).trim()) {
+        // Jeśli name zawiera spację i nie jest tylko nazwiskiem, użyj go
+        fullName = String(nameField).trim();
+      } else {
+        // Tylko nazwisko - użyj go, ale zaloguj ostrzeżenie
+        fullName = String(lastName).trim();
+        console.warn('⚠️ Tylko nazwisko dostępne:', lastName);
+      }
+    } else {
+      // Brak firstName i lastName - użyj pełnego imienia z innych pól
+      fullName = leadData.full_name || leadData.fullName || leadData.name || 'Brak imienia';
+    }
+    
+    // Upewnij się, że mamy przynajmniej coś
+    if (!fullName || fullName.trim().length === 0) {
+      fullName = 'Brak imienia';
+    }
+    
+    // Logowanie dla debugowania - POMOCNE do diagnozowania problemów
+    console.log('📝 Przetworzone imię i nazwisko:', {
+      firstName: firstName || '(brak)',
+      lastName: lastName || '(brak)',
+      fullName: fullName,
+      originalData: {
+        first_name: leadData.first_name || '(brak)',
+        last_name: leadData.last_name || '(brak)',
+        firstName: leadData.firstName || '(brak)',
+        lastName: leadData.lastName || '(brak)',
+        First_Name: leadData.First_Name || '(brak)',
+        'First_Name\\t': leadData['First_Name\t'] || '(brak)', // Sprawdź też z tabem
+        full_name: leadData.full_name || '(brak)',
+        fullName: leadData.fullName || '(brak)',
+        name: leadData.name || '(brak)'
+      },
+      allKeys: Object.keys(leadData) // Pokaż wszystkie klucze, żeby zobaczyć dokładne nazwy
+    });
     
     const phone = leadData.phone_number || 
                   leadData.phoneNumber || 
