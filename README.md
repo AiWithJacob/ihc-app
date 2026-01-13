@@ -1,16 +1,115 @@
-# React + Vite
+# IHC MVP - System zarządzania leadami i rezerwacjami
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplikacja CRM do zarządzania leadami i rezerwacjami wizyt dla chiropraktyków.
 
-Currently, two official plugins are available:
+## 🚀 Funkcjonalności
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Zarządzanie leadami** - dodawanie, edycja, filtrowanie leadów
+- **Kalendarz rezerwacji** - widok tygodniowy i dzienny, zarządzanie wizytami
+- **Statystyki** - przegląd aktywności i konwersji
+- **Historia zmian (Audit Log)** - pełna historia wszystkich zmian w systemie
+- **Integracja z Facebook Lead Ads** - automatyczne dodawanie leadów z Facebook
+- **Automatyczny backup** - codzienne backupy do Supabase Storage
+- **Konsola diagnostyczna** - standalone HTML do przeglądania danych
 
-## React Compiler
+## 📋 Wymagania
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js 18+
+- npm lub yarn
+- Konto Supabase
+- Konto Vercel (dla deploymentu)
 
-## Expanding the ESLint configuration
+## 🛠️ Instalacja
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+cd ihc-app
+npm install
+```
+
+## 🚀 Uruchomienie
+
+### Development
+
+```bash
+npm run dev
+```
+
+Aplikacja będzie dostępna pod adresem: http://localhost:5173
+
+### Build
+
+```bash
+npm run build
+```
+
+## 📁 Struktura projektu
+
+```
+ihc-app/
+├── api/                    # Vercel Serverless Functions
+│   ├── auditHelper.js     # Helper do audit log w API
+│   ├── bookings.js        # Endpoint rezerwacji
+│   ├── facebook-leads.js  # Webhook dla Facebook Lead Ads
+│   ├── leads.js           # Endpoint leadów
+│   └── supabase.js        # Konfiguracja Supabase
+├── docs/                   # Dokumentacja
+│   ├── AUDIT-LOG-SETUP.md
+│   ├── BACKUP-SETUP-GUIDE.md
+│   ├── DEPLOY-VERCEL.md
+│   └── ...
+├── src/                    # Kod źródłowy React
+│   ├── App.jsx            # Główna aplikacja
+│   ├── LeadsPage.jsx     # Strona leadów
+│   ├── CalendarPage.jsx  # Kalendarz
+│   ├── AuditLogPage.jsx  # Historia zmian
+│   └── ...
+├── supabase/              # Supabase konfiguracja
+│   ├── migrations/       # Migracje SQL
+│   └── functions/        # Edge Functions
+└── audit-log-diagnostics.html  # Konsola diagnostyczna
+```
+
+## ⚙️ Konfiguracja
+
+### Zmienne środowiskowe
+
+Utwórz plik `.env.local` w katalogu `ihc-app/`:
+
+```env
+VITE_SUPABASE_URL=twoj_supabase_url
+VITE_SUPABASE_ANON_KEY=twoj_supabase_anon_key
+VITE_API_URL=https://twoja-aplikacja.vercel.app
+```
+
+### Supabase
+
+1. Utwórz projekt w Supabase
+2. Uruchom migracje z `supabase/migrations/`
+3. Skonfiguruj Edge Functions (patrz `docs/BACKUP-SETUP-GUIDE.md`)
+
+### Vercel
+
+1. Połącz repozytorium z Vercel
+2. Dodaj zmienne środowiskowe
+3. Deploy automatyczny przy push do main
+
+## 📚 Dokumentacja
+
+Wszystka dokumentacja znajduje się w folderze `docs/`:
+
+- `AUDIT-LOG-SETUP.md` - Konfiguracja systemu audit log
+- `BACKUP-SETUP-GUIDE.md` - Konfiguracja automatycznego backupu
+- `DEPLOY-VERCEL.md` - Instrukcja deploymentu
+- `SUPABASE-SETUP.md` - Konfiguracja Supabase
+- `QUICK-START-FACEBOOK.md` - Integracja z Facebook Lead Ads
+
+## 🔧 Skrypty
+
+- `npm run dev` - Uruchomienie w trybie development
+- `npm run build` - Build produkcyjny
+- `npm run lint` - Sprawdzenie kodu ESLint
+- `npm run preview` - Podgląd builda
+
+## 📝 Licencja
+
+Prywatny projekt - wszystkie prawa zastrzeżone

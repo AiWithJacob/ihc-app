@@ -124,7 +124,14 @@ export default async function handler(req, res) {
         description: bookingData.description || null,
         notes: bookingData.notes || null,
         status: bookingData.status || 'scheduled',
-        created_at: bookingData.createdAt || new Date().toISOString()
+        created_at: bookingData.createdAt || new Date().toISOString(),
+        // Informacje o użytkowniku (trigger też to ustawi, ale lepiej mieć explicite)
+        created_by_user_id: userContext.user_id || null,
+        created_by_user_login: userContext.user_login || null,
+        created_by_user_email: userContext.user_email || null,
+        updated_by_user_id: userContext.user_id || null,
+        updated_by_user_login: userContext.user_login || null,
+        updated_by_user_email: userContext.user_email || null
       };
       
       const { data: insertedBooking, error } = await supabase
@@ -204,7 +211,11 @@ export default async function handler(req, res) {
         name: bookingData.name || null,
         description: bookingData.description || null,
         notes: bookingData.notes || null,
-        status: bookingData.status || 'scheduled'
+        status: bookingData.status || 'scheduled',
+        // Informacje o użytkowniku, który aktualizuje (trigger też to ustawi)
+        updated_by_user_id: userContext.user_id || null,
+        updated_by_user_login: userContext.user_login || null,
+        updated_by_user_email: userContext.user_email || null
       };
       
       // Usuń undefined/null wartości
@@ -273,6 +284,7 @@ export default async function handler(req, res) {
       
       // Ustaw kontekst użytkownika dla audit log
       const userContext = extractUserContext(req.body || {});
+      userContext.chiropractor = userContext.chiropractor || req.query.chiropractor || 'default';
       await setAuditContextForAPI(userContext, req);
       
       const { error } = await supabase

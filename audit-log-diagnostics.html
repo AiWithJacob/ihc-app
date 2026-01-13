@@ -9,90 +9,145 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: #0a0a0a;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
             color: #e0e0e0;
-            padding: 20px;
+            padding: 0;
             line-height: 1.6;
+            min-height: 100vh;
         }
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
         h1 { 
-            margin-bottom: 10px; 
+            margin-bottom: 8px; 
             color: #3b82f6;
-            font-size: 28px;
+            font-size: 32px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         .subtitle {
             color: #888;
-            margin-bottom: 30px;
-            font-size: 14px;
+            font-size: 15px;
         }
+        
+        /* Sections */
         .section {
             background: #1a1a1a;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
             border: 1px solid #2a2a2a;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
         .section h2 {
             color: #3b82f6;
-            margin-bottom: 15px;
-            font-size: 20px;
+            margin-bottom: 20px;
+            font-size: 22px;
             border-bottom: 2px solid #2a2a2a;
-            padding-bottom: 10px;
+            padding-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
+        
+        /* Config Grid */
         .config-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .config-item {
+            position: relative;
         }
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             color: #aaa;
             font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         input, select, textarea {
             width: 100%;
-            padding: 10px;
-            border-radius: 6px;
+            padding: 12px;
+            border-radius: 8px;
             border: 1px solid #333;
             background: #0f0f0f;
             color: #fff;
             font-size: 14px;
+            transition: all 0.2s;
         }
         input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            background: #151515;
+        }
+        
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
         }
         button {
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 12px 24px;
+            border-radius: 8px;
             border: none;
-            background: #3b82f6;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: #fff;
             cursor: pointer;
             font-weight: 600;
             font-size: 14px;
             transition: all 0.2s;
-            margin: 5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
         }
         button:hover { 
-            background: #2563eb;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
         }
         button:active { transform: translateY(0); }
-        button.danger { background: #ef4444; }
-        button.danger:hover { background: #dc2626; }
-        button.success { background: #22c55e; }
-        button.success:hover { background: #16a34a; }
+        button.success { 
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+        }
+        button.success:hover {
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+        }
+        button.secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+        }
+        button.danger { 
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Status Messages */
         .status {
-            padding: 10px;
-            border-radius: 6px;
+            padding: 12px 16px;
+            border-radius: 8px;
             margin: 10px 0;
             font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .status.success {
             background: rgba(34, 197, 94, 0.1);
@@ -109,136 +164,407 @@
             border: 1px solid #3b82f6;
             color: #3b82f6;
         }
+        .status.warning {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid #fbbf24;
+            color: #fbbf24;
+        }
+        
+        /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
             margin: 20px 0;
         }
         .stat-card {
-            background: #0f0f0f;
-            padding: 15px;
-            border-radius: 6px;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            padding: 20px;
+            border-radius: 10px;
             border: 1px solid #2a2a2a;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: #3b82f6;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
         }
         .stat-card .label {
             font-size: 12px;
             color: #888;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .stat-card .value {
-            font-size: 24px;
+            font-size: 32px;
             font-weight: 700;
             color: #3b82f6;
+            line-height: 1;
         }
-        .log-item {
-            background: #0f0f0f;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 6px;
-            border-left: 4px solid #3b82f6;
-            font-size: 13px;
-        }
-        .log-item.insert { border-color: #22c55e; }
-        .log-item.update { border-color: #3b82f6; }
-        .log-item.delete { border-color: #ef4444; }
-        .log-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .log-header strong {
-            color: #fff;
-            font-size: 14px;
-        }
-        .log-meta {
+        .stat-card .change {
             font-size: 11px;
-            color: #666;
-            margin-top: 5px;
-        }
-        .filters {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-        .filters select, .filters input {
-            flex: 1;
-            min-width: 150px;
-        }
-        pre {
-            background: #0a0a0a;
-            padding: 15px;
-            border-radius: 6px;
-            overflow: auto;
-            font-size: 12px;
-            border: 1px solid #2a2a2a;
-            max-height: 400px;
-        }
-        .loading {
-            text-align: center;
-            padding: 20px;
             color: #888;
+            margin-top: 8px;
         }
-        .export-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
+        
+        /* Tabs */
         .tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 5px;
+            margin-bottom: 25px;
             border-bottom: 2px solid #2a2a2a;
             flex-wrap: wrap;
+            background: #151515;
+            padding: 5px;
+            border-radius: 10px;
         }
         .tab {
-            padding: 10px 20px;
+            padding: 12px 24px;
             background: transparent;
             border: none;
             color: #888;
             cursor: pointer;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tab:hover {
+            background: #1a1a1a;
+            color: #aaa;
         }
         .tab.active {
-            color: #3b82f6;
-            border-bottom-color: #3b82f6;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
         }
         .tab-content {
             display: none;
+            animation: fadeIn 0.3s;
         }
         .tab-content.active {
             display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Filters */
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #151515;
+            border-radius: 10px;
+            border: 1px solid #2a2a2a;
+        }
+        .filters select, .filters input {
+            min-width: 0;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .filter-group label {
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+        
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #2a2a2a;
+            background: #151515;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead {
+            background: #0f0f0f;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        th {
+            padding: 14px 12px;
+            text-align: left;
+            color: #aaa;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #2a2a2a;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        th:hover {
+            background: #1a1a1a;
+            color: #3b82f6;
+        }
+        th.sortable::after {
+            content: ' ↕';
+            opacity: 0.5;
+            font-size: 10px;
+        }
+        th.sort-asc::after {
+            content: ' ↑';
+            opacity: 1;
+            color: #3b82f6;
+        }
+        th.sort-desc::after {
+            content: ' ↓';
+            opacity: 1;
+            color: #3b82f6;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #1a1a1a;
+            color: #e0e0e0;
+        }
+        tbody tr {
+            transition: all 0.2s;
+        }
+        tbody tr:hover {
+            background: #1a1a1a;
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge.insert {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid #22c55e;
+        }
+        .badge.update {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid #3b82f6;
+        }
+        .badge.delete {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        .badge.table {
+            background: rgba(139, 92, 246, 0.2);
+            color: #8b5cf6;
+            border: 1px solid #8b5cf6;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-size: 16px;
+        }
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #2a2a2a;
+        }
+        .modal-header h3 {
+            color: #3b82f6;
+            font-size: 20px;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+        .close-btn:hover {
+            background: #2a2a2a;
+            color: #fff;
+        }
+        
+        /* JSON Viewer */
+        pre {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow: auto;
+            font-size: 12px;
+            border: 1px solid #2a2a2a;
+            max-height: 400px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* Chiropractor Selector */
+        .chiropractor-selector {
+            position: relative;
+        }
+        .chiropractor-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            margin-top: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+        .chiropractor-dropdown.active {
+            display: block;
+        }
+        .chiropractor-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .chiropractor-option:hover {
+            background: #2a2a2a;
+        }
+        .chiropractor-option.selected {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+        
+        /* Auto-refresh indicator */
+        .auto-refresh {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #22c55e;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            .config-grid { grid-template-columns: 1fr; }
+            .filters { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .tabs { flex-direction: column; }
+            table { font-size: 11px; }
+            th, td { padding: 8px; }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔧 Konsola diagnostyczna - Audit Log</h1>
-        <p class="subtitle">Niezależne narzędzie do przeglądania historii zmian i diagnostyki systemu</p>
+        <div class="header">
+            <h1>🔧 Konsola diagnostyczna - Audit Log</h1>
+            <p class="subtitle">Niezależne narzędzie do przeglądania historii zmian i diagnostyki systemu</p>
+        </div>
 
         <!-- Konfiguracja -->
         <div class="section">
             <h2>⚙️ Konfiguracja połączenia</h2>
             <div class="config-grid">
-                <div>
+                <div class="config-item">
                     <label>Supabase URL</label>
                     <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
                 </div>
-                <div>
+                <div class="config-item">
                     <label>Supabase Anon Key</label>
                     <input type="password" id="supabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
                 </div>
-                <div>
+                <div class="config-item chiropractor-selector">
                     <label>Chiropraktyk</label>
-                    <input type="text" id="chiropractor" placeholder="np. Kamil">
+                    <input type="text" id="chiropractor" placeholder="Wpisz lub wybierz z listy..." autocomplete="off">
+                    <div class="chiropractor-dropdown" id="chiropractorDropdown"></div>
+                    <button onclick="loadChiropractors()" class="secondary" style="margin-top: 8px; padding: 8px 16px; font-size: 12px;">🔄 Wykryj dostępnych chiropraktyków</button>
                 </div>
             </div>
-            <button onclick="connect()">🔌 Połącz z Supabase</button>
-            <button onclick="saveConfig()" style="background: #22c55e;">💾 Zapisz konfigurację</button>
+            <div class="button-group">
+                <button onclick="connect()">🔌 Połącz z Supabase</button>
+                <button onclick="saveConfig()" class="success">💾 Zapisz konfigurację</button>
+            </div>
             <div id="connectionStatus"></div>
         </div>
 
@@ -249,15 +575,24 @@
                 <button class="tab" onclick="switchTab('logs')">📋 Historia zmian</button>
                 <button class="tab" onclick="switchTab('leads')">👥 Leady</button>
                 <button class="tab" onclick="switchTab('bookings')">📅 Rezerwacje</button>
+                <button class="tab" onclick="switchTab('users')">👤 Użytkownicy</button>
                 <button class="tab" onclick="switchTab('diagnostics')">🔍 Diagnostyka</button>
             </div>
 
             <!-- Tab: Przegląd -->
             <div id="tab-overview" class="tab-content active">
                 <div class="section">
-                    <h2>📊 Statystyki systemu</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>📊 Statystyki systemu</h2>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label style="margin: 0; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()" style="width: auto;">
+                                <span style="font-size: 13px; color: #aaa;">Auto-odświeżanie (30s)</span>
+                            </label>
+                            <button onclick="refreshStats()" class="secondary">🔄 Odśwież</button>
+                        </div>
+                    </div>
                     <div class="stats-grid" id="statsGrid"></div>
-                    <button onclick="refreshStats()">🔄 Odśwież statystyki</button>
                 </div>
             </div>
 
@@ -266,24 +601,42 @@
                 <div class="section">
                     <h2>📋 Historia zmian (Audit Log)</h2>
                     <div class="filters">
-                        <select id="tableFilter">
-                            <option value="">Wszystkie tabele</option>
-                            <option value="leads">Leady</option>
-                            <option value="bookings">Rezerwacje</option>
-                            <option value="users">Użytkownicy</option>
-                        </select>
-                        <select id="actionFilter">
-                            <option value="">Wszystkie akcje</option>
-                            <option value="INSERT">Utworzenie</option>
-                            <option value="UPDATE">Modyfikacja</option>
-                            <option value="DELETE">Usunięcie</option>
-                        </select>
-                        <input type="text" id="userFilter" placeholder="Filtruj po użytkowniku...">
-                        <input type="date" id="dateFrom" placeholder="Od daty">
-                        <input type="date" id="dateTo" placeholder="Do daty">
-                        <input type="number" id="limitFilter" value="100" placeholder="Limit" style="width: 100px;">
+                        <div class="filter-group">
+                            <label>Tabela</label>
+                            <select id="tableFilter">
+                                <option value="">Wszystkie tabele</option>
+                                <option value="leads">Leady</option>
+                                <option value="bookings">Rezerwacje</option>
+                                <option value="users">Użytkownicy</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Akcja</label>
+                            <select id="actionFilter">
+                                <option value="">Wszystkie akcje</option>
+                                <option value="INSERT">Utworzenie</option>
+                                <option value="UPDATE">Modyfikacja</option>
+                                <option value="DELETE">Usunięcie</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Użytkownik</label>
+                            <input type="text" id="userFilter" placeholder="Szukaj użytkownika...">
+                        </div>
+                        <div class="filter-group">
+                            <label>Od daty</label>
+                            <input type="date" id="dateFrom">
+                        </div>
+                        <div class="filter-group">
+                            <label>Do daty</label>
+                            <input type="date" id="dateTo">
+                        </div>
+                        <div class="filter-group">
+                            <label>Limit</label>
+                            <input type="number" id="limitFilter" value="100" min="1" max="1000">
+                        </div>
                     </div>
-                    <div class="export-buttons">
+                    <div class="button-group">
                         <button onclick="loadAuditLogs()">🔄 Załaduj</button>
                         <button onclick="exportCSV('audit')" class="success">📥 Eksportuj CSV</button>
                         <button onclick="exportJSON('audit')" class="success">📥 Eksportuj JSON</button>
@@ -297,16 +650,25 @@
                 <div class="section">
                     <h2>👥 Leady</h2>
                     <div class="filters">
-                        <input type="text" id="leadNameFilter" placeholder="Szukaj po imieniu...">
-                        <input type="text" id="leadPhoneFilter" placeholder="Szukaj po telefonie...">
-                        <select id="leadStatusFilter">
-                            <option value="">Wszystkie statusy</option>
-                            <option value="Nowy kontakt">Nowy kontakt</option>
-                            <option value="Umówiony">Umówiony</option>
-                            <option value="Nie odebrał">Nie odebrał</option>
-                        </select>
+                        <div class="filter-group">
+                            <label>Imię</label>
+                            <input type="text" id="leadNameFilter" placeholder="Szukaj po imieniu...">
+                        </div>
+                        <div class="filter-group">
+                            <label>Telefon</label>
+                            <input type="text" id="leadPhoneFilter" placeholder="Szukaj po telefonie...">
+                        </div>
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <select id="leadStatusFilter">
+                                <option value="">Wszystkie statusy</option>
+                                <option value="Nowy kontakt">Nowy kontakt</option>
+                                <option value="Umówiony">Umówiony</option>
+                                <option value="Nie odebrał">Nie odebrał</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="export-buttons">
+                    <div class="button-group">
                         <button onclick="loadLeads()">🔄 Załaduj</button>
                         <button onclick="exportCSV('leads')" class="success">📥 Eksportuj CSV</button>
                         <button onclick="exportJSON('leads')" class="success">📥 Eksportuj JSON</button>
@@ -320,16 +682,25 @@
                 <div class="section">
                     <h2>📅 Rezerwacje</h2>
                     <div class="filters">
-                        <input type="date" id="bookingDateFrom" placeholder="Od daty">
-                        <input type="date" id="bookingDateTo" placeholder="Do daty">
-                        <select id="bookingStatusFilter">
-                            <option value="">Wszystkie statusy</option>
-                            <option value="scheduled">Zaplanowane</option>
-                            <option value="completed">Zakończone</option>
-                            <option value="cancelled">Anulowane</option>
-                        </select>
+                        <div class="filter-group">
+                            <label>Od daty</label>
+                            <input type="date" id="bookingDateFrom">
+                        </div>
+                        <div class="filter-group">
+                            <label>Do daty</label>
+                            <input type="date" id="bookingDateTo">
+                        </div>
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <select id="bookingStatusFilter">
+                                <option value="">Wszystkie statusy</option>
+                                <option value="scheduled">Zaplanowane</option>
+                                <option value="completed">Zakończone</option>
+                                <option value="cancelled">Anulowane</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="export-buttons">
+                    <div class="button-group">
                         <button onclick="loadBookings()">🔄 Załaduj</button>
                         <button onclick="exportCSV('bookings')" class="success">📥 Eksportuj CSV</button>
                         <button onclick="exportJSON('bookings')" class="success">📥 Eksportuj JSON</button>
@@ -338,14 +709,52 @@
                 </div>
             </div>
 
+            <!-- Tab: Użytkownicy -->
+            <div id="tab-users" class="tab-content">
+                <div class="section">
+                    <h2>👤 Aktywność użytkowników</h2>
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label>Użytkownik</label>
+                            <input type="text" id="userActivityFilter" placeholder="Szukaj użytkownika...">
+                        </div>
+                        <div class="filter-group">
+                            <label>Od daty</label>
+                            <input type="date" id="userDateFrom">
+                        </div>
+                        <div class="filter-group">
+                            <label>Do daty</label>
+                            <input type="date" id="userDateTo">
+                        </div>
+                    </div>
+                    <div class="button-group">
+                        <button onclick="loadUserActivity()">🔄 Załaduj</button>
+                    </div>
+                    <div id="userActivityList"></div>
+                </div>
+            </div>
+
             <!-- Tab: Diagnostyka -->
             <div id="tab-diagnostics" class="tab-content">
                 <div class="section">
                     <h2>🔍 Diagnostyka systemu</h2>
-                    <button onclick="runDiagnostics()">▶️ Uruchom diagnostykę</button>
+                    <div class="button-group">
+                        <button onclick="runDiagnostics()">▶️ Uruchom diagnostykę</button>
+                    </div>
                     <div id="diagnosticsResults"></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal dla szczegółów -->
+    <div class="modal" id="detailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Szczegóły</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalBody"></div>
         </div>
     </div>
 
@@ -354,8 +763,12 @@
         let currentData = {
             auditLogs: [],
             leads: [],
-            bookings: []
+            bookings: [],
+            userActivity: []
         };
+        let sortConfig = { column: null, direction: 'desc' };
+        let autoRefreshInterval = null;
+        let availableChiropractors = [];
 
         // Auto-load config from localStorage
         window.onload = () => {
@@ -375,7 +788,84 @@
                 document.getElementById('chiropractor').value = params.get('chiropractor') || '';
                 window.connect();
             }
+
+            // Chiropractor input handler
+            const chiropractorInput = document.getElementById('chiropractor');
+            chiropractorInput.addEventListener('input', (e) => {
+                filterChiropractors(e.target.value);
+            });
+            chiropractorInput.addEventListener('focus', () => {
+                if (availableChiropractors.length > 0) {
+                    document.getElementById('chiropractorDropdown').classList.add('active');
+                }
+            });
         };
+
+        window.loadChiropractors = async function() {
+            if (!supabaseClient) {
+                showStatus('connectionStatus', 'Najpierw połącz z Supabase', 'warning');
+                return;
+            }
+
+            try {
+                // Pobierz chiropraktyków z różnych tabel
+                const [bookingsResult, leadsResult] = await Promise.all([
+                    supabaseClient.from('bookings').select('chiropractor').not('chiropractor', 'is', null),
+                    supabaseClient.from('leads').select('chiropractor').not('chiropractor', 'is', null)
+                ]);
+
+                const chiropractors = new Set();
+                if (bookingsResult.data) {
+                    bookingsResult.data.forEach(b => chiropractors.add(b.chiropractor));
+                }
+                if (leadsResult.data) {
+                    leadsResult.data.forEach(l => chiropractors.add(l.chiropractor));
+                }
+
+                availableChiropractors = Array.from(chiropractors).sort();
+                
+                const dropdown = document.getElementById('chiropractorDropdown');
+                if (availableChiropractors.length > 0) {
+                    dropdown.innerHTML = availableChiropractors.map(ch => `
+                        <div class="chiropractor-option" onclick="selectChiropractor('${ch}')">${ch}</div>
+                    `).join('');
+                    showStatus('connectionStatus', `Znaleziono ${availableChiropractors.length} chiropraktyków`, 'success');
+                } else {
+                    dropdown.innerHTML = '<div class="chiropractor-option" style="color: #888;">Brak chiropraktyków w bazie</div>';
+                    showStatus('connectionStatus', 'Nie znaleziono chiropraktyków w bazie', 'warning');
+                }
+            } catch (error) {
+                showStatus('connectionStatus', 'Błąd: ' + error.message, 'error');
+            }
+        };
+
+        function filterChiropractors(query) {
+            const dropdown = document.getElementById('chiropractorDropdown');
+            const filtered = availableChiropractors.filter(ch => 
+                ch.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            if (filtered.length > 0) {
+                dropdown.innerHTML = filtered.map(ch => `
+                    <div class="chiropractor-option" onclick="selectChiropractor('${ch}')">${ch}</div>
+                `).join('');
+                dropdown.classList.add('active');
+            } else {
+                dropdown.classList.remove('active');
+            }
+        }
+
+        function selectChiropractor(ch) {
+            document.getElementById('chiropractor').value = ch;
+            document.getElementById('chiropractorDropdown').classList.remove('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.chiropractor-selector')) {
+                document.getElementById('chiropractorDropdown').classList.remove('active');
+            }
+        });
 
         window.saveConfig = function() {
             const config = {
@@ -384,21 +874,21 @@
                 chiropractor: document.getElementById('chiropractor').value
             };
             localStorage.setItem('auditDiagnosticsConfig', JSON.stringify(config));
-            showStatus('connectionStatus', 'Konfiguracja zapisana!', 'success');
+            showStatus('connectionStatus', '✅ Konfiguracja zapisana!', 'success');
         };
 
-        window.connect = function() {
+        window.connect = async function() {
             const url = document.getElementById('supabaseUrl').value;
             const key = document.getElementById('supabaseKey').value;
             const chiropractor = document.getElementById('chiropractor').value;
 
             if (!url || !key) {
-                showStatus('connectionStatus', 'Wprowadź URL i klucz Supabase', 'error');
+                showStatus('connectionStatus', '❌ Wprowadź URL i klucz Supabase', 'error');
                 return;
             }
 
             if (!chiropractor) {
-                showStatus('connectionStatus', 'Wprowadź nazwę chiropraktyka', 'error');
+                showStatus('connectionStatus', '❌ Wprowadź nazwę chiropraktyka', 'error');
                 return;
             }
 
@@ -410,7 +900,15 @@
                 supabaseClient = window.supabase.createClient(url, key);
                 document.getElementById('connectedSection').style.display = 'block';
                 showStatus('connectionStatus', '✅ Połączono z Supabase', 'success');
+                
+                // Automatycznie wykryj chiropraktyków
+                await loadChiropractors();
+                
+                // Załaduj dane
                 window.refreshStats();
+                if (document.getElementById('tab-logs').classList.contains('active')) {
+                    loadAuditLogs();
+                }
             } catch (error) {
                 showStatus('connectionStatus', '❌ Błąd połączenia: ' + error.message, 'error');
             }
@@ -421,43 +919,68 @@
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
             document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // Auto-load data when switching tabs
+            if (tabName === 'logs' && supabaseClient) loadAuditLogs();
+            else if (tabName === 'leads' && supabaseClient) loadLeads();
+            else if (tabName === 'bookings' && supabaseClient) loadBookings();
+            else if (tabName === 'users' && supabaseClient) loadUserActivity();
         };
+
+        function toggleAutoRefresh() {
+            const enabled = document.getElementById('autoRefresh').checked;
+            if (enabled) {
+                autoRefreshInterval = setInterval(() => {
+                    refreshStats();
+                    if (document.getElementById('tab-logs').classList.contains('active')) {
+                        loadAuditLogs();
+                    }
+                }, 30000); // 30 sekund
+            } else {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+            }
+        }
 
         window.refreshStats = async function() {
             if (!supabaseClient) return;
             const chiropractor = document.getElementById('chiropractor').value;
 
             try {
-                const [auditCount, leadsCount, bookingsCount] = await Promise.all([
+                const [auditCount, leadsCount, bookingsCount, todayAudit, weekAudit] = await Promise.all([
                     supabaseClient.from('audit_logs').select('id', { count: 'exact', head: true }).eq('chiropractor', chiropractor),
                     supabaseClient.from('leads').select('id', { count: 'exact', head: true }).eq('chiropractor', chiropractor),
-                    supabaseClient.from('bookings').select('id', { count: 'exact', head: true }).eq('chiropractor', chiropractor)
+                    supabaseClient.from('bookings').select('id', { count: 'exact', head: true }).eq('chiropractor', chiropractor),
+                    supabaseClient.from('audit_logs').select('id', { count: 'exact', head: true })
+                        .eq('chiropractor', chiropractor)
+                        .gte('created_at', new Date(new Date().setHours(0,0,0,0)).toISOString()),
+                    supabaseClient.from('audit_logs').select('id', { count: 'exact', head: true })
+                        .eq('chiropractor', chiropractor)
+                        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
                 ]);
 
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const { count: todayAudit } = await supabaseClient
-                    .from('audit_logs')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('chiropractor', chiropractor)
-                    .gte('created_at', today.toISOString());
-
                 document.getElementById('statsGrid').innerHTML = `
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="switchTab('logs'); event.target.closest('.tab').click();">
                         <div class="label">Wszystkie zmiany</div>
                         <div class="value">${auditCount.count || 0}</div>
+                        <div class="change">W tym tygodniu: ${weekAudit.count || 0}</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="switchTab('logs'); event.target.closest('.tab').click();">
                         <div class="label">Zmiany dzisiaj</div>
-                        <div class="value">${todayAudit || 0}</div>
+                        <div class="value">${todayAudit.count || 0}</div>
+                        <div class="change">Ostatnie 24h</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="switchTab('leads'); event.target.closest('.tab').click();">
                         <div class="label">Leady</div>
                         <div class="value">${leadsCount.count || 0}</div>
+                        <div class="change">Aktywne kontakty</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="switchTab('bookings'); event.target.closest('.tab').click();">
                         <div class="label">Rezerwacje</div>
                         <div class="value">${bookingsCount.count || 0}</div>
+                        <div class="change">Wszystkie wizyty</div>
                     </div>
                 `;
             } catch (error) {
@@ -466,16 +989,23 @@
         }
 
         window.loadAuditLogs = async function() {
-            if (!supabaseClient) return;
+            if (!supabaseClient) {
+                showStatus('auditLogs', '❌ Brak połączenia z Supabase. Kliknij "Połącz z Supabase"', 'error');
+                return;
+            }
             const chiropractor = document.getElementById('chiropractor').value;
+            if (!chiropractor) {
+                showStatus('auditLogs', '❌ Wprowadź nazwę chiropraktyka', 'error');
+                return;
+            }
+            
             const container = document.getElementById('auditLogs');
-            container.innerHTML = '<div class="loading">Ładowanie...</div>';
+            container.innerHTML = '<div class="loading">Ładowanie</div>';
 
             try {
                 let query = supabaseClient
                     .from('audit_logs')
                     .select('*')
-                    .eq('chiropractor', chiropractor)
                     .order('created_at', { ascending: false })
                     .limit(parseInt(document.getElementById('limitFilter').value) || 100);
 
@@ -485,6 +1015,8 @@
                 const dateFrom = document.getElementById('dateFrom').value;
                 const dateTo = document.getElementById('dateTo').value;
 
+                query = query.eq('chiropractor', chiropractor);
+
                 if (tableFilter) query = query.eq('table_name', tableFilter);
                 if (actionFilter) query = query.eq('action', actionFilter);
                 if (userFilter) query = query.ilike('user_login', `%${userFilter}%`);
@@ -493,49 +1025,185 @@
 
                 const { data, error } = await query;
 
-                if (error) throw error;
+                if (error) {
+                    if (error.message && (error.message.includes('policy') || error.message.includes('RLS') || error.message.includes('permission'))) {
+                        container.innerHTML = `
+                            <div class="status error" style="padding: 20px;">
+                                <h3>❌ Błąd RLS (Row Level Security)</h3>
+                                <p>Konsola diagnostyczna nie może odczytać audit_logs z powodu RLS policy.</p>
+                                <p><strong>Rozwiązanie:</strong></p>
+                                <ol style="text-align: left; display: inline-block;">
+                                    <li>Otwórz Supabase SQL Editor</li>
+                                    <li>Wykonaj instrukcje z pliku <code>SUPABASE-AUDIT-LOG-FIX.md</code></li>
+                                    <li>Napraw RLS policy (Krok 4 w instrukcji)</li>
+                                </ol>
+                            </div>
+                        `;
+                        return;
+                    }
+                    throw error;
+                }
 
                 currentData.auditLogs = data || [];
-                displayAuditLogs(currentData.auditLogs);
+                
+                if (currentData.auditLogs.length === 0) {
+                    container.innerHTML = `
+                        <div style="padding: 40px; text-align: center; color: #888;">
+                            <p style="font-size: 18px; margin-bottom: 10px;">Brak zmian do wyświetlenia</p>
+                            <p style="font-size: 14px;">Spróbuj zmienić filtry lub sprawdź czy są dane w bazie.</p>
+                        </div>
+                    `;
+                } else {
+                    displayAuditLogsTable(currentData.auditLogs);
+                }
             } catch (error) {
                 container.innerHTML = `<div class="status error">Błąd: ${error.message}</div>`;
             }
         }
 
-        function displayAuditLogs(logs) {
+        function displayAuditLogsTable(logs) {
             const container = document.getElementById('auditLogs');
-            if (logs.length === 0) {
-                container.innerHTML = '<div class="status info">Brak zmian do wyświetlenia</div>';
-                return;
-            }
-
-            const actionIcons = { INSERT: '➕', UPDATE: '✏️', DELETE: '🗑️' };
-            const actionLabels = { INSERT: 'Utworzenie', UPDATE: 'Modyfikacja', DELETE: 'Usunięcie' };
-
-            container.innerHTML = logs.map(log => `
-                <div class="log-item ${log.action.toLowerCase()}">
-                    <div class="log-header">
-                        <strong>${actionIcons[log.action]} ${actionLabels[log.action]}</strong>
-                        <span style="color: #888; font-size: 11px;">${new Date(log.created_at).toLocaleString('pl-PL')}</span>
-                    </div>
-                    <div><strong>${log.table_name}</strong> #${log.record_id}</div>
-                    ${log.user_login ? `<div class="log-meta">👤 ${log.user_login}${log.user_email ? ` (${log.user_email})` : ''}</div>` : ''}
-                    ${log.changed_fields && log.changed_fields.length > 0 ? 
-                        `<div class="log-meta">Zmienione pola: <strong>${log.changed_fields.join(', ')}</strong></div>` : ''}
-                    ${log.old_data || log.new_data ? 
-                        `<details style="margin-top: 10px;">
-                            <summary style="cursor: pointer; color: #3b82f6;">📄 Pokaż szczegóły</summary>
-                            <pre>${JSON.stringify({old: log.old_data, new: log.new_data}, null, 2)}</pre>
-                        </details>` : ''}
+            
+            container.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sortable" onclick="sortTable('created_at')">Data i czas</th>
+                                <th class="sortable" onclick="sortTable('action')">Akcja</th>
+                                <th class="sortable" onclick="sortTable('table_name')">Tabela</th>
+                                <th class="sortable" onclick="sortTable('record_id')">ID rekordu</th>
+                                <th class="sortable" onclick="sortTable('user_login')">Użytkownik</th>
+                                <th>Zmienione pola</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${logs.map(log => `
+                                <tr>
+                                    <td>${new Date(log.created_at).toLocaleString('pl-PL')}</td>
+                                    <td><span class="badge ${log.action.toLowerCase()}">${log.action}</span></td>
+                                    <td><span class="badge table">${log.table_name}</span></td>
+                                    <td>#${log.record_id}</td>
+                                    <td>${log.user_login ? `${log.user_login}${log.user_email ? `<br><small style="color: #888;">${log.user_email}</small>` : ''}` : '<span style="color: #888;">System</span>'}</td>
+                                    <td>${log.changed_fields && log.changed_fields.length > 0 ? log.changed_fields.join(', ') : '-'}</td>
+                                    <td>
+                                        <button onclick="showLogDetails(${log.id})" style="padding: 6px 12px; font-size: 12px;">📄 Szczegóły</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
-            `).join('');
+                <div style="margin-top: 15px; color: #888; font-size: 12px;">
+                    Wyświetlono ${logs.length} zmian
+                </div>
+            `;
         }
 
+        function sortTable(column) {
+            if (sortConfig.column === column) {
+                sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortConfig.column = column;
+                sortConfig.direction = 'desc';
+            }
+
+            currentData.auditLogs.sort((a, b) => {
+                let aVal = a[column];
+                let bVal = b[column];
+                
+                if (column === 'created_at') {
+                    aVal = new Date(aVal).getTime();
+                    bVal = new Date(bVal).getTime();
+                } else {
+                    aVal = aVal || '';
+                    bVal = bVal || '';
+                }
+
+                if (sortConfig.direction === 'asc') {
+                    return aVal > bVal ? 1 : -1;
+                } else {
+                    return aVal < bVal ? 1 : -1;
+                }
+            });
+
+            displayAuditLogsTable(currentData.auditLogs);
+            
+            // Update sort indicators
+            document.querySelectorAll('th').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+            });
+            const header = event.target;
+            header.classList.add(`sort-${sortConfig.direction}`);
+        }
+
+        function showLogDetails(logId) {
+            const log = currentData.auditLogs.find(l => l.id === logId);
+            if (!log) return;
+
+            const modal = document.getElementById('detailsModal');
+            const modalBody = document.getElementById('modalBody');
+            const modalTitle = document.getElementById('modalTitle');
+
+            modalTitle.textContent = `Szczegóły zmiany #${log.id}`;
+
+            modalBody.innerHTML = `
+                <div style="display: grid; gap: 15px;">
+                    <div>
+                        <strong style="color: #3b82f6;">Podstawowe informacje:</strong>
+                        <div style="margin-top: 10px; padding: 15px; background: #0f0f0f; border-radius: 8px;">
+                            <div style="margin-bottom: 8px;"><strong>Tabela:</strong> <span class="badge table">${log.table_name}</span></div>
+                            <div style="margin-bottom: 8px;"><strong>ID rekordu:</strong> #${log.record_id}</div>
+                            <div style="margin-bottom: 8px;"><strong>Akcja:</strong> <span class="badge ${log.action.toLowerCase()}">${log.action}</span></div>
+                            <div style="margin-bottom: 8px;"><strong>Data:</strong> ${new Date(log.created_at).toLocaleString('pl-PL')}</div>
+                            ${log.user_login ? `<div style="margin-bottom: 8px;"><strong>Użytkownik:</strong> ${log.user_login}${log.user_email ? ` (${log.user_email})` : ''}</div>` : ''}
+                            ${log.chiropractor ? `<div><strong>Chiropraktyk:</strong> ${log.chiropractor}</div>` : ''}
+                        </div>
+                    </div>
+                    ${log.changed_fields && log.changed_fields.length > 0 ? `
+                        <div>
+                            <strong style="color: #3b82f6;">Zmienione pola:</strong>
+                            <div style="margin-top: 10px; padding: 15px; background: #0f0f0f; border-radius: 8px;">
+                                ${log.changed_fields.map(field => `<span class="badge update" style="margin: 4px;">${field}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${(log.old_data || log.new_data) ? `
+                        <div>
+                            <strong style="color: #3b82f6;">Dane (przed / po):</strong>
+                            <pre>${JSON.stringify({stare_dane: log.old_data, nowe_dane: log.new_data}, null, 2)}</pre>
+                        </div>
+                    ` : ''}
+                    ${log.metadata ? `
+                        <div>
+                            <strong style="color: #3b82f6;">Metadane:</strong>
+                            <pre>${JSON.stringify(log.metadata, null, 2)}</pre>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('detailsModal').classList.remove('active');
+        }
+
+        // Close modal on outside click
+        document.getElementById('detailsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'detailsModal') {
+                closeModal();
+            }
+        });
+
+        // Continue with other functions...
         window.loadLeads = async function() {
             if (!supabaseClient) return;
             const chiropractor = document.getElementById('chiropractor').value;
             const container = document.getElementById('leadsList');
-            container.innerHTML = '<div class="loading">Ładowanie...</div>';
+            container.innerHTML = '<div class="loading">Ładowanie</div>';
 
             try {
                 let query = supabaseClient.from('leads').select('*').eq('chiropractor', chiropractor).order('created_at', { ascending: false });
@@ -552,38 +1220,57 @@
                 if (error) throw error;
 
                 currentData.leads = data || [];
-                displayLeads(currentData.leads);
+                displayLeadsTable(currentData.leads);
             } catch (error) {
                 container.innerHTML = `<div class="status error">Błąd: ${error.message}</div>`;
             }
         }
 
-        function displayLeads(leads) {
+        function displayLeadsTable(leads) {
             const container = document.getElementById('leadsList');
             if (leads.length === 0) {
                 container.innerHTML = '<div class="status info">Brak leadów</div>';
                 return;
             }
 
-            container.innerHTML = leads.map(lead => `
-                <div class="log-item">
-                    <div class="log-header">
-                        <strong>${lead.name || 'Brak imienia'}</strong>
-                        <span style="color: #888; font-size: 11px;">${new Date(lead.created_at).toLocaleDateString('pl-PL')}</span>
-                    </div>
-                    <div class="log-meta">
-                        📞 ${lead.phone || 'Brak'} | ✉️ ${lead.email || 'Brak'} | 📊 ${lead.status || 'Brak'}
-                    </div>
-                    ${lead.description ? `<div style="margin-top: 5px; font-size: 12px; color: #aaa;">${lead.description}</div>` : ''}
+            container.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Imię i nazwisko</th>
+                                <th>Telefon</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Źródło</th>
+                                <th>Data utworzenia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${leads.map(lead => `
+                                <tr>
+                                    <td><strong>${lead.name || 'Brak imienia'}</strong></td>
+                                    <td>${lead.phone || '-'}</td>
+                                    <td>${lead.email || '-'}</td>
+                                    <td><span class="badge update">${lead.status || 'Brak'}</span></td>
+                                    <td>${lead.source || '-'}</td>
+                                    <td>${new Date(lead.created_at).toLocaleDateString('pl-PL')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
-            `).join('');
+                <div style="margin-top: 15px; color: #888; font-size: 12px;">
+                    Wyświetlono ${leads.length} leadów
+                </div>
+            `;
         }
 
         window.loadBookings = async function() {
             if (!supabaseClient) return;
             const chiropractor = document.getElementById('chiropractor').value;
             const container = document.getElementById('bookingsList');
-            container.innerHTML = '<div class="loading">Ładowanie...</div>';
+            container.innerHTML = '<div class="loading">Ładowanie</div>';
 
             try {
                 let query = supabaseClient.from('bookings').select('*').eq('chiropractor', chiropractor).order('date', { ascending: false });
@@ -600,45 +1287,165 @@
                 if (error) throw error;
 
                 currentData.bookings = data || [];
-                displayBookings(currentData.bookings);
+                displayBookingsTable(currentData.bookings);
             } catch (error) {
                 container.innerHTML = `<div class="status error">Błąd: ${error.message}</div>`;
             }
         }
 
-        function displayBookings(bookings) {
+        function displayBookingsTable(bookings) {
             const container = document.getElementById('bookingsList');
             if (bookings.length === 0) {
                 container.innerHTML = '<div class="status info">Brak rezerwacji</div>';
                 return;
             }
 
-            container.innerHTML = bookings.map(booking => `
-                <div class="log-item">
-                    <div class="log-header">
-                        <strong>${booking.name || 'Brak nazwy'}</strong>
-                        <span style="color: #888; font-size: 11px;">${new Date(booking.date).toLocaleDateString('pl-PL')}</span>
-                    </div>
-                    <div class="log-meta">
-                        🕐 ${booking.time_from}${booking.time_to ? ` - ${booking.time_to}` : ''} | 📊 ${booking.status || 'Brak'}
-                    </div>
+            container.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nazwa</th>
+                                <th>Data</th>
+                                <th>Godzina</th>
+                                <th>Status</th>
+                                <th>Opis</th>
+                                <th>Data utworzenia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${bookings.map(booking => `
+                                <tr>
+                                    <td><strong>${booking.name || 'Brak nazwy'}</strong></td>
+                                    <td>${new Date(booking.date).toLocaleDateString('pl-PL')}</td>
+                                    <td>${booking.time_from}${booking.time_to ? ` - ${booking.time_to}` : ''}</td>
+                                    <td><span class="badge update">${booking.status || 'Brak'}</span></td>
+                                    <td>${booking.description || '-'}</td>
+                                    <td>${new Date(booking.created_at).toLocaleDateString('pl-PL')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
-            `).join('');
+                <div style="margin-top: 15px; color: #888; font-size: 12px;">
+                    Wyświetlono ${bookings.length} rezerwacji
+                </div>
+            `;
+        }
+
+        window.loadUserActivity = async function() {
+            if (!supabaseClient) return;
+            const chiropractor = document.getElementById('chiropractor').value;
+            const container = document.getElementById('userActivityList');
+            container.innerHTML = '<div class="loading">Ładowanie</div>';
+
+            try {
+                let query = supabaseClient
+                    .from('audit_logs')
+                    .select('user_login, user_email, COUNT(*)')
+                    .eq('chiropractor', chiropractor)
+                    .not('user_login', 'is', null);
+
+                const userFilter = document.getElementById('userActivityFilter').value;
+                const dateFrom = document.getElementById('userDateFrom').value;
+                const dateTo = document.getElementById('userDateTo').value;
+
+                if (userFilter) query = query.ilike('user_login', `%${userFilter}%`);
+                if (dateFrom) query = query.gte('created_at', dateFrom);
+                if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59');
+
+                // Get all logs first, then group by user
+                const { data: logs, error } = await supabaseClient
+                    .from('audit_logs')
+                    .select('user_login, user_email, created_at, action, table_name')
+                    .eq('chiropractor', chiropractor)
+                    .not('user_login', 'is', null)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                // Group by user
+                const userActivity = {};
+                logs.forEach(log => {
+                    const key = log.user_login;
+                    if (!userActivity[key]) {
+                        userActivity[key] = {
+                            user_login: log.user_login,
+                            user_email: log.user_email,
+                            total_changes: 0,
+                            last_activity: log.created_at,
+                            actions: { INSERT: 0, UPDATE: 0, DELETE: 0 },
+                            tables: {}
+                        };
+                    }
+                    userActivity[key].total_changes++;
+                    userActivity[key].actions[log.action]++;
+                    userActivity[key].tables[log.table_name] = (userActivity[key].tables[log.table_name] || 0) + 1;
+                    if (new Date(log.created_at) > new Date(userActivity[key].last_activity)) {
+                        userActivity[key].last_activity = log.created_at;
+                    }
+                });
+
+                currentData.userActivity = Object.values(userActivity);
+                displayUserActivityTable(currentData.userActivity);
+            } catch (error) {
+                container.innerHTML = `<div class="status error">Błąd: ${error.message}</div>`;
+            }
+        }
+
+        function displayUserActivityTable(users) {
+            const container = document.getElementById('userActivityList');
+            if (users.length === 0) {
+                container.innerHTML = '<div class="status info">Brak aktywności użytkowników</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Użytkownik</th>
+                                <th>Email</th>
+                                <th>Wszystkie zmiany</th>
+                                <th>Utworzenia</th>
+                                <th>Modyfikacje</th>
+                                <th>Usunięcia</th>
+                                <th>Ostatnia aktywność</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${users.map(user => `
+                                <tr>
+                                    <td><strong>${user.user_login}</strong></td>
+                                    <td>${user.user_email || '-'}</td>
+                                    <td><span class="badge update">${user.total_changes}</span></td>
+                                    <td><span class="badge insert">${user.actions.INSERT || 0}</span></td>
+                                    <td><span class="badge update">${user.actions.UPDATE || 0}</span></td>
+                                    <td><span class="badge delete">${user.actions.DELETE || 0}</span></td>
+                                    <td>${new Date(user.last_activity).toLocaleString('pl-PL')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 15px; color: #888; font-size: 12px;">
+                    Wyświetlono ${users.length} użytkowników
+                </div>
+            `;
         }
 
         window.runDiagnostics = async function() {
             if (!supabaseClient) return;
             const container = document.getElementById('diagnosticsResults');
-            container.innerHTML = '<div class="loading">Uruchamianie diagnostyki...</div>';
+            container.innerHTML = '<div class="loading">Uruchamianie diagnostyki</div>';
 
             const chiropractor = document.getElementById('chiropractor').value;
             const results = [];
 
             try {
-                // Test 1: Połączenie z bazą
                 results.push({ test: 'Połączenie z Supabase', status: 'success', message: 'OK' });
 
-                // Test 2: Dostęp do tabel
                 const tables = ['audit_logs', 'leads', 'bookings'];
                 for (const table of tables) {
                     const { error } = await supabaseClient.from(table).select('id').limit(1);
@@ -649,11 +1456,9 @@
                     }
                 }
 
-                // Test 3: Liczba rekordów
                 const { count: auditCount } = await supabaseClient.from('audit_logs').select('id', { count: 'exact', head: true }).eq('chiropractor', chiropractor);
                 results.push({ test: 'Liczba rekordów audit_logs', status: 'success', message: `${auditCount || 0} rekordów` });
 
-                // Test 4: Ostatnia zmiana
                 const { data: lastChange } = await supabaseClient
                     .from('audit_logs')
                     .select('created_at')
@@ -667,14 +1472,13 @@
                     const hoursAgo = (Date.now() - lastChangeDate.getTime()) / (1000 * 60 * 60);
                     results.push({ 
                         test: 'Ostatnia zmiana', 
-                        status: hoursAgo > 24 ? 'error' : 'success',
+                        status: hoursAgo > 24 ? 'warning' : 'success',
                         message: `${hoursAgo.toFixed(1)} godzin temu`
                     });
                 }
 
-                // Wyświetl wyniki
                 container.innerHTML = results.map(r => `
-                    <div class="status ${r.status}" style="margin: 5px 0;">
+                    <div class="status ${r.status}" style="margin: 8px 0;">
                         <strong>${r.test}:</strong> ${r.message}
                     </div>
                 `).join('');

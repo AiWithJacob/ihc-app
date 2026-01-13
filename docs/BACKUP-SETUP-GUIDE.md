@@ -93,11 +93,15 @@ supabase functions deploy daily-backup
 ```
 BACKUP_STORAGE_TYPE=supabase
 BACKUP_BUCKET=ihc-backups
+BACKUP_MODE=full
 ```
 
-**To wystarczy dla podstawowego backupu do Supabase Storage!**
+**Wyjaśnienie:**
+- `BACKUP_STORAGE_TYPE=supabase` - używa Supabase Storage (najprostsze)
+- `BACKUP_BUCKET=ihc-backups` - nazwa bucketu w Supabase Storage
+- `BACKUP_MODE=full` - pełny backup wszystkich danych (lub `incremental` dla tylko ostatnich 24h)
 
-Jeśli chcesz backup do Google Drive lub Dropbox, dodaj dodatkowe secrets (patrz: `supabase/functions/daily-backup/README.md`)
+> **Uwaga:** Funkcja backupu obsługuje również Google Drive i Dropbox, ale dla uproszczenia zalecamy użycie Supabase Storage (działa od razu, bez dodatkowej konfiguracji OAuth).
 
 ### KROK 5: Zaplanuj automatyczne uruchamianie
 
@@ -150,7 +154,8 @@ curl -X POST https://YOUR_PROJECT_REF.supabase.co/functions/v1/daily-backup \
 
 **Sprawdź wynik:**
 - Powinieneś otrzymać JSON z informacją o backupie
-- Sprawdź w Supabase Storage → `ihc-backups` → `daily/` czy pojawiły się pliki
+- Sprawdź w Supabase Storage → `ihc-backups` → `full/` (lub `daily/` dla incremental) czy pojawiły się pliki
+- Powinny być dwa pliki: `ihc_backup_full_YYYY-MM-DD.json` i `ihc_backup_full_YYYY-MM-DD.csv`
 
 ### KROK 7: Przetestuj konsolę diagnostyczną
 
@@ -178,9 +183,8 @@ curl -X POST https://YOUR_PROJECT_REF.supabase.co/functions/v1/daily-backup \
 - **Dokumentacja:** `supabase/functions/daily-backup/README.md`
 
 ### Backupy (pliki)
-- **Supabase Storage:** `ihc-backups/daily/ihc_backup_YYYY-MM-DD.json`
-- **Google Drive:** Folder ustawiony w `GOOGLE_DRIVE_FOLDER_ID`
-- **Dropbox:** Ścieżka ustawiona w `DROPBOX_BACKUP_PATH`
+- **Supabase Storage:** `ihc-backups/full/ihc_backup_full_YYYY-MM-DD.json` (pełny backup)
+- **Supabase Storage:** `ihc-backups/daily/ihc_backup_daily_YYYY-MM-DD.json` (backup przyrostowy)
 
 ## 🔍 Jak sprawdzić czy wszystko działa
 
@@ -191,8 +195,8 @@ curl -X POST https://YOUR_PROJECT_REF.supabase.co/functions/v1/daily-backup \
 
 ### Automatyczny backup
 1. Sprawdź logi: Supabase Dashboard → Edge Functions → `daily-backup` → Logs
-2. Sprawdź storage: Supabase Dashboard → Storage → `ihc-backups` → `daily/`
-3. Powinny być pliki `ihc_backup_YYYY-MM-DD.json` i `.csv`
+2. Sprawdź storage: Supabase Dashboard → Storage → `ihc-backups` → `full/` (lub `daily/` dla incremental)
+3. Powinny być pliki `ihc_backup_full_YYYY-MM-DD.json` i `ihc_backup_full_YYYY-MM-DD.csv`
 
 ## 🆘 Rozwiązywanie problemów
 
