@@ -2,6 +2,7 @@
 // Pobiera leady z Supabase - działa między wszystkimi instancjami Vercel
 
 import { supabase } from './supabase.js';
+import { setAuditContextForAPI, extractUserContext } from './auditHelper.js';
 
 export default async function handler(req, res) {
   // Obsługa CORS
@@ -102,6 +103,11 @@ export default async function handler(req, res) {
       if (req.query.chiropractor && !leadData.chiropractor) {
         leadData.chiropractor = req.query.chiropractor;
       }
+      
+      // Ustaw kontekst użytkownika dla audit log
+      const userContext = extractUserContext(leadData);
+      userContext.chiropractor = leadData.chiropractor || req.query.chiropractor || 'default';
+      await setAuditContextForAPI(userContext, req);
       
       // Mapuj dane na format bazy danych
       const leadToInsert = {

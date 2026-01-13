@@ -2,6 +2,7 @@
 // Leady są zapisywane bezpośrednio w Supabase - działa między wszystkimi instancjami Vercel
 
 import { supabase } from './supabase.js';
+import { setAuditContextForAPI, extractUserContext } from './auditHelper.js';
 
 export default async function handler(req, res) {
   // Obsługa CORS - DODANE
@@ -182,6 +183,17 @@ export default async function handler(req, res) {
           timestamp: new Date().toISOString()
         });
       }
+      
+      // Ustaw kontekst użytkownika dla audit log (webhook z Zapier)
+      const userContext = {
+        id: null, // Webhook nie ma użytkownika
+        login: 'zapier_webhook',
+        email: null,
+        chiropractor: newLead.chiropractor,
+        source: 'webhook',
+        session_id: `webhook_${Date.now()}`
+      };
+      await setAuditContextForAPI(userContext, req);
       
       // Zapisz nowy lead do Supabase
       // Mapuj pola z aplikacji na strukturę bazy danych

@@ -258,25 +258,68 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
     }
   };
 
-  const addEvent = () => {
+  const addEvent = async () => {
     if (!newEventData.date || !newEventData.timeFrom) {
       alert("Wypełnij datę i godzinę");
-        return;
-      }
+      return;
+    }
 
     const timeDisplay = newEventData.timeFrom;
 
-      const newBooking = {
-        id: Date.now(),
+    const newBooking = {
+      id: Date.now(),
       date: newEventData.date,
       time: timeDisplay,
       name: leadFromState ? leadFromState.name : (newEventData.description || "Wydarzenie"),
       phone: leadFromState ? leadFromState.phone : "",
       description: newEventData.description,
       leadId: leadFromState ? leadFromState.id : null,
-      };
+    };
 
-      setBookings((prev) => [...prev, newBooking]);
+    setBookings((prev) => [...prev, newBooking]);
+    
+    // Zapisz do Supabase
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.chiropractor) {
+        const API_URL = import.meta.env.VITE_API_URL || 
+                        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                          ? 'https://ihc-app.vercel.app'
+                          : window.location.origin);
+        
+        const response = await fetch(`${API_URL}/api/bookings?chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...newBooking,
+            chiropractor: user.chiropractor,
+            timeFrom: timeDisplay,
+            // Kontekst użytkownika dla audit log
+            user_id: user.id,
+            user_login: user.login,
+            user_email: user.email,
+            source: 'ui'
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Rezerwacja zapisana w Supabase:', data.booking?.name);
+          // Zaktualizuj ID z bazy danych
+          if (data.booking?.id) {
+            setBookings((prev) => 
+              prev.map(b => b.id === newBooking.id ? { ...b, id: data.booking.id } : b)
+            );
+          }
+        } else {
+          console.error('❌ Błąd zapisywania rezerwacji w Supabase:', response.statusText);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Błąd zapisywania rezerwacji w Supabase:', error.message);
+    }
     
     // Automatycznie zmień status leada na "Umówiony", jeśli wizyta jest powiązana z leadem
     if (leadFromState && leadFromState.id) {
@@ -392,8 +435,43 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
     });
   }, [bookings, leads, setLeads]);
 
-  const deleteBooking = (bookingId) => {
+  const deleteBooking = async (bookingId) => {
     if (!window.confirm("Usunąć tę wizytę?")) return;
+    
+    // Usuń z Supabase jeśli booking ma ID z bazy
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.chiropractor && bookingId && typeof bookingId === 'number' && bookingId > 1000000000000) {
+        // To jest ID z bazy (duże liczby), nie lokalne Date.now()
+        const API_URL = import.meta.env.VITE_API_URL || 
+                        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                          ? 'https://ihc-app.vercel.app'
+                          : window.location.origin);
+        
+        const response = await fetch(`${API_URL}/api/bookings?id=${bookingId}&chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            // Kontekst użytkownika dla audit log
+            user_id: user.id,
+            user_login: user.login,
+            user_email: user.email,
+            source: 'ui'
+          })
+        });
+        
+        if (response.ok) {
+          console.log('✅ Rezerwacja usunięta z Supabase');
+        } else {
+          console.error('❌ Błąd usuwania rezerwacji z Supabase:', response.statusText);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Błąd usuwania rezerwacji z Supabase:', error.message);
+    }
+    
     setBookings((prev) => prev.filter((b) => b.id !== bookingId));
     setSelectedBooking(null);
     setEditMode(false);
@@ -418,7 +496,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
     setEditMode(true);
   };
 
-  const saveEditedBooking = () => {
+  const saveEditedBooking = async () => {
     if (!selectedBooking || !editedBooking) return;
     
     if (!editedBooking.date || !editedBooking.timeFrom) {
@@ -428,29 +506,59 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
 
     const timeDisplay = editedBooking.timeFrom;
 
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === selectedBooking.id
-          ? {
-              ...b,
-              date: editedBooking.date,
-              time: timeDisplay,
-              name: editedBooking.name,
-              phone: editedBooking.phone,
-              description: editedBooking.description,
-            }
-          : b
-      )
-    );
-    
-    setSelectedBooking({
+    const updatedBooking = {
       ...selectedBooking,
       date: editedBooking.date,
       time: timeDisplay,
       name: editedBooking.name,
       phone: editedBooking.phone,
       description: editedBooking.description,
-    });
+    };
+
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === selectedBooking.id ? updatedBooking : b
+      )
+    );
+    
+    setSelectedBooking(updatedBooking);
+    
+    // Zapisz zmiany do Supabase
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.chiropractor && selectedBooking.id && typeof selectedBooking.id === 'number' && selectedBooking.id > 1000000000000) {
+        // To jest ID z bazy (duże liczby), nie lokalne Date.now()
+        const API_URL = import.meta.env.VITE_API_URL || 
+                        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                          ? 'https://ihc-app.vercel.app'
+                          : window.location.origin);
+        
+        const response = await fetch(`${API_URL}/api/bookings?id=${selectedBooking.id}&chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...updatedBooking,
+            chiropractor: user.chiropractor,
+            timeFrom: timeDisplay,
+            // Kontekst użytkownika dla audit log
+            user_id: user.id,
+            user_login: user.login,
+            user_email: user.email,
+            source: 'ui'
+          })
+        });
+        
+        if (response.ok) {
+          console.log('✅ Rezerwacja zaktualizowana w Supabase');
+        } else {
+          console.error('❌ Błąd aktualizacji rezerwacji w Supabase:', response.statusText);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Błąd aktualizacji rezerwacji w Supabase:', error.message);
+    }
     
     setEditMode(false);
     setEditedBooking(null);

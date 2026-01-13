@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Konsola diagnostyczna - Audit Log</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { 
+            margin-bottom: 10px; 
+            color: #3b82f6;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .section {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #2a2a2a;
+        }
+        .section h2 {
+            color: #3b82f6;
+            margin-bottom: 15px;
+            font-size: 20px;
+            border-bottom: 2px solid #2a2a2a;
+            padding-bottom: 10px;
+        }
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #0f0f0f;
+            color: #fff;
+            font-size: 14px;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            background: #3b82f6;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+            margin: 5px;
+        }
+        button:hover { 
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        button:active { transform: translateY(0); }
+        button.danger { background: #ef4444; }
+        button.danger:hover { background: #dc2626; }
+        button.success { background: #22c55e; }
+        button.success:hover { background: #16a34a; }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .status.success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            color: #22c55e;
+        }
+        .status.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+        .status.info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            color: #3b82f6;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #0f0f0f;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #2a2a2a;
+        }
+        .stat-card .label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+        .log-item {
+            background: #0f0f0f;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+            font-size: 13px;
+        }
+        .log-item.insert { border-color: #22c55e; }
+        .log-item.update { border-color: #3b82f6; }
+        .log-item.delete { border-color: #ef4444; }
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .log-header strong {
+            color: #fff;
+            font-size: 14px;
+        }
+        .log-meta {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .filters select, .filters input {
+            flex: 1;
+            min-width: 150px;
+        }
+        pre {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 6px;
+            overflow: auto;
+            font-size: 12px;
+            border: 1px solid #2a2a2a;
+            max-height: 400px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2a2a2a;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        .tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Konsola diagnostyczna - Audit Log</h1>
+        <p class="subtitle">Niezależne narzędzie do przeglądania historii zmian i diagnostyki systemu</p>
+
+        <!-- Konfiguracja -->
+        <div class="section">
+            <h2>⚙️ Konfiguracja połączenia</h2>
+            <div class="config-grid">
+                <div>
+                    <label>Supabase URL</label>
+                    <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
+                </div>
+                <div>
+                    <label>Supabase Anon Key</label>
+                    <input type="password" id="supabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+                </div>
+                <div>
+                    <label>Chiropraktyk</label>
+                    <input type="text" id="chiropractor" placeholder="np. Kamil">
+                </div>
+            </div>
+            <button onclick="connect()">🔌 Połącz z Supabase</button>
+            <button onclick="saveConfig()" style="background: #22c55e;">💾 Zapisz konfigurację</button>
+            <div id="connectionStatus"></div>
+        </div>
+
+        <!-- Status połączenia -->
+        <div id="connectedSection" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('overview')">📊 Przegląd</button>
+                <button class="tab" onclick="switchTab('logs')">📋 Historia zmian</button>
+                <button class="tab" onclick="switchTab('leads')">👥 Leady</button>
+                <button class="tab" onclick="switchTab('bookings')">📅 Rezerwacje</button>
+                <button class="tab" onclick="switchTab('diagnostics')">🔍 Diagnostyka</button>
+            </div>
+
+            <!-- Tab: Przegląd -->
+            <div id="tab-overview" class="tab-content active">
+                <div class="section">
+                    <h2>📊 Statystyki systemu</h2>
+                    <div class="stats-grid" id="statsGrid"></div>
+                    <button onclick="refreshStats()">🔄 Odśwież statystyki</button>
+                </div>
+            </div>
+
+            <!-- Tab: Historia zmian -->
+            <div id="tab-logs" class="tab-content">
+                <div class="section">
+                    <h2>📋 Historia zmian (Audit Log)</h2>
+                    <div class="filters">
+                        <select id="tableFilter">
+                            <option value="">Wszystkie tabele</option>
+                            <option value="leads">Leady</option>
+                            <option value="bookings">Rezerwacje</option>
+                            <option value="users">Użytkownicy</option>
+                        </select>
+                        <select id="actionFilter">
+                            <option value="">Wszystkie akcje</option>
+                            <option value="INSERT">Utworzenie</option>
+                            <option value="UPDATE">Modyfikacja</option>
+                            <option value="DELETE">Usunięcie</option>
+                        </select>
+                        <input type="text" id="userFilter" placeholder="Filtruj po użytkowniku...">
+                        <input type="date" id="dateFrom" placeholder="Od daty">
+                        <input type="date" id="dateTo" placeholder="Do daty">
+                        <input type="number" id="limitFilter" value="100" placeholder="Limit" style="width: 100px;">
+                    </div>
+                    <div class="export-buttons">
+                        <button onclick="loadAuditLogs()">🔄 Załaduj</button>
+                        <button onclick="exportCSV('audit')" class="success">📥 Eksportuj CSV</button>
+                        <button onclick="exportJSON('audit')" class="success">📥 Eksportuj JSON</button>
+                    </div>
+                    <div id="auditLogs"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Leady -->
+            <div id="tab-leads" class="tab-content">
+                <div class="section">
+                    <h2>👥 Leady</h2>
+                    <div class="filters">
+                        <input type="text" id="leadNameFilter" placeholder="Szukaj po imieniu...">
+                        <input type="text" id="leadPhoneFilter" placeholder="Szukaj po telefonie...">
+                        <select id="leadStatusFilter">
+                            <option value="">Wszystkie statusy</option>
+                            <option value="Nowy kontakt">Nowy kontakt</option>
+                            <option value="Umówiony">Umówiony</option>
+                            <option value="Nie odebrał">Nie odebrał</option>
+                        </select>
+                    </div>
+                    <div class="export-buttons">
+                        <button onclick="loadLeads()">🔄 Załaduj</button>
+                        <button onclick="exportCSV('leads')" class="success">📥 Eksportuj CSV</button>
+                        <button onclick="exportJSON('leads')" class="success">📥 Eksportuj JSON</button>
+                    </div>
+                    <div id="leadsList"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Rezerwacje -->
+            <div id="tab-bookings" class="tab-content">
+                <div class="section">
+                    <h2>📅 Rezerwacje</h2>
+                    <div class="filters">
+                        <input type="date" id="bookingDateFrom" placeholder="Od daty">
+                        <input type="date" id="bookingDateTo" placeholder="Do daty">
+                        <select id="bookingStatusFilter">
+                            <option value="">Wszystkie statusy</option>
+                            <option value="scheduled">Zaplanowane</option>
+                            <option value="completed">Zakończone</option>
+                            <option value="cancelled">Anulowane</option>
+                        </select>
+                    </div>
+                    <div class="export-buttons">
+                        <button onclick="loadBookings()">🔄 Załaduj</button>
+                        <button onclick="exportCSV('bookings')" class="success">📥 Eksportuj CSV</button>
+                        <button onclick="exportJSON('bookings')" class="success">📥 Eksportuj JSON</button>
+                    </div>
+                    <div id="bookingsList"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Diagnostyka -->
+            <div id="tab-diagnostics" class="tab-content">
+                <div class="section">
+                    <h2>🔍 Diagnostyka systemu</h2>
+                    <button onclick="runDiagnostics()">▶️ Uruchom diagnostykę</button>
+                    <div id="diagnosticsResults"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let supabaseClient = null;
+        let currentData = {
+            auditLogs: [],
+            leads: [],
+            bookings: []
+        };
+
+        // Auto-load config from localStorage
+        window.onload = () => {
+            const saved = localStorage.getItem('auditDiagnosticsConfig');
+            if (saved) {
+                const config = JSON.parse(saved);
+                document.getElementById('supabaseUrl').value = config.url || '';
+                document.getElementById('supabaseKey').value = config.key || '';
+                document.getElementById('chiropractor').value = config.chiropractor || '';
+            }
+
+            // Auto-connect from URL params
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('url') && params.get('key')) {
+                document.getElementById('supabaseUrl').value = params.get('url');
+                document.getElementById('supabaseKey').value = params.get('key');
+                document.getElementById('chiropractor').value = params.get('chiropractor') || '';
+                window.connect();
+            }
+        };
+
+        window.saveConfig = function() {
+            const config = {
+                url: document.getElementById('supabaseUrl').value,
+                key: document.getElementById('supabaseKey').value,
+                chiropractor: document.getElementById('chiropractor').value
+            };
+            localStorage.setItem('auditDiagnosticsConfig', JSON.stringify(config));
+            showStatus('connectionStatus', 'Konfiguracja zapisana!', 'success');
+        };
+
+        window.connect = function() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            const chiropractor = document.getElementById('chiropractor').value;
+
+            if (!url || !key) {
+                showStatus('connectionStatus', 'Wprowadź URL i klucz Supabase', 'error');
+                return;
+            }
+
+            if (!chiropractor) {
+                showStatus('connectionStatus', 'Wprowadź nazwę chiropraktyka', 'error');
+                return;
+            }
+
+            try {
+                if (!window.supabase || !window.supabase.createClient) {
+                    showStatus('connectionStatus', '❌ Biblioteka Supabase nie została załadowana. Sprawdź połączenie internetowe.', 'error');
+                    return;
+                }
+                supabaseClient = window.supabase.createClient(url, key);
+                document.getElementById('connectedSection').style.display = 'block';
+                showStatus('connectionStatus', '✅ Połączono z Supabase', 'success');
+                window.refreshStats();
+            } catch (error) {
+                showStatus('connectionStatus', '❌ Błąd połączenia: ' + error.message, 'error');
+            }
+        };
+
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        };
+
+        window.refreshStats = async function() {
+            if (!supabaseClient) return;
+            const chiropractor = document.getElementById('chiropractor').value;
+
+            try {
+                const [auditCount, leadsCount, bookingsCount] = await Promise.all([
+                    supabaseClient.from('audit_logs').select('id', { count: 'exact', head: true }).eq('chiropractor', chiropractor),
+                    supabaseClient.from('leads').select('id', { count: 'exact', head: true }).eq('chiropractor', chiropractor),
+                    supabaseClient.from('bookings').select('id', { count: 'exact', head: true }).eq('chiropractor', chiropractor)
+                ]);
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const { count: todayAudit } = await supabaseClient
+                    .from('audit_logs')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('chiropractor', chiropractor)
+                    .gte('created_at', today.toISOString());
+
+                document.getElementById('statsGrid').innerHTML = `
+                    <div class="stat-card">
+                        <div class="label">Wszystkie zmiany</div>
+                        <div class="value">${auditCount.count || 0}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Zmiany dzisiaj</div>
+                        <div class="value">${todayAudit || 0}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Leady</div>
+                        <div class="value">${leadsCount.count || 0}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Rezerwacje</div>
+                        <div class="value">${bookingsCount.count || 0}</div>
+                    </div>
+                `;
+            } catch (error) {
+                showStatus('statsGrid', 'Błąd: ' + error.message, 'error');
+            }
+        }
+
+        window.loadAuditLogs = async function() {
+            if (!supabaseClient) return;
+            const chiropractor = document.getElementById('chiropractor').value;
+            const container = document.getElementById('auditLogs');
+            container.innerHTML = '<div class="loading">Ładowanie...</div>';
+
+            try {
+                let query = supabaseClient
+                    .from('audit_logs')
+                    .select('*')
+                    .eq('chiropractor', chiropractor)
+                    .order('created_at', { ascending: false })
+                    .limit(parseInt(document.getElementById('limitFilter').value) || 100);
+
+                const tableFilter = document.getElementById('tableFilter').value;
+                const actionFilter = document.getElementById('actionFilter').value;
+                const userFilter = document.getElementById('userFilter').value;
+                const dateFrom = document.getElementById('dateFrom').value;
+                const dateTo = document.getElementById('dateTo').value;
+
+                if (tableFilter) query = query.eq('table_name', tableFilter);
+                if (actionFilter) query = query.eq('action', actionFilter);
+                if (userFilter) query = query.ilike('user_login', `%${userFilter}%`);
+                if (dateFrom) query = query.gte('created_at', dateFrom);
+                if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59');
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+
+                currentData.auditLogs = data || [];
+                displayAuditLogs(currentData.auditLogs);
+            } catch (error) {
+                container.innerHTML = `<div class="status error">Błąd: ${error.message}</div>`;
+            }
+        }
+
+        function displayAuditLogs(logs) {
+            const container = document.getElementById('auditLogs');
+            if (logs.length === 0) {
+                container.innerHTML = '<div class="status info">Brak zmian do wyświetlenia</div>';
+                return;
+            }
+
+            const actionIcons = { INSERT: '➕', UPDATE: '✏️', DELETE: '🗑️' };
+            const actionLabels = { INSERT: 'Utworzenie', UPDATE: 'Modyfikacja', DELETE: 'Usunięcie' };
+
+            container.innerHTML = logs.map(log => `
+                <div class="log-item ${log.action.toLowerCase()}">
+                    <div class="log-header">
+                        <strong>${actionIcons[log.action]} ${actionLabels[log.action]}</strong>
+                        <span style="color: #888; font-size: 11px;">${new Date(log.created_at).toLocaleString('pl-PL')}</span>
+                    </div>
+                    <div><strong>${log.table_name}</strong> #${log.record_id}</div>
+                    ${log.user_login ? `<div class="log-meta">👤 ${log.user_login}${log.user_email ? ` (${log.user_email})` : ''}</div>` : ''}
+                    ${log.changed_fields && log.changed_fields.length > 0 ? 
+                        `<div class="log-meta">Zmienione pola: <strong>${log.changed_fields.join(', ')}</strong></div>` : ''}
+                    ${log.old_data || log.new_data ? 
+                        `<details style="margin-top: 10px;">
+                            <summary style="cursor: pointer; color: #3b82f6;">📄 Pokaż szczegóły</summary>
+                            <pre>${JSON.stringify({old: log.old_data, new: log.new_data}, null, 2)}</pre>
+                        </details>` : ''}
+                </div>
+            `).join('');
+        }
+
+        window.loadLeads = async function() {
+            if (!supabaseClient) return;
+            const chiropractor = document.getElementById('chiropractor').value;
+            const container = document.getElementById('leadsList');
+            container.innerHTML = '<div class="loading">Ładowanie...</div>';
+
+            try {
+                let query = supabaseClient.from('leads').select('*').eq('chiropractor', chiropractor).order('created_at', { ascending: false });
+
+                const nameFilter = document.getElementById('leadNameFilter').value;
+                const phoneFilter = document.getElementById('leadPhoneFilter').value;
+                const statusFilter = document.getElementById('leadStatusFilter').value;
+
+                if (nameFilter) query = query.ilike('name', `%${nameFilter}%`);
+                if (phoneFilter) query = query.ilike('phone', `%${phoneFilter}%`);
+                if (statusFilter) query = query.eq('status', statusFilter);
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                currentData.leads = data || [];
+                displayLeads(currentData.leads);
+            } catch (error) {
+                container.innerHTML = `<div class="status error">Błąd: ${error.message}</div>`;
+            }
+        }
+
+        function displayLeads(leads) {
+            const container = document.getElementById('leadsList');
+            if (leads.length === 0) {
+                container.innerHTML = '<div class="status info">Brak leadów</div>';
+                return;
+            }
+
+            container.innerHTML = leads.map(lead => `
+                <div class="log-item">
+                    <div class="log-header">
+                        <strong>${lead.name || 'Brak imienia'}</strong>
+                        <span style="color: #888; font-size: 11px;">${new Date(lead.created_at).toLocaleDateString('pl-PL')}</span>
+                    </div>
+                    <div class="log-meta">
+                        📞 ${lead.phone || 'Brak'} | ✉️ ${lead.email || 'Brak'} | 📊 ${lead.status || 'Brak'}
+                    </div>
+                    ${lead.description ? `<div style="margin-top: 5px; font-size: 12px; color: #aaa;">${lead.description}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        window.loadBookings = async function() {
+            if (!supabaseClient) return;
+            const chiropractor = document.getElementById('chiropractor').value;
+            const container = document.getElementById('bookingsList');
+            container.innerHTML = '<div class="loading">Ładowanie...</div>';
+
+            try {
+                let query = supabaseClient.from('bookings').select('*').eq('chiropractor', chiropractor).order('date', { ascending: false });
+
+                const dateFrom = document.getElementById('bookingDateFrom').value;
+                const dateTo = document.getElementById('bookingDateTo').value;
+                const statusFilter = document.getElementById('bookingStatusFilter').value;
+
+                if (dateFrom) query = query.gte('date', dateFrom);
+                if (dateTo) query = query.lte('date', dateTo);
+                if (statusFilter) query = query.eq('status', statusFilter);
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                currentData.bookings = data || [];
+                displayBookings(currentData.bookings);
+            } catch (error) {
+                container.innerHTML = `<div class="status error">Błąd: ${error.message}</div>`;
+            }
+        }
+
+        function displayBookings(bookings) {
+            const container = document.getElementById('bookingsList');
+            if (bookings.length === 0) {
+                container.innerHTML = '<div class="status info">Brak rezerwacji</div>';
+                return;
+            }
+
+            container.innerHTML = bookings.map(booking => `
+                <div class="log-item">
+                    <div class="log-header">
+                        <strong>${booking.name || 'Brak nazwy'}</strong>
+                        <span style="color: #888; font-size: 11px;">${new Date(booking.date).toLocaleDateString('pl-PL')}</span>
+                    </div>
+                    <div class="log-meta">
+                        🕐 ${booking.time_from}${booking.time_to ? ` - ${booking.time_to}` : ''} | 📊 ${booking.status || 'Brak'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.runDiagnostics = async function() {
+            if (!supabaseClient) return;
+            const container = document.getElementById('diagnosticsResults');
+            container.innerHTML = '<div class="loading">Uruchamianie diagnostyki...</div>';
+
+            const chiropractor = document.getElementById('chiropractor').value;
+            const results = [];
+
+            try {
+                // Test 1: Połączenie z bazą
+                results.push({ test: 'Połączenie z Supabase', status: 'success', message: 'OK' });
+
+                // Test 2: Dostęp do tabel
+                const tables = ['audit_logs', 'leads', 'bookings'];
+                for (const table of tables) {
+                    const { error } = await supabaseClient.from(table).select('id').limit(1);
+                    if (error) {
+                        results.push({ test: `Dostęp do tabeli ${table}`, status: 'error', message: error.message });
+                    } else {
+                        results.push({ test: `Dostęp do tabeli ${table}`, status: 'success', message: 'OK' });
+                    }
+                }
+
+                // Test 3: Liczba rekordów
+                const { count: auditCount } = await supabaseClient.from('audit_logs').select('id', { count: 'exact', head: true }).eq('chiropractor', chiropractor);
+                results.push({ test: 'Liczba rekordów audit_logs', status: 'success', message: `${auditCount || 0} rekordów` });
+
+                // Test 4: Ostatnia zmiana
+                const { data: lastChange } = await supabaseClient
+                    .from('audit_logs')
+                    .select('created_at')
+                    .eq('chiropractor', chiropractor)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (lastChange) {
+                    const lastChangeDate = new Date(lastChange.created_at);
+                    const hoursAgo = (Date.now() - lastChangeDate.getTime()) / (1000 * 60 * 60);
+                    results.push({ 
+                        test: 'Ostatnia zmiana', 
+                        status: hoursAgo > 24 ? 'error' : 'success',
+                        message: `${hoursAgo.toFixed(1)} godzin temu`
+                    });
+                }
+
+                // Wyświetl wyniki
+                container.innerHTML = results.map(r => `
+                    <div class="status ${r.status}" style="margin: 5px 0;">
+                        <strong>${r.test}:</strong> ${r.message}
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                container.innerHTML = `<div class="status error">Błąd diagnostyki: ${error.message}</div>`;
+            }
+        }
+
+        window.exportCSV = function(type) {
+            const data = currentData[type === 'audit' ? 'auditLogs' : type] || [];
+            if (data.length === 0) {
+                alert('Brak danych do eksportu');
+                return;
+            }
+
+            let csv = '';
+            if (type === 'audit') {
+                csv = [
+                    ['ID', 'Data', 'Tabela', 'Rekord ID', 'Akcja', 'Użytkownik', 'Email', 'Zmienione pola', 'IP', 'User Agent'].join(','),
+                    ...data.map(log => [
+                        log.id,
+                        log.created_at,
+                        log.table_name,
+                        log.record_id,
+                        log.action,
+                        log.user_login || '',
+                        log.user_email || '',
+                        log.changed_fields?.join(';') || '',
+                        log.ip_address || '',
+                        log.user_agent || ''
+                    ].map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
+                ].join('\n');
+            } else if (type === 'leads') {
+                csv = [
+                    ['ID', 'Imię', 'Telefon', 'Email', 'Status', 'Opis', 'Notatki', 'Źródło', 'Data utworzenia'].join(','),
+                    ...data.map(lead => [
+                        lead.id,
+                        lead.name || '',
+                        lead.phone || '',
+                        lead.email || '',
+                        lead.status || '',
+                        lead.description || '',
+                        lead.notes || '',
+                        lead.source || '',
+                        lead.created_at || ''
+                    ].map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
+                ].join('\n');
+            } else if (type === 'bookings') {
+                csv = [
+                    ['ID', 'Lead ID', 'Nazwa', 'Data', 'Od', 'Do', 'Status', 'Opis', 'Notatki', 'Data utworzenia'].join(','),
+                    ...data.map(booking => [
+                        booking.id,
+                        booking.lead_id || '',
+                        booking.name || '',
+                        booking.date || '',
+                        booking.time_from || '',
+                        booking.time_to || '',
+                        booking.status || '',
+                        booking.description || '',
+                        booking.notes || '',
+                        booking.created_at || ''
+                    ].map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
+                ].join('\n');
+            }
+
+            downloadFile(csv, `${type}_${Date.now()}.csv`, 'text/csv');
+        }
+
+        window.exportJSON = function(type) {
+            const data = currentData[type === 'audit' ? 'auditLogs' : type] || [];
+            if (data.length === 0) {
+                alert('Brak danych do eksportu');
+                return;
+            }
+            downloadFile(JSON.stringify(data, null, 2), `${type}_${Date.now()}.json`, 'application/json');
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => {
+                if (type === 'success') element.innerHTML = '';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

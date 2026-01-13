@@ -4,6 +4,7 @@ import { useTheme } from "./ThemeContext.jsx";
 import LeadsPage from "./LeadsPage.jsx";
 import CalendarPage from "./CalendarPage.jsx";
 import StatisticsPage from "./StatisticsPage.jsx";
+import AuditLogPage from "./AuditLogPage.jsx";
 import LoginPage from "./LoginPage.jsx";
 import ChiropractorSelection from "./ChiropractorSelection.jsx";
 import WelcomeAnimation from "./WelcomeAnimation.jsx";
@@ -215,6 +216,7 @@ export default function App() {
                           ? 'https://ihc-app.vercel.app'
                           : window.location.origin);
         
+        // Dodaj kontekst użytkownika dla audit log
         const response = await fetch(`${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}`, {
           method: 'POST',
           headers: {
@@ -222,7 +224,12 @@ export default function App() {
           },
           body: JSON.stringify({
             ...lead,
-            chiropractor: lead.chiropractor || user.chiropractor
+            chiropractor: lead.chiropractor || user.chiropractor,
+            // Kontekst użytkownika dla audit log
+            user_id: user.id,
+            user_login: user.login,
+            user_email: user.email,
+            source: 'ui'
           })
         });
         
@@ -256,6 +263,76 @@ export default function App() {
     };
   }, [user?.chiropractor, setLeads]);
 
+  // Synchronizacja rezerwacji z Supabase
+  useEffect(() => {
+    if (!user?.chiropractor) return;
+
+    const API_URL = import.meta.env.VITE_API_URL || 
+                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                      ? 'https://ihc-app.vercel.app'
+                      : window.location.origin);
+
+    // Funkcja do pobierania rezerwacji z Supabase
+    const syncBookingsFromSupabase = async () => {
+      try {
+        const lastCheckTime = localStorage.getItem('lastBookingsCheck') || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        
+        const apiUrl = `${API_URL}/api/bookings?chiropractor=${encodeURIComponent(user.chiropractor)}&since=${encodeURIComponent(lastCheckTime)}`;
+        console.log('🔍 Synchronizuję rezerwacje z Supabase:', {
+          url: apiUrl,
+          chiropractor: user.chiropractor,
+          since: lastCheckTime
+        });
+        
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+          console.log('⚠️ API nie jest dostępne (może być w trybie dev):', response.status, response.statusText);
+          return;
+        }
+
+        const data = await response.json();
+        console.log('📥 Otrzymano rezerwacje z Supabase:', {
+          success: data.success,
+          count: data.count,
+          bookings: data.bookings?.length || 0,
+          chiropractor: user.chiropractor,
+          source: data.source
+        });
+        
+        if (data.success && data.bookings && data.bookings.length > 0) {
+          setBookings(prev => {
+            const existingIds = prev.map(b => b.id);
+            const newBookings = data.bookings
+              .filter(b => !existingIds.includes(b.id))
+              .map(booking => ({
+                ...booking,
+                chiropractor: booking.chiropractor || user.chiropractor
+              }));
+            
+            if (newBookings.length > 0) {
+              console.log(`✅ Dodano ${newBookings.length} nowych rezerwacji z Supabase`);
+              const newCheckTime = new Date().toISOString();
+              localStorage.setItem('lastBookingsCheck', newCheckTime);
+              return [...newBookings, ...prev];
+            }
+            return prev;
+          });
+        }
+      } catch (error) {
+        console.error('❌ Błąd synchronizacji rezerwacji z Supabase:', error.message);
+      }
+    };
+
+    // Sprawdzaj co 30 sekund nowe rezerwacje z Supabase
+    const interval = setInterval(syncBookingsFromSupabase, 30000);
+    const timeout = setTimeout(syncBookingsFromSupabase, 2000);
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [user?.chiropractor, setBookings]);
 
   useEffect(() => {
     if (user) {
@@ -359,6 +436,7 @@ export default function App() {
   const isLeadsActive = location.pathname === "/";
   const isCalendarActive = location.pathname === "/calendar";
   const isStatisticsActive = location.pathname === "/statistics";
+  const isAuditLogActive = location.pathname === "/audit-log";
 
   // Debug logi
   console.log("App render state:", {
@@ -689,6 +767,40 @@ export default function App() {
               📊 Statystyki
             </Link>
 
+            <Link
+              to="/audit-log"
+              style={{
+                padding: "8px 14px",
+                borderRadius: 8,
+                textDecoration: "none",
+                background: isAuditLogActive 
+                  ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
+                  : themeData.surfaceElevated,
+                color: isAuditLogActive ? "white" : themeData.text,
+                fontWeight: isAuditLogActive ? 700 : 500,
+                transition: "all 0.3s ease",
+                border: isAuditLogActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
+                boxShadow: isAuditLogActive ? `0 4px 16px ${themeData.glow}` : "none",
+                fontSize: "14px",
+              }}
+              onMouseEnter={(e) => {
+                if (!isAuditLogActive) {
+                  e.currentTarget.style.background = themeData.surfaceHover;
+                  e.currentTarget.style.color = themeData.text;
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isAuditLogActive) {
+                  e.currentTarget.style.background = themeData.surfaceElevated;
+                  e.currentTarget.style.color = themeData.text;
+                  e.currentTarget.style.transform = "translateY(0)";
+                }
+              }}
+            >
+              📋 Historia
+            </Link>
+
             {/* Przycisk zmiany motywu */}
             <button
               onClick={toggleTheme}
@@ -795,6 +907,10 @@ export default function App() {
                   bookings={currentBookings}
                 />
               }
+            />
+            <Route
+              path="/audit-log"
+              element={<AuditLogPage />}
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
