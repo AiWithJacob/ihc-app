@@ -8,15 +8,20 @@ Ten folder zawiera kompletną dokumentację projektu.
 - **SUPABASE-SETUP.md** - Konfiguracja bazy danych Supabase
 - **AUDIT-LOG-SETUP.md** - Konfiguracja systemu audit log
 - **BACKUP-SETUP-GUIDE.md** - Konfiguracja automatycznego backupu
+- **BACKUP-STRATEGY.md** - Strategia backupu danych (ręczny backup)
 - **DEPLOY-VERCEL.md** - Instrukcja deploymentu na Vercel
 
 ### Integracje
 - **QUICK-START-FACEBOOK.md** - Szybki start z integracją Facebook Lead Ads
 - **README-FACEBOOK-INTEGRATION.md** - Szczegółowa dokumentacja integracji Facebook
+- **ZAPIER-MIGRATION-PLAN.md** - Plan migracji z Zapier do Make.com
+- **MAKE-COM-SETUP.md** - Konfiguracja Make.com krok po kroku
+- **TEST-WEBHOOK.md** - Testowanie webhooka bez Facebook Lead Ads
 
 ### Implementacja
 - **IMPLEMENTATION-SUMMARY.md** - Podsumowanie wszystkich zaimplementowanych funkcji
 - **ADD-USER-TRACKING-TO-BOOKINGS.md** - Dokumentacja śledzenia użytkowników w rezerwacjach
+- **STATUSES.md** - Dokumentacja statusów w systemie (leads i bookings)
 
 ## 🚀 Szybki start
 

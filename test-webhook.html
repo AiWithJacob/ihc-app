@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Test Webhook - IHC App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #3b82f6;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .section {
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #2a2a2a;
+        }
+        
+        .section h2 {
+            color: #3b82f6;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #0f0f0f;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+        
+        button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        button.secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+        
+        .status {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status.success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            color: #22c55e;
+            display: block;
+        }
+        
+        .status.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            display: block;
+        }
+        
+        .status.info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            color: #3b82f6;
+            display: block;
+        }
+        
+        pre {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow: auto;
+            font-size: 12px;
+            border: 1px solid #2a2a2a;
+            max-height: 300px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+        
+        .info-box strong {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Webhook - IHC App</h1>
+        <p class="subtitle">Narzędzie do testowania endpointu /api/facebook-leads bez Facebook Lead Ads</p>
+        
+        <div class="info-box">
+            <strong>ℹ️ Informacja:</strong> To narzędzie pozwala przetestować webhook bez konieczności konfiguracji Facebook Lead Ads. 
+            Możesz użyć tego do testów przed skonfigurowaniem Make.com.
+        </div>
+        
+        <div class="section">
+            <h2>📝 Dane testowe</h2>
+            
+            <div class="grid">
+                <div>
+                    <label>Imię</label>
+                    <input type="text" id="firstName" value="Jan" placeholder="Jan">
+                </div>
+                <div>
+                    <label>Nazwisko</label>
+                    <input type="text" id="lastName" value="Testowy" placeholder="Testowy">
+                </div>
+            </div>
+            
+            <div class="grid">
+                <div>
+                    <label>Telefon</label>
+                    <input type="text" id="phone" value="123456789" placeholder="123456789">
+                </div>
+                <div>
+                    <label>Email</label>
+                    <input type="email" id="email" value="jan.testowy@example.com" placeholder="jan@example.com">
+                </div>
+            </div>
+            
+            <label>Opis / Pytania</label>
+            <textarea id="description" rows="3" placeholder="Test lead z webhooka">Test lead z webhooka - sprawdzenie działania endpointu</textarea>
+            
+            <label>Chiropraktyk</label>
+            <input type="text" id="chiropractor" value="default" placeholder="default">
+            
+            <label>Źródło webhooka</label>
+            <select id="webhookSource">
+                <option value="make">Make.com</option>
+                <option value="zapier">Zapier</option>
+                <option value="test">Test (bez źródła)</option>
+            </select>
+            
+            <label>URL Endpoint</label>
+            <input type="text" id="endpointUrl" value="https://ihc-app.vercel.app/api/facebook-leads" placeholder="https://ihc-app.vercel.app/api/facebook-leads">
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="sendWebhook()">🚀 Wyślij Webhook</button>
+                <button class="secondary" onclick="fillSampleData()">📋 Wypełnij przykładowe dane</button>
+                <button class="secondary" onclick="clearForm()">🗑️ Wyczyść</button>
+            </div>
+            
+            <div id="status"></div>
+        </div>
+        
+        <div class="section">
+            <h2>📤 Request (JSON)</h2>
+            <pre id="requestJson"></pre>
+        </div>
+        
+        <div class="section">
+            <h2>📥 Response</h2>
+            <pre id="responseJson">Kliknij "Wyślij Webhook" aby zobaczyć odpowiedź...</pre>
+        </div>
+        
+        <div class="section">
+            <h2>📚 Instrukcje dla Make.com</h2>
+            <div style="font-size: 14px; line-height: 1.6;">
+                <p><strong>1. Utwórz Scenario w Make.com:</strong></p>
+                <ul style="margin-left: 20px; margin-bottom: 15px;">
+                    <li>Kliknij "Create a new scenario"</li>
+                    <li>Nazwa: "Test Webhook → IHC App"</li>
+                </ul>
+                
+                <p><strong>2. Dodaj moduł Webhooks:</strong></p>
+                <ul style="margin-left: 20px; margin-bottom: 15px;">
+                    <li>Wyszukaj: "Webhooks"</li>
+                    <li>Wybierz: "Custom webhook" → "Receive a webhook"</li>
+                    <li>Kliknij "Save" - Make.com wygeneruje URL webhooka</li>
+                    <li>Skopiuj ten URL - użyjesz go do testów</li>
+                </ul>
+                
+                <p><strong>3. Dodaj moduł HTTP Request:</strong></p>
+                <ul style="margin-left: 20px; margin-bottom: 15px;">
+                    <li>Wyszukaj: "HTTP"</li>
+                    <li>Wybierz: "Make an HTTP Request"</li>
+                    <li><strong>Method:</strong> POST</li>
+                    <li><strong>URL:</strong> <code id="endpointUrlCopy">https://ihc-app.vercel.app/api/facebook-leads</code></li>
+                    <li><strong>Query String:</strong> <code>chiropractor=default</code></li>
+                    <li><strong>Header:</strong> <code>X-Webhook-Source: make</code></li>
+                    <li><strong>Body Type:</strong> JSON</li>
+                    <li><strong>Body:</strong> Użyj danych z modułu Webhooks (mapowanie pól)</li>
+                </ul>
+                
+                <p><strong>4. Przetestuj:</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>Kliknij "Run once" w Make.com</li>
+                    <li>Make.com wyświetli URL webhooka</li>
+                    <li>Użyj tego narzędzia (powyżej) lub curl/Postman do wysłania danych na URL webhooka Make.com</li>
+                    <li>Make.com przekieruje dane do endpointu IHC App</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function fillSampleData() {
+            document.getElementById('firstName').value = 'Jan';
+            document.getElementById('lastName').value = 'Testowy';
+            document.getElementById('phone').value = '123456789';
+            document.getElementById('email').value = 'jan.testowy@example.com';
+            document.getElementById('description').value = 'Test lead z webhooka - sprawdzenie działania endpointu';
+            document.getElementById('chiropractor').value = 'default';
+        }
+        
+        function clearForm() {
+            document.getElementById('firstName').value = '';
+            document.getElementById('lastName').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('chiropractor').value = 'default';
+            document.getElementById('responseJson').textContent = 'Kliknij "Wyślij Webhook" aby zobaczyć odpowiedź...';
+            document.getElementById('status').innerHTML = '';
+        }
+        
+        function updateRequestJson() {
+            const data = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                phone_number: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                custom_questions: document.getElementById('description').value,
+                chiropractor: document.getElementById('chiropractor').value
+            };
+            
+            document.getElementById('requestJson').textContent = JSON.stringify(data, null, 2);
+            return data;
+        }
+        
+        async function sendWebhook() {
+            const statusDiv = document.getElementById('status');
+            const responsePre = document.getElementById('responseJson');
+            
+            // Pokaż status ładowania
+            statusDiv.innerHTML = '<div class="status info">⏳ Wysyłanie webhooka...</div>';
+            responsePre.textContent = 'Wysyłanie...';
+            
+            // Przygotuj dane
+            const data = updateRequestJson();
+            const endpointUrl = document.getElementById('endpointUrl').value;
+            const chiropractor = document.getElementById('chiropractor').value;
+            const webhookSource = document.getElementById('webhookSource').value;
+            
+            // Przygotuj URL z query string
+            const url = `${endpointUrl}?chiropractor=${encodeURIComponent(chiropractor)}`;
+            
+            // Przygotuj headers
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Dodaj header dla rozróżnienia źródła
+            if (webhookSource === 'make') {
+                headers['X-Webhook-Source'] = 'make';
+                headers['User-Agent'] = 'make.com/1.0';
+            } else if (webhookSource === 'zapier') {
+                headers['User-Agent'] = 'Zapier';
+            }
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(data)
+                });
+                
+                const responseData = await response.json();
+                
+                // Wyświetl odpowiedź
+                responsePre.textContent = JSON.stringify(responseData, null, 2);
+                
+                // Wyświetl status
+                if (response.ok && responseData.success) {
+                    statusDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ Sukces! Webhook został wysłany poprawnie.<br>
+                            Lead ID: ${responseData.lead?.id || 'N/A'}<br>
+                            Message: ${responseData.message || 'OK'}
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="status error">
+                            ❌ Błąd: ${responseData.error || 'Unknown error'}<br>
+                            Message: ${responseData.message || 'No message'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                let errorMessage = error.message;
+                
+                // Sprawdź czy to błąd parsowania JSON (webhook Make.com zwraca HTML/tekst)
+                if (errorMessage.includes('JSON') || errorMessage.includes('Unexpected token')) {
+                    errorMessage = 'Webhook Make.com zwrócił odpowiedź, która nie jest JSON. To normalne - webhook Make.com zwraca HTML/tekst gdy nie ma jeszcze skonfigurowanego modułu HTTP Request. Dodaj moduł HTTP Request w Make.com, aby przekierować dane do endpointu IHC.';
+                }
+                
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Błąd: ${errorMessage}
+                    </div>
+                `;
+                responsePre.textContent = `Error: ${error.message}\n\nUwaga: Jeśli używasz webhooka Make.com bez modułu HTTP Request, to jest normalne. Webhook Make.com zwraca HTML/tekst zamiast JSON. Dodaj moduł HTTP Request w Make.com.`;
+            }
+        }
+        
+        // Aktualizuj JSON przy zmianie danych
+        ['firstName', 'lastName', 'phone', 'email', 'description', 'chiropractor'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateRequestJson);
+        });
+        
+        // Inicjalizacja
+        updateRequestJson();
+    </script>
+</body>
+</html>

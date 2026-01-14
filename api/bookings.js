@@ -3,6 +3,7 @@
 
 import { supabase } from './supabase.js';
 import { setAuditContextForAPI, extractUserContext } from './auditHelper.js';
+import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from './google-calendar.js';
 
 export default async function handler(req, res) {
   // Obsługa CORS
@@ -148,6 +149,27 @@ export default async function handler(req, res) {
         });
       }
       
+      // Utwórz wydarzenie w Google Calendar (jeśli skonfigurowane)
+      let googleCalendarEventId = null;
+      try {
+        const chiropractorName = insertedBooking.chiropractor;
+        googleCalendarEventId = await createCalendarEvent(insertedBooking, chiropractorName);
+        
+        // Zaktualizuj booking z event_id
+        if (googleCalendarEventId) {
+          await supabase
+            .from('bookings')
+            .update({ google_calendar_event_id: googleCalendarEventId })
+            .eq('id', insertedBooking.id);
+          
+          insertedBooking.google_calendar_event_id = googleCalendarEventId;
+          console.log(`✅ Wydarzenie Google Calendar utworzone: ${googleCalendarEventId}`);
+        }
+      } catch (gcError) {
+        // Nie przerywaj procesu jeśli Google Calendar nie działa
+        console.warn('⚠️ Błąd tworzenia wydarzenia w Google Calendar (kontynuuję):', gcError.message);
+      }
+      
       // Mapuj z powrotem na format aplikacji
       const mappedBooking = {
         id: insertedBooking.id,
@@ -161,7 +183,8 @@ export default async function handler(req, res) {
         description: insertedBooking.description || '',
         chiropractor: insertedBooking.chiropractor,
         status: insertedBooking.status,
-        createdAt: insertedBooking.created_at
+        createdAt: insertedBooking.created_at,
+        googleCalendarEventId: insertedBooking.google_calendar_event_id || null
       };
       
       return res.status(200).json({
@@ -240,6 +263,18 @@ export default async function handler(req, res) {
         });
       }
       
+      // Aktualizuj wydarzenie w Google Calendar (jeśli istnieje event_id)
+      if (updatedBooking.google_calendar_event_id) {
+        try {
+          const chiropractorName = updatedBooking.chiropractor;
+          await updateCalendarEvent(updatedBooking.google_calendar_event_id, updatedBooking, chiropractorName);
+          console.log(`✅ Wydarzenie Google Calendar zaktualizowane: ${updatedBooking.google_calendar_event_id}`);
+        } catch (gcError) {
+          // Nie przerywaj procesu jeśli Google Calendar nie działa
+          console.warn('⚠️ Błąd aktualizacji wydarzenia w Google Calendar (kontynuuję):', gcError.message);
+        }
+      }
+      
       // Mapuj z powrotem na format aplikacji
       const mappedBooking = {
         id: updatedBooking.id,
@@ -253,7 +288,8 @@ export default async function handler(req, res) {
         description: updatedBooking.description || '',
         chiropractor: updatedBooking.chiropractor,
         status: updatedBooking.status,
-        createdAt: updatedBooking.created_at
+        createdAt: updatedBooking.created_at,
+        googleCalendarEventId: updatedBooking.google_calendar_event_id || null
       };
       
       return res.status(200).json({
@@ -287,6 +323,34 @@ export default async function handler(req, res) {
       userContext.chiropractor = userContext.chiropractor || req.query.chiropractor || 'default';
       await setAuditContextForAPI(userContext, req);
       
+      // Najpierw pobierz booking aby uzyskać google_calendar_event_id i chiropractor
+      const { data: bookingToDelete, error: fetchError } = await supabase
+        .from('bookings')
+        .select('google_calendar_event_id, chiropractor')
+        .eq('id', id)
+        .single();
+      
+      if (fetchError) {
+        console.error('❌ Błąd pobierania rezerwacji przed usunięciem:', fetchError);
+        return res.status(500).json({ 
+          error: 'Database error',
+          message: fetchError.message 
+        });
+      }
+      
+      // Usuń wydarzenie z Google Calendar (jeśli istnieje event_id)
+      if (bookingToDelete?.google_calendar_event_id) {
+        try {
+          const chiropractorName = bookingToDelete.chiropractor || userContext.chiropractor;
+          await deleteCalendarEvent(bookingToDelete.google_calendar_event_id, chiropractorName);
+          console.log(`✅ Wydarzenie Google Calendar usunięte: ${bookingToDelete.google_calendar_event_id}`);
+        } catch (gcError) {
+          // Nie przerywaj procesu jeśli Google Calendar nie działa
+          console.warn('⚠️ Błąd usuwania wydarzenia z Google Calendar (kontynuuję):', gcError.message);
+        }
+      }
+      
+      // Usuń booking z Supabase
       const { error } = await supabase
         .from('bookings')
         .delete()

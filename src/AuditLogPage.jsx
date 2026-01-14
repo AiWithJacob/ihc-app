@@ -22,6 +22,7 @@ export default function AuditLogPage() {
     table_name: "",
     action: "",
     user_login: "",
+    source: "",
     date_from: "",
     date_to: "",
     limit: 100
@@ -79,10 +80,19 @@ export default function AuditLogPage() {
       }
 
       const { data, error: queryError } = await query;
+      
+      // Filtrowanie po źródle po stronie klienta (metadata.source jest JSONB)
+      let filteredData = data || [];
+      if (filters.source) {
+        filteredData = filteredData.filter(log => {
+          const logSource = log.metadata?.source || 'database';
+          return logSource === filters.source;
+        });
+      }
 
       if (queryError) throw queryError;
 
-      setAuditLogs(data || []);
+      setAuditLogs(filteredData);
     } catch (err) {
       console.error("Błąd ładowania historii:", err);
       setError(`Błąd: ${err.message}`);
@@ -259,6 +269,25 @@ export default function AuditLogPage() {
           }}
         />
 
+        <select
+          value={filters.source}
+          onChange={(e) => setFilters({ ...filters, source: e.target.value })}
+          style={{
+            padding: "8px",
+            borderRadius: "6px",
+            border: `1px solid ${themeData.border}`,
+            background: themeData.surfaceElevated,
+            color: themeData.text,
+            fontSize: "14px"
+          }}
+        >
+          <option value="">Wszystkie źródła</option>
+          <option value="ui">🖥️ UI</option>
+          <option value="api">🔌 API</option>
+          <option value="webhook">🔗 Webhook</option>
+          <option value="database">📊 Baza danych</option>
+        </select>
+
         <input
           type="date"
           placeholder="Od daty"
@@ -425,13 +454,25 @@ export default function AuditLogPage() {
                         color: themeData.textSecondary,
                         display: "flex",
                         gap: "10px",
-                        flexWrap: "wrap"
+                        flexWrap: "wrap",
+                        alignItems: "center"
                       }}
                     >
-                      {log.user_login && (
+                      {log.user_login ? (
                         <span>
-                          👤 <strong>{log.user_login}</strong>
+                          👤 <strong>Kto zmienił: {log.user_login}</strong>
                           {log.user_email && ` (${log.user_email})`}
+                        </span>
+                      ) : (
+                        <span style={{ color: themeData.textSecondary }}>
+                          👤 <strong>Kto zmienił:</strong> System
+                        </span>
+                      )}
+                      {log.metadata?.source && (
+                        <span>
+                          {log.metadata.source === 'ui' ? '🖥️' : log.metadata.source === 'api' ? '🔌' : log.metadata.source === 'webhook' ? '🔗' : '📊'} 
+                          <strong> Źródło: </strong>
+                          {log.metadata.source === 'ui' ? 'UI' : log.metadata.source === 'api' ? 'API' : log.metadata.source === 'webhook' ? 'Webhook' : 'Baza danych'}
                         </span>
                       )}
                       {log.session_id && (
@@ -534,10 +575,23 @@ export default function AuditLogPage() {
               <div>
                 <strong>Data:</strong> {formatDate(selectedLog.created_at)}
               </div>
-              {selectedLog.user_login && (
+              {selectedLog.user_login ? (
                 <div>
-                  <strong>Użytkownik:</strong> {selectedLog.user_login}
+                  <strong>Kto zmienił:</strong> <strong>{selectedLog.user_login}</strong>
                   {selectedLog.user_email && ` (${selectedLog.user_email})`}
+                </div>
+              ) : (
+                <div>
+                  <strong>Kto zmienił:</strong> <span style={{ color: themeData.textSecondary }}>System</span>
+                </div>
+              )}
+              {selectedLog.metadata?.source && (
+                <div>
+                  <strong>Źródło:</strong>{" "}
+                  {selectedLog.metadata.source === 'ui' ? '🖥️ UI' : 
+                   selectedLog.metadata.source === 'api' ? '🔌 API' : 
+                   selectedLog.metadata.source === 'webhook' ? '🔗 Webhook' : 
+                   '📊 Baza danych'}
                 </div>
               )}
               {selectedLog.changed_fields && selectedLog.changed_fields.length > 0 && (

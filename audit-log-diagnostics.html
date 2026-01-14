@@ -620,8 +620,18 @@
                             </select>
                         </div>
                         <div class="filter-group">
-                            <label>Użytkownik</label>
+                            <label>Kto zmienił</label>
                             <input type="text" id="userFilter" placeholder="Szukaj użytkownika...">
+                        </div>
+                        <div class="filter-group">
+                            <label>Źródło</label>
+                            <select id="sourceFilter">
+                                <option value="">Wszystkie źródła</option>
+                                <option value="ui">🖥️ UI</option>
+                                <option value="api">🔌 API</option>
+                                <option value="webhook">🔗 Webhook</option>
+                                <option value="database">📊 Baza danych</option>
+                            </select>
                         </div>
                         <div class="filter-group">
                             <label>Od daty</label>
@@ -1012,6 +1022,7 @@
                 const tableFilter = document.getElementById('tableFilter').value;
                 const actionFilter = document.getElementById('actionFilter').value;
                 const userFilter = document.getElementById('userFilter').value;
+                const sourceFilter = document.getElementById('sourceFilter').value;
                 const dateFrom = document.getElementById('dateFrom').value;
                 const dateTo = document.getElementById('dateTo').value;
 
@@ -1022,6 +1033,9 @@
                 if (userFilter) query = query.ilike('user_login', `%${userFilter}%`);
                 if (dateFrom) query = query.gte('created_at', dateFrom);
                 if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59');
+                
+                // Filtrowanie po źródle - trzeba pobrać wszystkie i filtrować po stronie klienta
+                // (bo metadata jest JSONB i filtrowanie w Supabase jest bardziej skomplikowane)
 
                 const { data, error } = await query;
 
@@ -1044,7 +1058,16 @@
                     throw error;
                 }
 
-                currentData.auditLogs = data || [];
+                // Filtrowanie po źródle po stronie klienta
+                let filteredData = data || [];
+                if (sourceFilter) {
+                    filteredData = filteredData.filter(log => {
+                        const logSource = log.metadata?.source || 'database';
+                        return logSource === sourceFilter;
+                    });
+                }
+                
+                currentData.auditLogs = filteredData;
                 
                 if (currentData.auditLogs.length === 0) {
                     container.innerHTML = `
@@ -1073,25 +1096,32 @@
                                 <th class="sortable" onclick="sortTable('action')">Akcja</th>
                                 <th class="sortable" onclick="sortTable('table_name')">Tabela</th>
                                 <th class="sortable" onclick="sortTable('record_id')">ID rekordu</th>
-                                <th class="sortable" onclick="sortTable('user_login')">Użytkownik</th>
+                                <th class="sortable" onclick="sortTable('user_login')">Kto zmienił</th>
+                                <th class="sortable" onclick="sortTable('source')">Źródło</th>
                                 <th>Zmienione pola</th>
                                 <th>Akcje</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${logs.map(log => `
+                            ${logs.map(log => {
+                                const source = log.metadata?.source || 'database';
+                                const sourceIcon = source === 'ui' ? '🖥️' : source === 'api' ? '🔌' : source === 'webhook' ? '🔗' : '📊';
+                                const sourceLabel = source === 'ui' ? 'UI' : source === 'api' ? 'API' : source === 'webhook' ? 'Webhook' : 'Baza';
+                                return `
                                 <tr>
                                     <td>${new Date(log.created_at).toLocaleString('pl-PL')}</td>
                                     <td><span class="badge ${log.action.toLowerCase()}">${log.action}</span></td>
                                     <td><span class="badge table">${log.table_name}</span></td>
                                     <td>#${log.record_id}</td>
-                                    <td>${log.user_login ? `${log.user_login}${log.user_email ? `<br><small style="color: #888;">${log.user_email}</small>` : ''}` : '<span style="color: #888;">System</span>'}</td>
+                                    <td>${log.user_login ? `<strong>${log.user_login}</strong>${log.user_email ? `<br><small style="color: #888;">${log.user_email}</small>` : ''}` : '<span style="color: #888;">System</span>'}</td>
+                                    <td><span style="display: inline-flex; align-items: center; gap: 4px;">${sourceIcon} ${sourceLabel}</span></td>
                                     <td>${log.changed_fields && log.changed_fields.length > 0 ? log.changed_fields.join(', ') : '-'}</td>
                                     <td>
                                         <button onclick="showLogDetails(${log.id})" style="padding: 6px 12px; font-size: 12px;">📄 Szczegóły</button>
                                     </td>
                                 </tr>
-                            `).join('')}
+                            `;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -1157,8 +1187,9 @@
                             <div style="margin-bottom: 8px;"><strong>ID rekordu:</strong> #${log.record_id}</div>
                             <div style="margin-bottom: 8px;"><strong>Akcja:</strong> <span class="badge ${log.action.toLowerCase()}">${log.action}</span></div>
                             <div style="margin-bottom: 8px;"><strong>Data:</strong> ${new Date(log.created_at).toLocaleString('pl-PL')}</div>
-                            ${log.user_login ? `<div style="margin-bottom: 8px;"><strong>Użytkownik:</strong> ${log.user_login}${log.user_email ? ` (${log.user_email})` : ''}</div>` : ''}
-                            ${log.chiropractor ? `<div><strong>Chiropraktyk:</strong> ${log.chiropractor}</div>` : ''}
+                            ${log.user_login ? `<div style="margin-bottom: 8px;"><strong>Kto zmienił:</strong> <strong>${log.user_login}</strong>${log.user_email ? ` (${log.user_email})` : ''}</div>` : '<div style="margin-bottom: 8px;"><strong>Kto zmienił:</strong> <span style="color: #888;">System</span></div>'}
+                            ${log.chiropractor ? `<div style="margin-bottom: 8px;"><strong>Chiropraktyk:</strong> ${log.chiropractor}</div>` : ''}
+                            ${log.metadata?.source ? `<div><strong>Źródło:</strong> ${log.metadata.source === 'ui' ? '🖥️ UI' : log.metadata.source === 'api' ? '🔌 API' : log.metadata.source === 'webhook' ? '🔗 Webhook' : '📊 Baza danych'}</div>` : ''}
                         </div>
                     </div>
                     ${log.changed_fields && log.changed_fields.length > 0 ? `
@@ -1498,15 +1529,16 @@
             let csv = '';
             if (type === 'audit') {
                 csv = [
-                    ['ID', 'Data', 'Tabela', 'Rekord ID', 'Akcja', 'Użytkownik', 'Email', 'Zmienione pola', 'IP', 'User Agent'].join(','),
+                    ['ID', 'Data', 'Tabela', 'Rekord ID', 'Akcja', 'Kto zmienił', 'Email', 'Źródło', 'Zmienione pola', 'IP', 'User Agent'].join(','),
                     ...data.map(log => [
                         log.id,
                         log.created_at,
                         log.table_name,
                         log.record_id,
                         log.action,
-                        log.user_login || '',
+                        log.user_login || 'System',
                         log.user_email || '',
+                        log.metadata?.source || 'database',
                         log.changed_fields?.join(';') || '',
                         log.ip_address || '',
                         log.user_agent || ''

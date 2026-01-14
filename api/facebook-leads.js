@@ -1,4 +1,4 @@
-// Vercel Serverless Function - Endpoint do odbierania leadów z Zapier/Facebook
+// Vercel Serverless Function - Endpoint do odbierania leadów z Make.com/Facebook
 // Leady są zapisywane bezpośrednio w Supabase - działa między wszystkimi instancjami Vercel
 
 import { supabase } from './supabase.js';
@@ -22,12 +22,17 @@ export default async function handler(req, res) {
   try {
     const leadData = req.body;
     
-    // Logowanie dla debugowania (w produkcji usuń lub użyj loggera)
-    console.log('Otrzymano lead z Zapier:', JSON.stringify(leadData, null, 2));
+    // Wykryj źródło webhooka (Make.com lub Zapier)
+    const isMake = req.headers['user-agent']?.includes('make.com') || 
+                   req.headers['x-webhook-source'] === 'make';
+    const webhookSource = isMake ? 'Make.com' : 'Zapier';
     
-    // Przetwórz dane z Zapier/Facebook Lead Ads
-    // Zapier może wysłać różne formaty, więc obsługujemy różne warianty
-    // UWAGA: Zapier czasami dodaje białe znaki (taby, spacje) na końcu nazw pól!
+    // Logowanie dla debugowania (w produkcji usuń lub użyj loggera)
+    console.log(`Otrzymano lead z ${webhookSource}:`, JSON.stringify(leadData, null, 2));
+    
+    // Przetwórz dane z Make.com/Facebook Lead Ads
+    // Make.com może wysłać różne formaty, więc obsługujemy różne warianty
+    // UWAGA: Make.com czasami dodaje białe znaki (taby, spacje) na końcu nazw pól!
     
     // Funkcja pomocnicza do znajdowania wartości z różnymi wariantami nazw pól
     const getFieldValue = (data, possibleNames) => {
@@ -129,7 +134,7 @@ export default async function handler(req, res) {
                        'Lead z Facebook Ads';
     
     // Pobierz chiropraktyka z query string, body lub użyj domyślnego
-    // UWAGA: W Zapier musisz dodać pole "chiropractor" do danych
+    // UWAGA: W Make.com musisz dodać pole "chiropractor" do danych (w Query String lub Body)
     const chiropractor = req.query.chiropractor || leadData.chiropractor || 'default';
     
     // Utwórz obiekt leada zgodny ze strukturą aplikacji
@@ -146,10 +151,7 @@ export default async function handler(req, res) {
       chiropractor: chiropractor // WAŻNE: Przypisz chiropraktyka
     };
 
-    // W przyszłości tutaj możesz zapisać do bazy danych (Supabase, MongoDB, itp.)
-    // Na razie zwracamy lead - Zapier może go zapisać lub możesz użyć innego serwisu
-    
-    console.log('Przetworzony lead:', newLead);
+    console.log(`Przetworzony lead z ${webhookSource}:`, newLead);
     
     // Zapisz lead do Supabase
     if (!supabase) {
@@ -184,10 +186,10 @@ export default async function handler(req, res) {
         });
       }
       
-      // Ustaw kontekst użytkownika dla audit log (webhook z Zapier)
+      // Ustaw kontekst użytkownika dla audit log (webhook z Make.com lub Zapier)
       const userContext = {
         id: null, // Webhook nie ma użytkownika
-        login: 'zapier_webhook',
+        login: isMake ? 'make_webhook' : 'zapier_webhook',
         email: null,
         chiropractor: newLead.chiropractor,
         source: 'webhook',

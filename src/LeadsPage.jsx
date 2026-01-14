@@ -1049,7 +1049,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                 <div
                   style={{
                     marginBottom: 12,
-                    padding: 12,
+                    padding: "2px 12px",
                     background: `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`,
                     borderRadius: 8,
                     fontSize: "14px",
@@ -1084,14 +1084,14 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                   }}
                   style={{
                     display: "block",
-                    marginBottom: 5,
+                    marginBottom: 3,
                     fontSize: "12px",
                     width: "100%",
                     padding: "8px 12px",
                     background: getStatusColor(s),
                     color: "white",
                     border: "1px solid transparent",
-                    borderRadius: 6,
+                    borderRadius: 5,
                     cursor: "pointer",
                     fontWeight: 500,
                     transition: "opacity 0.2s",
