@@ -213,20 +213,22 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
       
       <div
         style={{
-          marginBottom: 16,
-          padding: "16px 16px 0 16px",
+          marginBottom: "clamp(12px, 2vw, 16px)",
+          padding: "clamp(12px, 2vw, 16px) clamp(12px, 2vw, 16px) 0 clamp(12px, 2vw, 16px)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           position: "relative",
           zIndex: 1,
           flexShrink: 0,
+          flexWrap: "wrap",
+          gap: "8px",
         }}
       >
         <h1
           style={{
             margin: 0,
-            fontSize: "32px",
+            fontSize: "clamp(20px, 5vw, 32px)",
             fontWeight: 800,
             letterSpacing: "-1px",
             color: themeData.text,
@@ -239,7 +241,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
             position: "absolute",
             bottom: "-6px",
             left: 0,
-            width: "50px",
+            width: "clamp(40px, 10vw, 50px)",
             height: "3px",
             background: `linear-gradient(90deg, ${themeData.accent} 0%, transparent 100%)`,
             borderRadius: "2px",
@@ -249,16 +251,17 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
         <button
           onClick={() => navigate("/calendar")}
           style={{
-            padding: "10px 20px",
+            padding: "clamp(8px, 2vw, 10px) clamp(12px, 3vw, 20px)",
             borderRadius: 8,
             border: `2px solid ${themeData.accent}`,
             background: `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`,
             color: "white",
             cursor: "pointer",
-            fontSize: "14px",
+            fontSize: "clamp(12px, 3vw, 14px)",
             fontWeight: 600,
             transition: "all 0.3s ease",
             boxShadow: `0 4px 16px ${themeData.glow}`,
+            whiteSpace: "nowrap",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
@@ -276,17 +279,19 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
       {/* Status columns - fill entire page */}
       <div style={{ 
         display: "flex", 
-        gap: 12, 
+        gap: "clamp(8px, 2vw, 12px)", 
         flex: 1,
-        overflow: "hidden",
+        overflowX: "auto",
+        overflowY: "hidden",
         minHeight: 0,
         maxHeight: "100%",
         alignItems: "stretch",
         position: "relative",
         zIndex: 1,
         width: "100%",
-        padding: "0 16px 16px 16px",
+        padding: "0 clamp(8px, 2vw, 16px) clamp(8px, 2vw, 16px) clamp(8px, 2vw, 16px)",
         boxSizing: "border-box",
+        WebkitOverflowScrolling: "touch",
       }}>
         {STATUSES.map((status) => {
           const statusColor = getStatusColor(status);
@@ -303,9 +308,10 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                 ? statusColor 
                 : themeData.border,
               borderRadius: 12,
-              padding: 12,
-              flex: 1,
-              minWidth: 0,
+              padding: "clamp(8px, 2vw, 12px)",
+              flex: "1 1 0",
+              minWidth: "clamp(200px, 20vw, 280px)",
+              maxWidth: "clamp(200px, 20vw, 280px)",
               height: "100%",
               background: dragOverStatus === status 
                 ? themeData.cardBackground
@@ -348,7 +354,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
             }}>
               <h3 style={{ 
                 margin: 0, 
-                fontSize: "16px", 
+                fontSize: "clamp(12px, 3vw, 16px)", 
                 fontWeight: 700,
                 color: themeData.text,
                 display: "flex",
@@ -912,21 +918,23 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
               e.stopPropagation();
             }}
             style={{
-              padding: "27px 24px",
+              padding: "clamp(16px, 3vw, 27px) clamp(16px, 3vw, 24px)",
               background: themeData.surface,
               borderRadius: 12,
-              width: "1000px",
-              height: "600px",
+              width: "clamp(90vw, 95vw, 1000px)",
+              maxWidth: "1000px",
+              height: "clamp(70vh, 80vh, 600px)",
+              maxHeight: "90vh",
               display: "flex",
               flexWrap: "wrap",
-              gap: 20,
+              gap: "clamp(12px, 2vw, 20px)",
               border: `2px solid ${themeData.border}`,
               boxShadow: `0 12px 48px ${themeData.shadow}`,
               position: "fixed",
-              top: "48%",
+              top: "50%",
               left: "50%",
-              transform: "translate(-50%, -48%)",
-              overflow: "hidden",
+              transform: "translate(-50%, -50%)",
+              overflow: "auto",
               boxSizing: "border-box",
               userSelect: "text",
               WebkitUserSelect: "text",
@@ -947,16 +955,17 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
             
             <div
               style={{
-                width: 300,
-                minWidth: 300,
+                width: "clamp(250px, 30vw, 300px)",
+                minWidth: "clamp(250px, 30vw, 300px)",
+                maxWidth: "100%",
                 borderTop: "none",
                 borderBottom: "none",
                 borderLeft: "none",
                 borderRight: `2px solid ${themeData.border}`,
-                paddingRight: 16,
+                paddingRight: "clamp(12px, 2vw, 16px)",
                 display: "flex",
                 flexDirection: "column",
-                overflowY: "hidden",
+                overflowY: "auto",
                 maxHeight: "100%",
                 flexShrink: 0,
               }}
@@ -1191,7 +1200,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
               </button>
             </div>
 
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: 600, minWidth: 0, overflowY: "hidden", overflowX: "hidden", maxHeight: "100%", justifyContent: "space-between" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: "clamp(300px, 50vw, 600px)", minWidth: "clamp(250px, 30vw, 300px)", overflowY: "auto", overflowX: "hidden", maxHeight: "100%", justifyContent: "space-between" }}>
               <div>
                 <h3
                   style={{

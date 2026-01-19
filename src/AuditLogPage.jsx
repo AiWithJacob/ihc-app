@@ -193,15 +193,15 @@ export default function AuditLogPage() {
 
   return (
     <div
-      style={{
-        padding: "20px",
-        background: themeData.background,
-        minHeight: "100vh",
-        color: themeData.text,
-        overflowY: "auto"
-      }}
+        style={{
+          padding: "clamp(12px, 2vw, 20px)",
+          background: themeData.background,
+          minHeight: "100vh",
+          color: themeData.text,
+          overflowY: "auto"
+        }}
     >
-      <h1 style={{ marginBottom: "20px", fontSize: "28px", fontWeight: 700 }}>
+      <h1 style={{ marginBottom: "clamp(12px, 2vw, 20px)", fontSize: "clamp(20px, 5vw, 28px)", fontWeight: 700 }}>
         📋 Historia zmian
       </h1>
 
@@ -209,10 +209,10 @@ export default function AuditLogPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "10px",
-          marginBottom: "20px",
-          padding: "15px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(clamp(150px, 20vw, 200px), 1fr))",
+          gap: "clamp(8px, 1.5vw, 10px)",
+          marginBottom: "clamp(12px, 2vw, 20px)",
+          padding: "clamp(12px, 2vw, 15px)",
           background: themeData.surface,
           borderRadius: "8px",
           border: `1px solid ${themeData.border}`
@@ -412,8 +412,8 @@ export default function AuditLogPage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "auto 1fr auto",
-                    gap: "15px",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: "clamp(10px, 2vw, 15px)",
                     alignItems: "center"
                   }}
                 >
@@ -522,8 +522,8 @@ export default function AuditLogPage() {
             style={{
               background: themeData.surface,
               borderRadius: "12px",
-              padding: "25px",
-              maxWidth: "800px",
+              padding: "clamp(16px, 3vw, 25px)",
+              maxWidth: "clamp(90vw, 95vw, 800px)",
               width: "100%",
               maxHeight: "90vh",
               overflowY: "auto",

@@ -516,13 +516,15 @@ export default function App() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            padding: "12px 20px",
+            padding: "clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px)",
             borderBottom: `2px solid ${themeData.border}`,
             background: themeData.gradient,
             flexShrink: 0,
             boxShadow: `0 4px 16px ${themeData.shadow}`,
             position: "relative",
             overflow: "hidden",
+            flexWrap: "wrap",
+            gap: "8px",
           }}
         >
           {/* Efekt świetlny na górze */}
@@ -545,15 +547,20 @@ export default function App() {
             gap: "12px",
             position: "relative",
             zIndex: 1,
+            flex: "1 1 0",
+            minWidth: 0,
           }}>
             <div style={{ 
-              fontSize: "24px", 
+              fontSize: "clamp(14px, 4vw, 24px)", 
               fontWeight: 800, 
               letterSpacing: "-1px",
               color: themeData.text,
               textShadow: theme === 'light' ? 'none' : `0 0 20px ${themeData.glow}`,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}>
-              Pracujesz dla {user.chiropractor}
+              <span className="desktop-only">Pracujesz dla </span>{user.chiropractor}
             </div>
             {user.chiropractorImage && (
               <div style={{
@@ -593,13 +600,14 @@ export default function App() {
                 background: "transparent",
                 color: themeData.text,
                 cursor: "pointer",
-                fontSize: "14px",
+                fontSize: "clamp(12px, 3vw, 14px)",
                 fontWeight: 600,
                 transition: "all 0.3s ease",
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
                 opacity: 0.8,
+                flexShrink: 0,
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = themeData.accent;
@@ -618,16 +626,18 @@ export default function App() {
               title="Zmień chiropraktyka"
             >
               <span>🔄</span>
-              <span>Zmień</span>
+              <span className="mobile-hidden">Zmień</span>
             </button>
           </div>
 
           <div style={{ 
             display: "flex", 
-            gap: 8, 
+            gap: "clamp(4px, 1vw, 8px)", 
             alignItems: "center",
             position: "relative",
             zIndex: 1,
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
           }}>
             {isLeadsActive && (
               <button
@@ -637,16 +647,17 @@ export default function App() {
                   }
                 }}
                 style={{
-                  padding: "8px 16px",
+                  padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 16px)",
                   borderRadius: 8,
                   border: `2px solid ${themeData.accent}`,
                   background: `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`,
                   color: "white",
                   cursor: "pointer",
-                  fontSize: "14px",
+                  fontSize: "clamp(11px, 2.5vw, 14px)",
                   fontWeight: 600,
                   transition: "all 0.3s ease",
                   boxShadow: `0 4px 16px ${themeData.glow}`,
+                  whiteSpace: "nowrap",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
@@ -657,14 +668,14 @@ export default function App() {
                   e.currentTarget.style.boxShadow = `0 4px 16px ${themeData.glow}`;
                 }}
               >
-                ➕ Dodaj nowy lead
+                ➕ <span className="mobile-hidden">Dodaj nowy lead</span>
               </button>
             )}
             
             <button
               onClick={() => navigate("/")}
               style={{
-                padding: "8px 14px",
+                padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px)",
                 borderRadius: 8,
                 border: isLeadsActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
                 background: isLeadsActive 
@@ -679,7 +690,8 @@ export default function App() {
                 zIndex: 10,
                 display: "inline-block",
                 fontFamily: "inherit",
-                fontSize: "14px",
+                fontSize: "clamp(11px, 2.5vw, 14px)",
+                whiteSpace: "nowrap",
               }}
               onMouseEnter={(e) => {
                 if (!isLeadsActive) {
@@ -702,7 +714,7 @@ export default function App() {
             <Link
               to="/calendar"
               style={{
-                padding: "8px 14px",
+                padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px)",
                 borderRadius: 8,
                 textDecoration: "none",
                 background: isCalendarActive 
@@ -711,9 +723,10 @@ export default function App() {
                 color: isCalendarActive ? "white" : themeData.text,
                 fontWeight: isCalendarActive ? 700 : 500,
                 transition: "all 0.3s ease",
-                fontSize: "14px",
+                fontSize: "clamp(11px, 2.5vw, 14px)",
                 border: isCalendarActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
                 boxShadow: isCalendarActive ? `0 4px 16px ${themeData.glow}` : "none",
+                whiteSpace: "nowrap",
               }}
               onMouseEnter={(e) => {
                 if (!isCalendarActive) {
@@ -736,7 +749,7 @@ export default function App() {
             <Link
               to="/statistics"
               style={{
-                padding: "8px 14px",
+                padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px)",
                 borderRadius: 8,
                 textDecoration: "none",
                 background: isStatisticsActive 
@@ -747,7 +760,8 @@ export default function App() {
                 transition: "all 0.3s ease",
                 border: isStatisticsActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
                 boxShadow: isStatisticsActive ? `0 4px 16px ${themeData.glow}` : "none",
-                fontSize: "14px",
+                fontSize: "clamp(11px, 2.5vw, 14px)",
+                whiteSpace: "nowrap",
               }}
               onMouseEnter={(e) => {
                 if (!isStatisticsActive) {
@@ -770,7 +784,7 @@ export default function App() {
             <Link
               to="/audit-log"
               style={{
-                padding: "8px 14px",
+                padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px)",
                 borderRadius: 8,
                 textDecoration: "none",
                 background: isAuditLogActive 
@@ -781,7 +795,8 @@ export default function App() {
                 transition: "all 0.3s ease",
                 border: isAuditLogActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
                 boxShadow: isAuditLogActive ? `0 4px 16px ${themeData.glow}` : "none",
-                fontSize: "14px",
+                fontSize: "clamp(11px, 2.5vw, 14px)",
+                whiteSpace: "nowrap",
               }}
               onMouseEnter={(e) => {
                 if (!isAuditLogActive) {
@@ -842,19 +857,20 @@ export default function App() {
             <button
               onClick={handleLogout}
               style={{
-                padding: "8px 14px",
+                padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px)",
                 borderRadius: 8,
                 border: "2px solid #991b1b",
                 background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
                 color: "white",
                 cursor: "pointer",
-                fontSize: "14px",
+                fontSize: "clamp(11px, 2.5vw, 14px)",
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
                 transition: "all 0.3s ease",
                 boxShadow: "0 4px 12px rgba(220, 38, 38, 0.3)",
+                whiteSpace: "nowrap",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)";
@@ -868,7 +884,7 @@ export default function App() {
               }}
             >
               <span>🚪</span>
-              Wyloguj
+              <span className="mobile-hidden">Wyloguj</span>
             </button>
           </div>
         </div>

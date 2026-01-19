@@ -126,3 +126,56 @@ button:focus-visible {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS (Mobile First)
+   ============================================ */
+
+/* Mobile: < 640px (telefony) */
+/* Base styles are mobile-first, no media query needed */
+
+/* Tablet: 640px - 1024px */
+@media (min-width: 640px) {
+  h1 {
+    font-size: 2.5em;
+  }
+}
+
+/* Laptop: 1024px - 1440px */
+@media (min-width: 1024px) {
+  h1 {
+    font-size: 3em;
+  }
+}
+
+/* Desktop: > 1440px (duże monitory) */
+@media (min-width: 1440px) {
+  h1 {
+    font-size: 3.2em;
+  }
+}
+
+/* Utility classes for responsive design */
+@media (max-width: 639px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .tablet-hidden {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .desktop-only {
+    display: block !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .desktop-only {
+    display: none !important;
+  }
+}

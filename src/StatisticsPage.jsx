@@ -77,20 +77,20 @@ function StatisticsPage({ leads, bookings }) {
 
   return (
     <div
-      style={{
-        padding: "16px",
-        background: themeData.background,
-        minHeight: "100%",
-        color: themeData.text,
-        overflowY: "auto",
-        maxHeight: "calc(100vh - 120px)",
-      }}
+        style={{
+          padding: "clamp(12px, 2vw, 16px)",
+          background: themeData.background,
+          minHeight: "100%",
+          color: themeData.text,
+          overflowY: "auto",
+          maxHeight: "calc(100vh - 120px)",
+        }}
     >
       <h1
         style={{
-          fontSize: "28px",
+          fontSize: "clamp(20px, 5vw, 28px)",
           fontWeight: 700,
-          marginBottom: "16px",
+          marginBottom: "clamp(12px, 2vw, 16px)",
           color: themeData.text,
         }}
       >
@@ -101,9 +101,9 @@ function StatisticsPage({ leads, bookings }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-          gap: "12px",
-          marginBottom: "16px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(clamp(120px, 15vw, 140px), 1fr))",
+          gap: "clamp(8px, 2vw, 12px)",
+          marginBottom: "clamp(12px, 2vw, 16px)",
         }}
       >
         {/* Wszystkie kontakty */}
@@ -118,7 +118,7 @@ function StatisticsPage({ leads, bookings }) {
           <div style={{ fontSize: "11px", opacity: 0.9, marginBottom: "6px", color: "white", fontWeight: 500 }}>
             Wszystkie kontakty
           </div>
-          <div style={{ fontSize: "32px", fontWeight: 700, color: "white" }}>{additionalStats.totalLeads}</div>
+          <div style={{ fontSize: "clamp(24px, 5vw, 32px)", fontWeight: 700, color: "white" }}>{additionalStats.totalLeads}</div>
         </div>
 
         {/* Umówione wizyty */}
@@ -327,9 +327,9 @@ function StatisticsPage({ leads, bookings }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "12px",
-          marginBottom: "16px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gap: "clamp(8px, 2vw, 12px)",
+          marginBottom: "clamp(12px, 2vw, 16px)",
         }}
       >
         {/* Wykresy słupkowe dla każdego statusu - lewa kolumna */}

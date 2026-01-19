@@ -844,7 +844,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                   display: "grid",
                   gridTemplateColumns: "repeat(3, 1fr)",
                   gap: "4px",
-                  minWidth: "300px",
+                  minWidth: "clamp(250px, 30vw, 300px)",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
                 }}
               >
@@ -1072,15 +1072,15 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {/* Sidebar z mini-kalendarzem */}
         <div
-          className="hide-scrollbar"
+          className="hide-scrollbar desktop-only"
           style={{
-            width: "310px",
+            width: "clamp(250px, 20vw, 310px)",
             borderTop: "none",
             borderBottom: "none",
             borderLeft: "none",
             borderRight: `2px solid ${themeData.border}`,
             background: themeData.gradient,
-            padding: "16px",
+            padding: "clamp(12px, 2vw, 16px)",
             overflowY: "auto",
             flexShrink: 0,
             boxShadow: `2px 0 12px ${themeData.shadow}`,
@@ -1401,7 +1401,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
           className="hide-scrollbar"
                 style={{
           width: "95%",
-          maxWidth: "1200px",
+          maxWidth: "clamp(100%, 95vw, 1200px)",
           border: `2px solid ${themeData.border}`,
           borderRadius: "10px",
           overflow: "auto",
@@ -2019,8 +2019,8 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                           borderRadius: 12,
                           padding: editMode ? "12px" : "24px",
                           zIndex: 1002,
-                          minWidth: editMode ? "280px" : "400px",
-                          maxWidth: editMode ? "320px" : "400px",
+                          minWidth: editMode ? "clamp(250px, 30vw, 280px)" : "clamp(300px, 40vw, 400px)",
+                          maxWidth: editMode ? "clamp(280px, 35vw, 320px)" : "clamp(350px, 45vw, 400px)",
                           boxShadow: `0 4px 16px ${themeData.shadow}`,
                         }}
                       >
