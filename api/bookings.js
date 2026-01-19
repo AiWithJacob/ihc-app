@@ -114,9 +114,26 @@ export default async function handler(req, res) {
       const timeFrom = timeParts[0];
       const timeTo = timeParts[1] || null;
       
+      // Sprawdź czy lead_id istnieje (jeśli jest podany)
+      let leadId = null;
+      if (bookingData.leadId) {
+        // Sprawdź czy lead istnieje w bazie
+        const { data: leadExists } = await supabase
+          .from('leads')
+          .select('id')
+          .eq('id', bookingData.leadId)
+          .single();
+        
+        if (leadExists) {
+          leadId = bookingData.leadId;
+        } else {
+          console.warn(`⚠️ Lead ID ${bookingData.leadId} nie istnieje w bazie, ustawiam na null`);
+        }
+      }
+      
       // Mapuj dane na format bazy danych
       const bookingToInsert = {
-        lead_id: bookingData.leadId || null,
+        lead_id: leadId,
         chiropractor: bookingData.chiropractor || 'default',
         date: bookingData.date,
         time_from: timeFrom,
