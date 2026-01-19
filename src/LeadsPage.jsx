@@ -389,7 +389,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
 
             <div
               ref={(el) => (scrollRefs.current[status] = el)}
-              className="hide-scrollbar"
               style={{
                 flex: 1,
                 overflowY: "auto",
@@ -397,6 +396,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                 marginTop: 12,
                 paddingTop: 8,
                 minHeight: 0,
+                maxHeight: "100%",
+                WebkitOverflowScrolling: "touch",
               }}
               onScroll={() => {
                 // Scroll handling removed - scrollableStatuses was unused
