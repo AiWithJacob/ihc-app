@@ -283,7 +283,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
         overflowX: "auto",
         overflowY: "hidden",
         minHeight: 0,
-        height: "100%",
         alignItems: "stretch",
         position: "relative",
         zIndex: 1,
