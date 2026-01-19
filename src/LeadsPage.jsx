@@ -188,7 +188,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
   return (
     <div style={{ 
       padding: "0", 
-      height: "100%", 
+      height: "100vh",
+      maxHeight: "100vh",
       display: "flex", 
       flexDirection: "column", 
       overflow: "hidden",
@@ -196,6 +197,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
       position: "relative",
       width: "100%",
       boxSizing: "border-box",
+      marginTop: "0px",
+      marginBottom: "0px",
     }}>
       {/* Futurystyczne tło z gradientem */}
       <div style={{
@@ -282,6 +285,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
         flex: 1,
         overflow: "hidden",
         minHeight: 0,
+        height: "calc(100vh - 120px)",
+        maxHeight: "calc(100vh - 120px)",
         alignItems: "stretch",
         position: "relative",
         zIndex: 1,
@@ -307,8 +312,10 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
               padding: "clamp(8px, 2vw, 12px)",
               flex: "1 1 0",
               minWidth: 0,
-              width: "100%",
+              width: "calc((100% - 4 * clamp(8px, 1.5vw, 12px)) / 5)",
+              maxWidth: "calc((100% - 4 * clamp(8px, 1.5vw, 12px)) / 5)",
               height: "100%",
+              maxHeight: "100%",
               background: dragOverStatus === status 
                 ? themeData.cardBackground
                 : themeData.surface,
@@ -388,6 +395,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
 
             <div
               ref={(el) => (scrollRefs.current[status] = el)}
+              className="hide-scrollbar"
               style={{
                 flex: 1,
                 overflowY: "auto",

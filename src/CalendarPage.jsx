@@ -678,8 +678,10 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
       style={{
         display: "flex",
         flexDirection: "column",
-        height: "100%",
-        overflow: "hidden",
+        minHeight: "100%",
+        height: "auto",
+        overflow: "auto",
+        overflowY: "auto",
         background: themeData.background,
         width: "100%",
         margin: 0,
@@ -1069,7 +1071,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
       })()}
 
       {/* Główny kontener z sidebarem i kalendarzem */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div style={{ display: "flex", flex: 1, overflow: "auto", overflowY: "auto", minHeight: 0 }}>
         {/* Sidebar z mini-kalendarzem */}
         <div
           className="hide-scrollbar desktop-only"
@@ -1398,10 +1400,11 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
         >
         {/* Kontener kalendarza z ramką */}
         <div 
-          className="hide-scrollbar"
                 style={{
           width: "95%",
           maxWidth: "clamp(100%, 95vw, 1200px)",
+          maxHeight: "calc(100vh - 200px)",
+          height: "100%",
           border: `2px solid ${themeData.border}`,
           borderRadius: "10px",
           overflow: "auto",
