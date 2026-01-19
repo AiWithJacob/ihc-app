@@ -128,11 +128,29 @@ export async function createCalendarEvent(booking, chiropractor) {
     
     const { refreshToken, calendarId } = refreshTokenData;
     
-    // Pobierz access token
-    const accessToken = await getAccessToken(refreshToken);
-
-    // Utwórz klienta Google Calendar
-    const calendar = google.calendar({ version: 'v3', auth: accessToken });
+    // Utwórz OAuth2 client
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI || 
+      'https://ihc-app.vercel.app/api/google-calendar/callback';
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('Google OAuth credentials not configured');
+    }
+    
+    const oauth2Client = new google.auth.OAuth2(
+      clientId,
+      clientSecret,
+      redirectUri
+    );
+    
+    // Ustaw credentials (refresh token automatycznie odświeży access token)
+    oauth2Client.setCredentials({
+      refresh_token: refreshToken
+    });
+    
+    // Utwórz klienta Google Calendar z OAuth2 client
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
     // Przygotuj datę i czas
     const dateStr = booking.date; // Format: YYYY-MM-DD
