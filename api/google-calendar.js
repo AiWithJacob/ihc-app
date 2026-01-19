@@ -17,10 +17,14 @@ async function getAccessToken(refreshToken) {
     throw new Error('Google OAuth credentials not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Vercel environment variables.');
   }
 
+  // Użyj tego samego redirect URI co przy autoryzacji (lub domyślnego)
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || 
+    'https://ihc-app.vercel.app/api/google-calendar/callback';
+
   const oauth2Client = new google.auth.OAuth2(
     clientId,
     clientSecret,
-    'urn:ietf:wg:oauth:2.0:oob' // Out-of-band redirect
+    redirectUri
   );
 
   oauth2Client.setCredentials({
@@ -28,10 +32,17 @@ async function getAccessToken(refreshToken) {
   });
 
   try {
+    console.log('🔍 Próba odświeżenia access token...');
     const { credentials } = await oauth2Client.refreshAccessToken();
+    console.log('✅ Access token odświeżony pomyślnie');
     return credentials.access_token;
   } catch (error) {
     console.error('❌ Błąd odświeżania access token:', error);
+    console.error('❌ Szczegóły błędu:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.data
+    });
     throw new Error(`Failed to refresh access token: ${error.message}`);
   }
 }
