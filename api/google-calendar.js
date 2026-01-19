@@ -79,7 +79,27 @@ export async function createCalendarEvent(booking, chiropractor) {
     console.log(`📅 Tworzenie wydarzenia w Google Calendar dla chiropraktyka: ${chiropractor}`);
 
     // Pobierz refresh token
-    const { refreshToken, calendarId } = await getRefreshTokenForChiropractor(chiropractor);
+    let refreshTokenData;
+    try {
+      refreshTokenData = await getRefreshTokenForChiropractor(chiropractor);
+      console.log(`✅ Znaleziono refresh token dla: ${chiropractor}`);
+    } catch (tokenError) {
+      console.error(`❌ Błąd pobierania refresh token dla "${chiropractor}":`, tokenError.message);
+      // Spróbuj z 'default' jako fallback
+      if (chiropractor !== 'default') {
+        console.log(`⚠️ Próbuję z 'default' jako fallback...`);
+        try {
+          refreshTokenData = await getRefreshTokenForChiropractor('default');
+          console.log(`✅ Użyto refresh token z 'default'`);
+        } catch (defaultError) {
+          throw new Error(`No Google Calendar refresh token found for chiropractor: ${chiropractor} or 'default'. Please authorize Google Calendar first.`);
+        }
+      } else {
+        throw tokenError;
+      }
+    }
+    
+    const { refreshToken, calendarId } = refreshTokenData;
     
     // Pobierz access token
     const accessToken = await getAccessToken(refreshToken);
