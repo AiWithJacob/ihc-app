@@ -280,10 +280,9 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
       {/* Status columns - fill entire page */}
       <div style={{ 
         display: "flex", 
-        gap: "clamp(8px, 2vw, 12px)", 
+        gap: "clamp(8px, 1.5vw, 12px)", 
         flex: 1,
-        overflowX: "auto",
-        overflowY: "hidden",
+        overflow: "hidden",
         minHeight: 0,
         maxHeight: "100%",
         alignItems: "stretch",
@@ -292,7 +291,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
         width: "100%",
         padding: "0 clamp(8px, 2vw, 16px) clamp(8px, 2vw, 16px) clamp(8px, 2vw, 16px)",
         boxSizing: "border-box",
-        WebkitOverflowScrolling: "touch",
       }}>
         {STATUSES.map((status) => {
           const statusColor = getStatusColor(status);
@@ -311,8 +309,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
               borderRadius: 12,
               padding: "clamp(8px, 2vw, 12px)",
               flex: "1 1 0",
-              minWidth: "clamp(200px, 20vw, 280px)",
-              maxWidth: "clamp(200px, 20vw, 280px)",
+              minWidth: 0,
+              width: "100%",
               height: "100%",
               background: dragOverStatus === status 
                 ? themeData.cardBackground
