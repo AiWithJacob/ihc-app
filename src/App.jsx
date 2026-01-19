@@ -889,7 +889,7 @@ export default function App() {
         </div>
 
         {/* Widoki stron */}
-        <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", width: "100%", minHeight: 0 }}>
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", width: "100%", minHeight: 0, height: "100%" }}>
           <Routes>
             <Route
               path="/"

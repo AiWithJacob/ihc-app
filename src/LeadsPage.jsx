@@ -189,8 +189,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
     <div style={{ 
       padding: "0", 
       height: "100%", 
-      minHeight: "calc(100vh - 80px)",
-      maxHeight: "calc(100vh - 80px)",
       display: "flex", 
       flexDirection: "column", 
       overflow: "hidden",
@@ -284,7 +282,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
         flex: 1,
         overflow: "hidden",
         minHeight: 0,
-        maxHeight: "100%",
+        height: "100%",
         alignItems: "stretch",
         position: "relative",
         zIndex: 1,
