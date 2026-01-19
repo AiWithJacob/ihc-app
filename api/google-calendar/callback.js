@@ -74,11 +74,6 @@ export default async function handler(req, res) {
       throw new Error('No refresh token received. Make sure you revoked previous access and requested offline access.');
     }
 
-    // Pobierz informacje o użytkowniku
-    oauth2Client.setCredentials(tokens);
-    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
-    const { data: userInfo } = await oauth2.userinfo.get();
-
     // state powinien zawierać chiropractor name (zostanie dodane w przyszłości)
     const chiropractor = state || 'default';
 
