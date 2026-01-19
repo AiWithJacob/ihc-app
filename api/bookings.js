@@ -170,6 +170,14 @@ export default async function handler(req, res) {
       let googleCalendarEventId = null;
       try {
         const chiropractorName = insertedBooking.chiropractor;
+        console.log(`🔍 Próba utworzenia wydarzenia Google Calendar dla chiropraktyka: "${chiropractorName}"`);
+        console.log(`🔍 Booking data:`, {
+          id: insertedBooking.id,
+          date: insertedBooking.date,
+          time_from: insertedBooking.time_from,
+          name: insertedBooking.name
+        });
+        
         googleCalendarEventId = await createCalendarEvent(insertedBooking, chiropractorName);
         
         // Zaktualizuj booking z event_id
@@ -181,10 +189,17 @@ export default async function handler(req, res) {
           
           insertedBooking.google_calendar_event_id = googleCalendarEventId;
           console.log(`✅ Wydarzenie Google Calendar utworzone: ${googleCalendarEventId}`);
+        } else {
+          console.warn('⚠️ createCalendarEvent zwróciło null - brak event_id');
         }
       } catch (gcError) {
         // Nie przerywaj procesu jeśli Google Calendar nie działa
-        console.warn('⚠️ Błąd tworzenia wydarzenia w Google Calendar (kontynuuję):', gcError.message);
+        console.error('❌ Błąd tworzenia wydarzenia w Google Calendar (kontynuuję):', gcError);
+        console.error('❌ Szczegóły błędu:', {
+          message: gcError.message,
+          stack: gcError.stack,
+          chiropractor: insertedBooking.chiropractor
+        });
       }
       
       // Mapuj z powrotem na format aplikacji

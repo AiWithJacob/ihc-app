@@ -42,14 +42,23 @@ async function getRefreshTokenForChiropractor(chiropractor) {
     throw new Error('Supabase client not initialized');
   }
 
+  console.log(`🔍 Szukam refresh token dla chiropraktyka: "${chiropractor}"`);
+
   // Najpierw sprawdź w tabeli google_calendar_tokens
   const { data: tokenData, error: tokenError } = await supabase
     .from('google_calendar_tokens')
-    .select('refresh_token, calendar_id')
+    .select('refresh_token, calendar_id, chiropractor')
     .eq('chiropractor', chiropractor)
     .single();
 
+  console.log(`🔍 Wynik zapytania google_calendar_tokens:`, {
+    found: !tokenError && tokenData,
+    error: tokenError?.message,
+    chiropractor: tokenData?.chiropractor
+  });
+
   if (!tokenError && tokenData) {
+    console.log(`✅ Znaleziono refresh token w google_calendar_tokens dla: "${chiropractor}"`);
     return {
       refreshToken: tokenData.refresh_token,
       calendarId: tokenData.calendar_id || 'primary'
@@ -59,11 +68,18 @@ async function getRefreshTokenForChiropractor(chiropractor) {
   // Jeśli nie ma w google_calendar_tokens, sprawdź w tabeli users (backward compatibility)
   const { data: userData, error: userError } = await supabase
     .from('users')
-    .select('google_calendar_refresh_token, google_calendar_calendar_id')
+    .select('google_calendar_refresh_token, google_calendar_calendar_id, chiropractor')
     .eq('chiropractor', chiropractor)
     .single();
 
+  console.log(`🔍 Wynik zapytania users:`, {
+    found: !userError && userData?.google_calendar_refresh_token,
+    error: userError?.message,
+    chiropractor: userData?.chiropractor
+  });
+
   if (!userError && userData?.google_calendar_refresh_token) {
+    console.log(`✅ Znaleziono refresh token w users dla: "${chiropractor}"`);
     return {
       refreshToken: userData.google_calendar_refresh_token,
       calendarId: userData.google_calendar_calendar_id || 'primary'
