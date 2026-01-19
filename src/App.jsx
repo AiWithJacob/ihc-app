@@ -574,8 +574,8 @@ export default function App() {
                   src={user.chiropractorImage}
                   alt={user.chiropractor}
                   style={{
-                    width: "40px",
-                    height: "40px",
+                    width: "clamp(32px, 8vw, 40px)",
+                    height: "clamp(32px, 8vw, 40px)",
                     borderRadius: "50%",
                     objectFit: "cover",
                     border: `2px solid ${themeData.surface}`,
@@ -594,7 +594,7 @@ export default function App() {
                 }, 300);
               }}
               style={{
-                padding: "6px 12px",
+                padding: "clamp(4px, 1.5vw, 6px) clamp(8px, 2.5vw, 12px)",
                 borderRadius: "8px",
                 border: `2px solid ${themeData.accent}`,
                 background: "transparent",
@@ -820,17 +820,17 @@ export default function App() {
             <button
               onClick={toggleTheme}
               style={{
-                padding: "8px 12px",
+                padding: "clamp(6px, 1.5vw, 8px) clamp(8px, 2.5vw, 12px)",
                 borderRadius: 8,
                 border: `2px solid ${themeData.border}`,
                 background: themeData.surfaceElevated,
                 color: themeData.text,
                 cursor: "pointer",
-                fontSize: "18px",
+                fontSize: "clamp(16px, 4vw, 18px)",
                 fontWeight: 500,
                 transition: "all 0.3s ease",
-                minWidth: "40px",
-                height: "40px",
+                minWidth: "clamp(32px, 8vw, 40px)",
+                height: "clamp(32px, 8vw, 40px)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
