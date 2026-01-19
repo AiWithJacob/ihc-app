@@ -500,14 +500,13 @@ export default function App() {
           color: themeData.text,
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
-          overflow: "hidden",
           width: "100%",
           margin: 0,
           padding: 0,
           opacity: isTransitioning ? 0 : 1,
           transform: isTransitioning ? "translateY(20px)" : "translateY(0)",
           transition: "all 0.5s ease-out",
+          boxSizing: "border-box",
         }}
       >
         {/* Górny pasek nawigacji */}
@@ -890,7 +889,7 @@ export default function App() {
         </div>
 
         {/* Widoki stron */}
-        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", width: "100%", minHeight: 0 }}>
+        <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", width: "100%", minHeight: 0 }}>
           <Routes>
             <Route
               path="/"

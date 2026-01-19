@@ -188,15 +188,14 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
   return (
     <div style={{ 
       padding: "0", 
-      height: "100%", 
       minHeight: "calc(100vh - 80px)",
-      maxHeight: "calc(100vh - 80px)",
       display: "flex", 
       flexDirection: "column", 
-      overflow: "hidden",
+      overflow: "visible",
       background: themeData.background,
       position: "relative",
       width: "100%",
+      boxSizing: "border-box",
     }}>
       {/* Futurystyczne tło z gradientem */}
       <div style={{
