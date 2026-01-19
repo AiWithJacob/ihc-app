@@ -515,7 +515,7 @@ export default function App() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            padding: "clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px)",
+            padding: "clamp(4px, 1vw, 6px) clamp(12px, 3vw, 20px)",
             borderBottom: `2px solid ${themeData.border}`,
             background: themeData.gradient,
             flexShrink: 0,
@@ -524,6 +524,10 @@ export default function App() {
             overflow: "hidden",
             flexWrap: "wrap",
             gap: "8px",
+            minHeight: "56px",
+            height: "56px",
+            maxHeight: "56px",
+            boxSizing: "border-box",
           }}
         >
           {/* Efekt świetlny na górze */}
@@ -550,14 +554,16 @@ export default function App() {
             minWidth: 0,
           }}>
             <div style={{ 
-              fontSize: "clamp(14px, 4vw, 24px)", 
-              fontWeight: 800, 
-              letterSpacing: "-1px",
+              fontSize: "clamp(12px, 3vw, 18px)", 
+              fontWeight: 700, 
+              letterSpacing: "-0.5px",
               color: themeData.text,
               textShadow: theme === 'light' ? 'none' : `0 0 20px ${themeData.glow}`,
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
+              display: "flex",
+              alignItems: "center",
             }}>
               <span className="desktop-only">Pracujesz dla </span>{user.chiropractor}
             </div>
@@ -573,8 +579,8 @@ export default function App() {
                   src={user.chiropractorImage}
                   alt={user.chiropractor}
                   style={{
-                    width: "clamp(32px, 8vw, 40px)",
-                    height: "clamp(32px, 8vw, 40px)",
+                    width: "clamp(28px, 6vw, 32px)",
+                    height: "clamp(28px, 6vw, 32px)",
                     borderRadius: "50%",
                     objectFit: "cover",
                     border: `2px solid ${themeData.surface}`,
@@ -593,20 +599,22 @@ export default function App() {
                 }, 300);
               }}
               style={{
-                padding: "clamp(4px, 1.5vw, 6px) clamp(8px, 2.5vw, 12px)",
-                borderRadius: "8px",
+                padding: "clamp(3px, 1vw, 4px) clamp(8px, 2vw, 10px)",
+                borderRadius: "6px",
                 border: `2px solid ${themeData.accent}`,
                 background: "transparent",
                 color: themeData.text,
                 cursor: "pointer",
-                fontSize: "clamp(12px, 3vw, 14px)",
+                fontSize: "clamp(11px, 2.5vw, 13px)",
                 fontWeight: 600,
                 transition: "all 0.3s ease",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "4px",
                 opacity: 0.8,
                 flexShrink: 0,
+                height: "32px",
+                lineHeight: "1",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = themeData.accent;
@@ -631,11 +639,11 @@ export default function App() {
 
           <div style={{ 
             display: "flex", 
-            gap: "clamp(4px, 1vw, 8px)", 
+            gap: "clamp(4px, 1vw, 6px)", 
             alignItems: "center",
             position: "relative",
             zIndex: 1,
-            flexWrap: "wrap",
+            flexWrap: "nowrap",
             justifyContent: "flex-end",
           }}>
             {isLeadsActive && (
@@ -646,17 +654,25 @@ export default function App() {
                   }
                 }}
                 style={{
-                  padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 16px)",
-                  borderRadius: 8,
+                  padding: "clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)",
+                  borderRadius: 6,
                   border: `2px solid ${themeData.accent}`,
                   background: `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`,
                   color: "white",
                   cursor: "pointer",
-                  fontSize: "clamp(11px, 2.5vw, 14px)",
+                  fontSize: "clamp(11px, 2.5vw, 13px)",
                   fontWeight: 600,
                   transition: "all 0.3s ease",
                   boxShadow: `0 4px 16px ${themeData.glow}`,
                   whiteSpace: "nowrap",
+                  height: "32px",
+                  maxHeight: "32px",
+                  minHeight: "32px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: "1",
+                  boxSizing: "border-box",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
@@ -674,8 +690,8 @@ export default function App() {
             <button
               onClick={() => navigate("/")}
               style={{
-                padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px)",
-                borderRadius: 8,
+                padding: "clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)",
+                borderRadius: 6,
                 border: isLeadsActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
                 background: isLeadsActive 
                   ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
@@ -685,12 +701,17 @@ export default function App() {
                 transition: "all 0.3s ease",
                 boxShadow: isLeadsActive ? `0 4px 16px ${themeData.glow}` : "none",
                 cursor: "pointer",
-                position: "relative",
-                zIndex: 10,
-                display: "inline-block",
-                fontFamily: "inherit",
-                fontSize: "clamp(11px, 2.5vw, 14px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "clamp(11px, 2.5vw, 13px)",
                 whiteSpace: "nowrap",
+                height: "32px",
+                maxHeight: "32px",
+                minHeight: "32px",
+                lineHeight: "1",
+                textDecoration: "none",
+                boxSizing: "border-box",
               }}
               onMouseEnter={(e) => {
                 if (!isLeadsActive) {
@@ -713,8 +734,8 @@ export default function App() {
             <Link
               to="/calendar"
               style={{
-                padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px)",
-                borderRadius: 8,
+                padding: "clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)",
+                borderRadius: 6,
                 textDecoration: "none",
                 background: isCalendarActive 
                   ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
@@ -722,10 +743,18 @@ export default function App() {
                 color: isCalendarActive ? "white" : themeData.text,
                 fontWeight: isCalendarActive ? 700 : 500,
                 transition: "all 0.3s ease",
-                fontSize: "clamp(11px, 2.5vw, 14px)",
+                fontSize: "clamp(11px, 2.5vw, 13px)",
                 border: isCalendarActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
                 boxShadow: isCalendarActive ? `0 4px 16px ${themeData.glow}` : "none",
                 whiteSpace: "nowrap",
+                height: "32px",
+                maxHeight: "32px",
+                minHeight: "32px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: "1",
+                boxSizing: "border-box",
               }}
               onMouseEnter={(e) => {
                 if (!isCalendarActive) {
@@ -748,8 +777,8 @@ export default function App() {
             <Link
               to="/statistics"
               style={{
-                padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px)",
-                borderRadius: 8,
+                padding: "clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)",
+                borderRadius: 6,
                 textDecoration: "none",
                 background: isStatisticsActive 
                   ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
@@ -759,8 +788,16 @@ export default function App() {
                 transition: "all 0.3s ease",
                 border: isStatisticsActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
                 boxShadow: isStatisticsActive ? `0 4px 16px ${themeData.glow}` : "none",
-                fontSize: "clamp(11px, 2.5vw, 14px)",
+                fontSize: "clamp(11px, 2.5vw, 13px)",
                 whiteSpace: "nowrap",
+                height: "32px",
+                maxHeight: "32px",
+                minHeight: "32px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: "1",
+                boxSizing: "border-box",
               }}
               onMouseEnter={(e) => {
                 if (!isStatisticsActive) {
@@ -783,8 +820,8 @@ export default function App() {
             <Link
               to="/audit-log"
               style={{
-                padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px)",
-                borderRadius: 8,
+                padding: "clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)",
+                borderRadius: 6,
                 textDecoration: "none",
                 background: isAuditLogActive 
                   ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
@@ -794,8 +831,16 @@ export default function App() {
                 transition: "all 0.3s ease",
                 border: isAuditLogActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
                 boxShadow: isAuditLogActive ? `0 4px 16px ${themeData.glow}` : "none",
-                fontSize: "clamp(11px, 2.5vw, 14px)",
+                fontSize: "clamp(11px, 2.5vw, 13px)",
                 whiteSpace: "nowrap",
+                height: "32px",
+                maxHeight: "32px",
+                minHeight: "32px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: "1",
+                boxSizing: "border-box",
               }}
               onMouseEnter={(e) => {
                 if (!isAuditLogActive) {
@@ -819,17 +864,17 @@ export default function App() {
             <button
               onClick={toggleTheme}
               style={{
-                padding: "clamp(6px, 1.5vw, 8px) clamp(8px, 2.5vw, 12px)",
-                borderRadius: 8,
+                padding: "0",
+                borderRadius: 6,
                 border: `2px solid ${themeData.border}`,
                 background: themeData.surfaceElevated,
                 color: themeData.text,
                 cursor: "pointer",
-                fontSize: "clamp(16px, 4vw, 18px)",
+                fontSize: "clamp(14px, 3vw, 16px)",
                 fontWeight: 500,
                 transition: "all 0.3s ease",
-                minWidth: "clamp(32px, 8vw, 40px)",
-                height: "clamp(32px, 8vw, 40px)",
+                width: "32px",
+                height: "32px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -856,20 +901,22 @@ export default function App() {
             <button
               onClick={handleLogout}
               style={{
-                padding: "clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px)",
-                borderRadius: 8,
+                padding: "clamp(4px, 1vw, 6px) clamp(10px, 2vw, 14px)",
+                borderRadius: 6,
                 border: "2px solid #991b1b",
                 background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
                 color: "white",
                 cursor: "pointer",
-                fontSize: "clamp(11px, 2.5vw, 14px)",
+                fontSize: "clamp(11px, 2.5vw, 13px)",
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "4px",
                 transition: "all 0.3s ease",
                 boxShadow: "0 4px 12px rgba(220, 38, 38, 0.3)",
                 whiteSpace: "nowrap",
+                height: "32px",
+                lineHeight: "1",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)";
