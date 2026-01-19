@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Calendar OAuth Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #3b82f6;
+            margin-bottom: 20px;
+        }
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #3b82f6;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result.success {
+            border-color: #22c55e;
+        }
+        .result.error {
+            border-color: #ef4444;
+        }
+        code {
+            background: #0a0a0a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+        .info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Google Calendar OAuth Test</h1>
+        
+        <div class="info">
+            <strong>ℹ️ Instrukcja:</strong><br>
+            1. Kliknij "Autoryzuj z Google Calendar"<br>
+            2. Zaloguj się i zezwól na dostęp<br>
+            3. Po przekierowaniu skopiuj Refresh Token<br>
+            4. Zapisz go w Supabase
+        </div>
+
+        <button onclick="startOAuth()">🔗 Autoryzuj z Google Calendar</button>
+        <button onclick="checkToken()">🔍 Sprawdź token w URL</button>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const CLIENT_ID = '876673763001-16gh8vdso9l6p7adttat9r3807v9b0be.apps.googleusercontent.com';
+        const REDIRECT_URI = window.location.origin + window.location.pathname;
+        const SCOPE = 'https://www.googleapis.com/auth/calendar';
+
+        function startOAuth() {
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+                `client_id=${encodeURIComponent(CLIENT_ID)}&` +
+                `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+                `response_type=code&` +
+                `scope=${encodeURIComponent(SCOPE)}&` +
+                `access_type=offline&` +
+                `prompt=consent`;
+
+            window.location.href = authUrl;
+        }
+
+        function checkToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const error = urlParams.get('error');
+
+            const resultDiv = document.getElementById('result');
+            
+            if (error) {
+                resultDiv.className = 'result show error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Błąd autoryzacji</h3>
+                    <p><strong>Błąd:</strong> ${error}</p>
+                    <p>${urlParams.get('error_description') || ''}</p>
+                `;
+                return;
+            }
+
+            if (code) {
+                resultDiv.className = 'result show';
+                resultDiv.innerHTML = `
+                    <h3>✅ Kod autoryzacyjny otrzymany!</h3>
+                    <p><strong>Kod:</strong> <code>${code}</code></p>
+                    <p>Teraz wymień kod na Refresh Token:</p>
+                    <button onclick="exchangeCode('${code}')">🔄 Wymień kod na Refresh Token</button>
+                `;
+            } else {
+                resultDiv.className = 'result show';
+                resultDiv.innerHTML = `
+                    <p>Brak kodu autoryzacyjnego w URL.</p>
+                    <p>Kliknij "Autoryzuj z Google Calendar" aby rozpocząć.</p>
+                `;
+            }
+        }
+
+        async function exchangeCode(code) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result show';
+            resultDiv.innerHTML = '<p>⏳ Wymienianie kodu na tokeny...</p>';
+
+            try {
+                const response = await fetch('/api/google-calendar/callback?code=' + encodeURIComponent(code));
+                const text = await response.text();
+                
+                if (response.ok) {
+                    // Sprawdź czy w odpowiedzi jest refresh token
+                    if (text.includes('refresh_token') || text.includes('Autoryzacja zakończona')) {
+                        resultDiv.className = 'result show success';
+                        resultDiv.innerHTML = `
+                            <h3>✅ Sukces!</h3>
+                            <p>Refresh Token został zapisany w Supabase.</p>
+                            <p>Możesz teraz przetestować tworzenie rezerwacji w aplikacji.</p>
+                        `;
+                    } else {
+                        resultDiv.className = 'result show';
+                        resultDiv.innerHTML = `
+                            <h3>⚠️ Sprawdź odpowiedź</h3>
+                            <pre>${text.substring(0, 500)}</pre>
+                        `;
+                    }
+                } else {
+                    resultDiv.className = 'result show error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ Błąd</h3>
+                        <pre>${text.substring(0, 500)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result show error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Błąd</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+
+        // Sprawdź token przy załadowaniu strony
+        window.onload = checkToken;
+    </script>
+</body>
+</html>
