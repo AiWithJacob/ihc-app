@@ -1071,21 +1071,22 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
       })()}
 
       {/* Główny kontener z sidebarem i kalendarzem */}
-      <div style={{ display: "flex", flex: 1, overflow: "auto", overflowY: "auto", minHeight: 0 }}>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0, height: "calc(100vh - 112px)", maxHeight: "calc(100vh - 112px)" }}>
         {/* Sidebar z mini-kalendarzem */}
         <div
           className="hide-scrollbar desktop-only"
           style={{
-            width: "clamp(250px, 20vw, 310px)",
-            borderTop: "none",
-            borderBottom: "none",
-            borderLeft: "none",
-            borderRight: `2px solid ${themeData.border}`,
+            width: "clamp(280px, 22vw, 350px)",
+            border: `2px solid ${themeData.border}`,
+            borderRadius: "0",
             background: themeData.gradient,
             padding: "clamp(12px, 2vw, 16px)",
             overflowY: "auto",
             flexShrink: 0,
             boxShadow: `2px 0 12px ${themeData.shadow}`,
+            height: "100%",
+            maxHeight: "calc(100vh - 112px)",
+            boxSizing: "border-box",
           }}
         >
           <h3 style={{ 
@@ -1390,27 +1391,31 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                 className="hide-scrollbar"
                 style={{
             flex: 1,
-            overflow: "auto",
-            overflowY: "auto",
-                display: "flex",
+            overflow: "hidden",
+            display: "flex",
             flexDirection: "column",
             padding: "20px",
-                alignItems: "center",
+            alignItems: "center",
+            height: "100%",
+            maxHeight: "calc(100vh - 112px)",
+            boxSizing: "border-box",
           }}
         >
         {/* Kontener kalendarza z ramką */}
         <div 
+          className="hide-scrollbar"
                 style={{
           width: "95%",
           maxWidth: "clamp(100%, 95vw, 1200px)",
-          maxHeight: "calc(100vh - 200px)",
           height: "100%",
+          maxHeight: "100%",
           border: `2px solid ${themeData.border}`,
           borderRadius: "10px",
           overflow: "auto",
           overflowY: "auto",
           boxShadow: `0 4px 20px ${themeData.shadow}`,
           background: themeData.background,
+          boxSizing: "border-box",
         }}>
         {/* Przycisk powrotu do widoku tygodniowego */}
         {viewMode === 'single' && (
