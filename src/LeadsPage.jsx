@@ -278,12 +278,11 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
       {/* Status columns - fill entire page */}
       <div style={{ 
         display: "flex", 
-        gap: "clamp(8px, 2vw, 12px)", 
+        gap: "clamp(8px, 1.5vw, 12px)", 
         flex: 1,
         overflowX: "auto",
-        overflowY: "hidden",
+        overflowY: "auto",
         minHeight: 0,
-        maxHeight: "100%",
         alignItems: "stretch",
         position: "relative",
         zIndex: 1,
@@ -308,9 +307,10 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                 : themeData.border,
               borderRadius: 12,
               padding: "clamp(8px, 2vw, 12px)",
-              flex: "1 1 0",
-              minWidth: "clamp(200px, 20vw, 280px)",
-              maxWidth: "clamp(200px, 20vw, 280px)",
+              flex: "1 1 auto",
+              minWidth: "clamp(160px, 15vw, 220px)",
+              maxWidth: "none",
+              width: "100%",
               height: "100%",
               background: dragOverStatus === status 
                 ? themeData.cardBackground
@@ -323,6 +323,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
               boxShadow: dragOverStatus === status 
                 ? `0 8px 32px ${themeData.shadow}, 0 0 0 1px ${statusColor}40`
                 : `0 4px 16px ${themeData.shadow}`,
+              boxSizing: "border-box",
             }}
             onMouseEnter={(e) => {
               if (dragOverStatus !== status) {
