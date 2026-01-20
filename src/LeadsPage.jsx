@@ -489,11 +489,24 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                       <b style={{ 
                         fontSize: "14px", 
                         fontWeight: 700, 
-                        display: "block", 
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
                         marginBottom: 2, 
                         color: themeData.text,
                         lineHeight: "1.3",
                       }}>
+                        {status === "Umówiony" && getLeadBooking(l.id)?.status === 'completed' && (
+                          <span style={{ 
+                            color: "#22c55e",
+                            fontSize: "16px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            fontWeight: 700,
+                          }}>
+                            ✓
+                          </span>
+                        )}
                         {l.name}
                       </b>
                       {l.email ? (
@@ -924,7 +937,10 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
               e.stopPropagation();
             }}
             style={{
-              padding: "clamp(16px, 3vw, 27px) clamp(16px, 3vw, 24px)",
+              paddingTop: "21px",
+              paddingBottom: "21px",
+              paddingLeft: "clamp(16px, 3vw, 24px)",
+              paddingRight: "clamp(16px, 3vw, 24px)",
               background: themeData.surface,
               borderRadius: 12,
               width: "clamp(90vw, 95vw, 1000px)",
@@ -940,7 +956,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              overflow: "auto",
+              overflow: "hidden",
               boxSizing: "border-box",
               userSelect: "text",
               WebkitUserSelect: "text",
@@ -971,7 +987,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                 paddingRight: "clamp(12px, 2vw, 16px)",
                 display: "flex",
                 flexDirection: "column",
-                overflowY: "auto",
+                overflowY: "hidden",
                 maxHeight: "100%",
                 flexShrink: 0,
               }}

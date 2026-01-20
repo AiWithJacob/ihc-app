@@ -100,6 +100,64 @@ async function getRefreshTokenForChiropractor(chiropractor) {
   throw new Error(`No Google Calendar refresh token found for chiropractor: ${chiropractor}`);
 }
 
+// Funkcja pomocnicza do sprawdzania czy jest czas letni (DST) w Europe/Warsaw
+// Przyjmuje year, month (1-12), day
+function isDaylightSavingTime(year, month, day) {
+  // Czas letni w Polsce: ostatnia niedziela marca - ostatnia niedziela października
+  // month to już wartość 1-12 (nie 0-11)
+  if (month < 3 || month > 10) return false; // Styczeń, luty, listopad, grudzień - czas zimowy
+  if (month > 3 && month < 10) return true; // Kwiecień-wrzesień - czas letni
+  
+  // Marzec: sprawdź ostatnią niedzielę (month = 3, ale w Date to index 2)
+  if (month === 3) {
+    const lastSundayMarch = getLastSunday(year, 2); // 2 = marzec (0-indexed)
+    return day >= lastSundayMarch;
+  }
+  
+  // Październik: sprawdź ostatnią niedzielę (month = 10, ale w Date to index 9)
+  if (month === 10) {
+    const lastSundayOctober = getLastSunday(year, 9); // 9 = październik (0-indexed)
+    return day < lastSundayOctober;
+  }
+  
+  return false;
+}
+
+// Funkcja pomocnicza do znalezienia ostatniej niedzieli w miesiącu
+// month to 0-11 (0 = styczeń)
+function getLastSunday(year, month) {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  for (let day = lastDay; day >= 1; day--) {
+    const date = new Date(year, month, day);
+    if (date.getDay() === 0) return day; // 0 = niedziela
+  }
+  return lastDay;
+}
+
+// Funkcja pomocnicza do formatowania daty i czasu w timezone Europe/Warsaw
+function formatDateTimeForWarsaw(year, month, day, hour, minute) {
+  // Format: YYYY-MM-DDTHH:MM:SS+HH:MM (RFC3339)
+  // Używamy offsetu dla Europe/Warsaw (UTC+1 zimowy, UTC+2 letni)
+  const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+  
+  // Sprawdź czy jest czas letni (DST) dla Europe/Warsaw
+  // Przekazujemy year, month (1-12), day bezpośrednio
+  const isDST = isDaylightSavingTime(year, month, day);
+  
+  // Offset dla Europe/Warsaw
+  // Czas zimowy: UTC+1 (+01:00)
+  // Czas letni: UTC+2 (+02:00)
+  const offset = isDST ? '+02:00' : '+01:00';
+  
+  // Zwróć czas lokalny z offsetem
+  // WAŻNE: Podajemy czas jako lokalny czas w Europe/Warsaw (np. 9:00)
+  // z odpowiednim offsetem (+01:00 lub +02:00)
+  // Google Calendar zrozumie to jako: "9:00 w strefie czasowej Europe/Warsaw"
+  // Dodatkowo mamy timeZone: 'Europe/Warsaw' w obiekcie event, co potwierdza timezone
+  return `${dateStr}T${timeStr}${offset}`;
+}
+
 // Utwórz wydarzenie w Google Calendar
 export async function createCalendarEvent(booking, chiropractor) {
   try {
@@ -158,30 +216,13 @@ export async function createCalendarEvent(booking, chiropractor) {
     const timeTo = booking.time_to || booking.timeTo || timeFrom; // Format: HH:MM
 
     // Parsuj datę i czas
-    const [year, month, day] = dateStr.split('-');
-    const [fromHour, fromMinute] = timeFrom.split(':');
-    const [toHour, toMinute] = timeTo.split(':');
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [fromHour, fromMinute] = timeFrom.split(':').map(Number);
+    const [toHour, toMinute] = timeTo.split(':').map(Number);
 
-    // Utwórz obiekty Date (używamy timezone Europe/Warsaw)
-    const startDateTime = new Date(Date.UTC(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-      parseInt(fromHour),
-      parseInt(fromMinute)
-    ));
-    
-    const endDateTime = new Date(Date.UTC(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-      parseInt(toHour),
-      parseInt(toMinute)
-    ));
-
-    // Formatuj dla Google Calendar API (RFC3339)
-    const startDateTimeStr = startDateTime.toISOString().replace(/\.\d{3}Z$/, '');
-    const endDateTimeStr = endDateTime.toISOString().replace(/\.\d{3}Z$/, '');
+    // Formatuj datę i czas w timezone Europe/Warsaw
+    const startDateTimeStr = formatDateTimeForWarsaw(year, month, day, fromHour, fromMinute);
+    const endDateTimeStr = formatDateTimeForWarsaw(year, month, day, toHour, toMinute);
 
     // Przygotuj opis wydarzenia
     let description = '';
@@ -198,7 +239,7 @@ export async function createCalendarEvent(booking, chiropractor) {
       description += `Status: ${booking.status}`;
     }
 
-    // Utwórz wydarzenie
+    // Utwórz wydarzenie (bez lokalizacji)
     const event = {
       summary: booking.name ? `Wizyta: ${booking.name}` : 'Wizyta',
       description: description.trim() || 'Wizyta w gabinecie',
@@ -210,7 +251,7 @@ export async function createCalendarEvent(booking, chiropractor) {
         dateTime: endDateTimeStr,
         timeZone: 'Europe/Warsaw'
       },
-      location: 'Gabinet chiropraktyka',
+      // Usunięto: location: 'Gabinet chiropraktyka',
       colorId: '1' // Niebieski
     };
 
@@ -270,28 +311,13 @@ export async function updateCalendarEvent(eventId, booking, chiropractor) {
     const timeFrom = booking.time_from || booking.timeFrom;
     const timeTo = booking.time_to || booking.timeTo || timeFrom;
 
-    const [year, month, day] = dateStr.split('-');
-    const [fromHour, fromMinute] = timeFrom.split(':');
-    const [toHour, toMinute] = timeTo.split(':');
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [fromHour, fromMinute] = timeFrom.split(':').map(Number);
+    const [toHour, toMinute] = timeTo.split(':').map(Number);
 
-    const startDateTime = new Date(Date.UTC(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-      parseInt(fromHour),
-      parseInt(fromMinute)
-    ));
-    
-    const endDateTime = new Date(Date.UTC(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-      parseInt(toHour),
-      parseInt(toMinute)
-    ));
-
-    const startDateTimeStr = startDateTime.toISOString().replace(/\.\d{3}Z$/, '');
-    const endDateTimeStr = endDateTime.toISOString().replace(/\.\d{3}Z$/, '');
+    // Formatuj datę i czas w timezone Europe/Warsaw
+    const startDateTimeStr = formatDateTimeForWarsaw(year, month, day, fromHour, fromMinute);
+    const endDateTimeStr = formatDateTimeForWarsaw(year, month, day, toHour, toMinute);
 
     // Przygotuj opis wydarzenia
     let description = '';
@@ -314,7 +340,7 @@ export async function updateCalendarEvent(eventId, booking, chiropractor) {
       eventId: eventId
     });
 
-    // Zaktualizuj wydarzenie
+    // Zaktualizuj wydarzenie (bez lokalizacji)
     const updatedEvent = {
       ...existingEvent.data,
       summary: booking.name ? `Wizyta: ${booking.name}` : 'Wizyta',
@@ -326,8 +352,8 @@ export async function updateCalendarEvent(eventId, booking, chiropractor) {
       end: {
         dateTime: endDateTimeStr,
         timeZone: 'Europe/Warsaw'
-      },
-      location: 'Gabinet chiropraktyka'
+      }
+      // Usunięto: location: 'Gabinet chiropraktyka'
     };
 
     await calendar.events.update({

@@ -100,6 +100,13 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
       seconds: now.getSeconds(),
     };
   });
+  const [draggedBooking, setDraggedBooking] = useState(null);
+  const [dragOverCell, setDragOverCell] = useState(null);
+  const [showChangeNotification, setShowChangeNotification] = useState(false);
+  const [changeNotificationData, setChangeNotificationData] = useState(null);
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const scrollContainerRef = useRef(null);
 
   // Aktualizuj czas co sekundę
   useEffect(() => {
@@ -114,6 +121,126 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
 
     return () => clearInterval(interval);
   }, []);
+
+  // Automatycznie oznaczaj minione rezerwacje jako "completed"
+  useEffect(() => {
+    if (!bookings || bookings.length === 0 || !setBookings) return;
+
+    const checkAndUpdateBookings = () => {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const todayISO = new Date().toISOString().slice(0, 10);
+
+      // Sprawdź wszystkie rezerwacje
+      const bookingsToUpdate = bookings.filter(booking => {
+        // Tylko rezerwacje ze statusem 'scheduled' (sprawdź też undefined/null jako domyślny)
+        const bookingStatus = booking.status || 'scheduled';
+        if (bookingStatus !== 'scheduled') return false;
+
+        // Parsuj datę i godzinę rezerwacji
+        const bookingDate = booking.date;
+        if (!bookingDate) return false;
+
+        const timePart = booking.time?.split(" - ")[0] || booking.time || booking.time_from || '';
+        
+        if (!timePart) return false;
+
+        const [bookingHour, bookingMinute] = timePart.split(":").map(Number);
+        
+        if (isNaN(bookingHour) || isNaN(bookingMinute)) return false;
+
+        // Sprawdź czy rezerwacja jest w przeszłości
+        if (bookingDate < todayISO) {
+          // Rezerwacja z przeszłości - automatycznie oznacz jako completed
+          console.log(`🕐 Znaleziono rezerwację z przeszłości: ${bookingDate} ${timePart} (booking ID: ${booking.id})`);
+          return true;
+        } else if (bookingDate === todayISO) {
+          // Rezerwacja dzisiaj - sprawdź czy minęła następna godzina
+          // Jeśli currentHour > bookingHour (przeszła następna pełna godzina)
+          // Np. booking 20:00, currentHour 21:00 → 21 > 20 = true
+          if (currentHour > bookingHour) {
+            console.log(`🕐 Znaleziono rezerwację która minęła: ${bookingDate} ${timePart} (booking ID: ${booking.id}, teraz: ${currentHour}:${String(currentMinute).padStart(2, '0')})`);
+            return true;
+          }
+        }
+
+        return false;
+      });
+
+      // Zaktualizuj status dla wszystkich znalezionych rezerwacji
+      if (bookingsToUpdate.length > 0) {
+        console.log(`📋 Znaleziono ${bookingsToUpdate.length} rezerwacji do automatycznego oznaczenia jako completed`);
+        
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const API_URL = import.meta.env.VITE_API_URL || 
+                        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                          ? 'https://ihc-app.vercel.app'
+                          : window.location.origin);
+
+        // Zaktualizuj lokalnie
+        setBookings((prev) =>
+          prev.map((b) => {
+            const shouldUpdate = bookingsToUpdate.some(btu => btu.id === b.id);
+            const currentStatus = b.status || 'scheduled';
+            if (shouldUpdate && currentStatus === 'scheduled') {
+              console.log(`✅ Lokalna aktualizacja: booking ${b.id} zmieniony z '${currentStatus}' na 'completed'`);
+              return { ...b, status: 'completed' };
+            }
+            return b;
+          })
+        );
+
+        // Zaktualizuj w Supabase dla każdej rezerwacji
+        bookingsToUpdate.forEach(async (booking) => {
+          try {
+            if (user.chiropractor && booking.id) {
+              const timeFrom = booking.time?.split(" - ")[0] || booking.time || booking.time_from || '';
+              
+              console.log(`🔄 Aktualizuję booking ${booking.id} w Supabase...`);
+              
+              const response = await fetch(`${API_URL}/api/bookings?id=${booking.id}&chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  ...booking,
+                  status: 'completed',
+                  chiropractor: user.chiropractor,
+                  timeFrom: timeFrom,
+                  date: booking.date,
+                  // Kontekst użytkownika dla audit log
+                  user_id: user.id,
+                  user_login: user.login,
+                  user_email: user.email,
+                  source: 'auto' // Oznacz jako automatyczna zmiana
+                })
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                console.log(`✅ Automatycznie oznaczono rezerwację ${booking.id} jako completed w Supabase`, data);
+              } else {
+                const errorData = await response.json().catch(() => ({}));
+                console.error(`❌ Błąd automatycznego oznaczania rezerwacji ${booking.id}:`, response.status, response.statusText, errorData);
+              }
+            }
+          } catch (error) {
+            console.error(`❌ Błąd automatycznego oznaczania rezerwacji ${booking.id}:`, error.message);
+          }
+        });
+      }
+    };
+
+    // Sprawdź od razu
+    checkAndUpdateBookings();
+
+    // Sprawdzaj co minutę (60000 ms), aby automatycznie oznaczać minione rezerwacje
+    const interval = setInterval(checkAndUpdateBookings, 60000);
+
+    return () => clearInterval(interval);
+  }, [bookings, setBookings]); // Uruchamiaj przy każdej zmianie bookings
 
   // Funkcja do obliczania pozycji paska zbliżającej się godziny (nieużywana, ale zachowana dla przyszłego użycia)
   // eslint-disable-next-line no-unused-vars
@@ -227,7 +354,324 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
     });
   };
 
+  // Funkcje obsługi drag and drop
+  const handleBookingDragStart = (e, booking) => {
+    e.stopPropagation();
+    setDraggedBooking(booking);
+    setIsDragging(true);
+    setDragPosition({ x: e.clientX, y: e.clientY });
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", booking.id.toString());
+    // Ustaw pusty drag image, żeby użyć naszego własnego elementu
+    const emptyImg = document.createElement("img");
+    emptyImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    e.dataTransfer.setDragImage(emptyImg, 0, 0);
+    
+    // Ukryj scrollbar podczas przeciągania i zablokuj scrollowanie strony
+    const calendarContainer = scrollContainerRef.current;
+    if (calendarContainer) {
+      calendarContainer.style.scrollbarWidth = 'none';
+      calendarContainer.style.msOverflowStyle = 'none';
+      
+      // Zapisz oryginalne style overflow dla strony
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      
+      // Dodaj obsługę wheel bezpośrednio na kontenerze kalendarza i na całym dokumencie
+      const wheelHandler = (wheelEvent) => {
+        wheelEvent.preventDefault();
+        wheelEvent.stopPropagation();
+        // Zawsze scrolluj kalendarz, nawet jeśli mysz jest poza nim
+        if (calendarContainer) {
+          calendarContainer.scrollBy({ top: wheelEvent.deltaY, behavior: 'auto' });
+        }
+      };
+      calendarContainer.addEventListener('wheel', wheelHandler, { passive: false });
+      document.addEventListener('wheel', wheelHandler, { passive: false, capture: true });
+      window.addEventListener('wheel', wheelHandler, { passive: false, capture: true });
+      // Zapisz handler, żeby móc go usunąć później
+      calendarContainer.__dragWheelHandler = wheelHandler;
+    }
+  };
+
+  // Obsługa poruszania myszką podczas przeciągania z auto-scrollowaniem
+  useEffect(() => {
+    let scrollInterval = null;
+    const SCROLL_SPEED = 20; // Szybkość scrollowania
+    const DAY_THRESHOLD = 120; // Odległość od dolnej krawędzi dnia w px (około 2 godzin)
+
+    const checkAndScroll = (e) => {
+      if (!isDragging || !draggedBooking) return;
+      
+      const calendarContainer = scrollContainerRef.current;
+      if (!calendarContainer) return;
+      
+      const containerRect = calendarContainer.getBoundingClientRect();
+      const mouseY = e.clientY;
+      
+      // Sprawdź czy mysz jest w obszarze kalendarza (lub kontynuuj scroll nawet gdy poza)
+      const mouseInCalendar = mouseY >= containerRect.top && mouseY <= containerRect.bottom;
+      
+      // Znajdź kolumny dni w widoku tygodniowym
+      const dayColumns = calendarContainer.querySelectorAll('[style*="flex: 1"][style*="flexDirection: column"]');
+      
+      let shouldScrollDown = false;
+      let shouldScrollUp = false;
+      
+      // Sprawdź czy mysz jest nad którąś kolumną dnia
+      for (const dayColumn of dayColumns) {
+        const rect = dayColumn.getBoundingClientRect();
+        const mouseX = e.clientX;
+        
+        // Sprawdź czy mysz jest w obszarze tej kolumny lub blisko niej
+        if (mouseX >= rect.left - 50 && mouseX <= rect.right + 50) {
+          // Jeśli mysz jest poza kalendarzem, użyj ostatniej znanej pozycji Y względem kontenera
+          let relativeY;
+          if (mouseInCalendar) {
+            relativeY = mouseY - rect.top;
+          } else {
+            // Gdy mysz jest poza kalendarzem, kontynuuj scroll w tym samym kierunku
+            relativeY = mouseY < containerRect.top ? 0 : rect.height;
+          }
+          
+          const columnHeight = rect.height;
+          const distanceFromBottom = columnHeight - relativeY;
+          
+          // Auto-scroll w dół gdy mysz jest blisko dolnej krawędzi dnia lub poza kalendarzem poniżej
+          if ((distanceFromBottom < DAY_THRESHOLD && distanceFromBottom > 0) || 
+              (!mouseInCalendar && mouseY > containerRect.bottom)) {
+            shouldScrollDown = true;
+            break;
+          }
+          
+          // Auto-scroll w górę gdy mysz jest blisko górnej krawędzi dnia lub poza kalendarzem powyżej
+          if ((relativeY < DAY_THRESHOLD && relativeY > 0) || 
+              (!mouseInCalendar && mouseY < containerRect.top)) {
+            shouldScrollUp = true;
+            break;
+          }
+        }
+      }
+      
+      // Zatrzymaj poprzedni interval jeśli istnieje
+      if (scrollInterval) {
+        clearInterval(scrollInterval);
+        scrollInterval = null;
+      }
+      
+      // Rozpocznij auto-scroll w odpowiednim kierunku
+      if (shouldScrollDown) {
+        scrollInterval = setInterval(() => {
+          const maxScroll = calendarContainer.scrollHeight - calendarContainer.clientHeight;
+          if (calendarContainer.scrollTop < maxScroll) {
+            calendarContainer.scrollBy({ top: SCROLL_SPEED, behavior: 'auto' });
+          } else {
+            if (scrollInterval) {
+              clearInterval(scrollInterval);
+              scrollInterval = null;
+            }
+          }
+        }, 16); // ~60fps
+      } else if (shouldScrollUp) {
+        scrollInterval = setInterval(() => {
+          if (calendarContainer.scrollTop > 0) {
+            calendarContainer.scrollBy({ top: -SCROLL_SPEED, behavior: 'auto' });
+          } else {
+            if (scrollInterval) {
+              clearInterval(scrollInterval);
+              scrollInterval = null;
+            }
+          }
+        }, 16); // ~60fps
+      }
+    };
+
+    const handleMouseMove = (e) => {
+      if (isDragging && draggedBooking) {
+        setDragPosition({ x: e.clientX, y: e.clientY });
+        checkAndScroll(e);
+      }
+    };
+
+    const handleDragOver = (e) => {
+      if (isDragging && draggedBooking) {
+        e.preventDefault();
+        setDragPosition({ x: e.clientX, y: e.clientY });
+        checkAndScroll(e);
+      }
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove, true);
+      document.addEventListener('dragover', handleDragOver, true);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove, true);
+        document.removeEventListener('dragover', handleDragOver, true);
+        if (scrollInterval) {
+          clearInterval(scrollInterval);
+        }
+      };
+    }
+  }, [isDragging, draggedBooking]);
+
+  const handleBookingDragEnd = (e) => {
+    e.stopPropagation();
+    setDraggedBooking(null);
+    setDragOverCell(null);
+    setIsDragging(false);
+    setDragPosition({ x: 0, y: 0 });
+    
+    // Przywróć scrollbar i odblokuj scrollowanie strony
+    const calendarContainer = scrollContainerRef.current;
+    if (calendarContainer) {
+      calendarContainer.style.scrollbarWidth = '';
+      calendarContainer.style.msOverflowStyle = '';
+      
+      // Przywróć oryginalne style overflow dla strony
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      
+      // Usuń obsługę wheel z kontenera kalendarza i dokumentu
+      if (calendarContainer.__dragWheelHandler) {
+        calendarContainer.removeEventListener('wheel', calendarContainer.__dragWheelHandler);
+        document.removeEventListener('wheel', calendarContainer.__dragWheelHandler, { capture: true });
+        window.removeEventListener('wheel', calendarContainer.__dragWheelHandler, { capture: true });
+        delete calendarContainer.__dragWheelHandler;
+      }
+    }
+  };
+
+  const handleCellDragOver = (e, date, time) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverCell({ date, time });
+    // Aktualizuj pozycję ghost elementu
+    if (isDragging && draggedBooking) {
+      setDragPosition({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleCellDragLeave = (e) => {
+    e.stopPropagation();
+    // Nie czyść dragOverCell natychmiast, żeby uniknąć migotania
+  };
+
+  const handleCellDrop = async (e, targetDate, targetTime) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Natychmiast ukryj ghost element
+    setIsDragging(false);
+    
+    if (!draggedBooking) {
+      setDraggedBooking(null);
+      setDragOverCell(null);
+      setDragPosition({ x: 0, y: 0 });
+      return;
+    }
+
+    const oldDate = draggedBooking.date;
+    const oldTime = draggedBooking.time?.split(" - ")[0] || draggedBooking.time;
+    
+    // Sprawdź czy data lub czas się zmieniły
+    if (oldDate === targetDate && oldTime === targetTime) {
+      setDraggedBooking(null);
+      setDragOverCell(null);
+      setDragPosition({ x: 0, y: 0 });
+      return;
+    }
+
+    // Zaktualizuj booking lokalnie
+    const updatedBooking = {
+      ...draggedBooking,
+      date: targetDate,
+      time: targetTime,
+    };
+
+    setBookings((prev) =>
+      prev.map((b) => (b.id === draggedBooking.id ? updatedBooking : b))
+    );
+
+    // Pokaż powiadomienie o zmianie
+    setChangeNotificationData({
+      name: updatedBooking.name || updatedBooking.description || "Wydarzenie",
+      oldDate,
+      oldTime,
+      newDate: targetDate,
+      newTime: targetTime,
+    });
+    setShowChangeNotification(true);
+    setTimeout(() => setShowChangeNotification(false), 4000);
+
+    // Zaktualizuj w Supabase i Google Calendar
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.chiropractor && draggedBooking.id) {
+        const API_URL = import.meta.env.VITE_API_URL || 
+                        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                          ? 'https://ihc-app.vercel.app'
+                          : window.location.origin);
+        
+        const response = await fetch(`${API_URL}/api/bookings?id=${draggedBooking.id}&chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...updatedBooking,
+            chiropractor: user.chiropractor,
+            timeFrom: targetTime,
+            // Kontekst użytkownika dla audit log
+            user_id: user.id,
+            user_login: user.login,
+            user_email: user.email,
+            source: 'ui'
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Rezerwacja zaktualizowana (przez przeciągnięcie):', data.booking?.id);
+          
+          // Jeśli booking miał Google Calendar event ID, zaktualizuj w Google Calendar
+          if (updatedBooking.google_calendar_event_id || draggedBooking.google_calendar_event_id) {
+            try {
+              const { updateCalendarEvent } = await import('../api/google-calendar.js');
+              await updateCalendarEvent(
+                updatedBooking.google_calendar_event_id || draggedBooking.google_calendar_event_id,
+                updatedBooking,
+                user.chiropractor
+              );
+              console.log('✅ Wydarzenie zaktualizowane w Google Calendar');
+            } catch (calendarError) {
+              console.error('❌ Błąd aktualizacji w Google Calendar:', calendarError.message);
+            }
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ Błąd aktualizacji rezerwacji (przez przeciągnięcie):', response.statusText, errorData);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Błąd aktualizacji rezerwacji (przez przeciągnięcie):', error.message);
+    }
+
+    // Zaktualizuj selectedBooking jeśli to był ten booking
+    if (selectedBooking && selectedBooking.id === draggedBooking.id) {
+      setSelectedBooking(updatedBooking);
+    }
+
+    // Wyczyść stan przeciągania
+    setDraggedBooking(null);
+    setDragOverCell(null);
+    setDragPosition({ x: 0, y: 0 });
+  };
+
   const handleCellClick = (date, time) => {
+    // Jeśli przeciągamy booking, nie otwieraj modala
+    if (draggedBooking) return;
+    
     console.log("handleCellClick called:", date, time);
     // Sprawdź zarówno dokładne dopasowanie, jak i zakres czasowy
     const exactBooking = getBooking(date, time);
@@ -674,6 +1118,83 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
   };
 
   return (
+    <>
+      {/* Powiadomienie o zmianie daty/godziny rezerwacji */}
+      {showChangeNotification && changeNotificationData && (
+        <div
+          style={{
+            position: "fixed",
+            top: "60px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 10000,
+            background: `linear-gradient(135deg, ${themeData.success} 0%, ${themeData.successDark} 100%)`,
+            color: "#fff",
+            padding: "12px 24px",
+            borderRadius: "12px",
+            boxShadow: `0 4px 20px ${themeData.successGlow}`,
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            fontSize: "14px",
+            fontWeight: 600,
+            animation: "slideDown 0.3s ease-out",
+            maxWidth: "90vw",
+          }}
+        >
+          <span style={{ fontSize: "20px" }}>✅</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <div>
+              <strong>{changeNotificationData.name}</strong> - Rezerwacja przeniesiona
+            </div>
+            <div style={{ fontSize: "12px", opacity: 0.9 }}>
+              {changeNotificationData.oldDate} {changeNotificationData.oldTime} → {changeNotificationData.newDate} {changeNotificationData.newTime}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Ghost element podczas przeciągania */}
+      {isDragging && draggedBooking && (
+        <div
+          style={{
+            position: "fixed",
+            left: `${dragPosition.x}px`,
+            top: `${dragPosition.y}px`,
+            zIndex: 10000,
+            pointerEvents: "none",
+            background: `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`,
+            color: "#fff",
+            padding: "10px 14px",
+            borderRadius: "8px",
+            boxShadow: `0 4px 20px ${themeData.glow}`,
+            border: `2px solid ${themeData.accent}`,
+            fontSize: "14px",
+            fontWeight: 600,
+            maxWidth: "250px",
+            transform: "translate(-50%, -50%)",
+            transition: "none",
+          }}
+        >
+          <div style={{ fontSize: "16px", marginBottom: "4px", fontWeight: 700 }}>
+            {draggedBooking.name || draggedBooking.description || "Wydarzenie"}
+          </div>
+          <div style={{ fontSize: "12px", opacity: 0.9 }}>
+            {draggedBooking.date} {draggedBooking.time}
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes slideDown {
+          from {
+            transform: translateX(-50%) translateY(-100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     <div
       style={{
         display: "flex",
@@ -990,85 +1511,6 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
         </div>
       )}
       </div>
-
-      {/* Sekcja "Nadchodzące wydarzenia" */}
-      {(() => {
-        const today = todayISO();
-        const todayBookings = bookings
-          .filter(b => b.date === today)
-          .sort((a, b) => {
-            const timeA = a.time.split(" - ")[0];
-            const timeB = b.time.split(" - ")[0];
-            return timeA.localeCompare(timeB);
-          });
-        
-        if (todayBookings.length === 0) return null;
-        
-        return (
-          <div style={{
-            padding: "12px 20px",
-            borderBottom: `2px solid ${themeData.border}`,
-            background: themeData.surface,
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            flexShrink: 0,
-          }}>
-            <div style={{
-              fontSize: "14px",
-              fontWeight: 600,
-              color: themeData.text,
-            }}>
-              📅 Nadchodzące wydarzenia ({todayBookings.length}):
-            </div>
-            <div style={{
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-              flex: 1,
-            }}>
-              {todayBookings.map((booking) => (
-                <div
-                  key={booking.id}
-                  onClick={() => {
-                    setSelectedBooking(booking);
-                    setSelectedDate(booking.date);
-                  }}
-                  style={{
-                    padding: "6px 12px",
-                    background: themeData.surfaceElevated,
-                    border: `1px solid ${themeData.border}`,
-                    borderRadius: 6,
-                    cursor: "pointer",
-                    fontSize: "12px",
-                    color: themeData.text,
-                    transition: "all 0.3s ease",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = themeData.accent;
-                    e.currentTarget.style.borderColor = themeData.accent;
-                    e.currentTarget.style.color = "white";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = themeData.surfaceElevated;
-                    e.currentTarget.style.borderColor = themeData.border;
-                    e.currentTarget.style.color = themeData.text;
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
-                >
-                  <span style={{ fontWeight: 600 }}>{booking.time}</span>
-                  <span>-</span>
-                  <span>{booking.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Główny kontener z sidebarem i kalendarzem */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0, height: "calc(100vh - 112px)", maxHeight: "calc(100vh - 112px)" }}>
@@ -1401,22 +1843,24 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
             boxSizing: "border-box",
           }}
         >
-        {/* Kontener kalendarza z ramką */}
+        {/* Kontener kalendarza z ramką - główny kontener do scrollowania */}
         <div 
+          ref={scrollContainerRef}
           className="hide-scrollbar"
-                style={{
-          width: "95%",
-          maxWidth: "clamp(100%, 95vw, 1200px)",
-          height: "100%",
-          maxHeight: "100%",
-          border: `2px solid ${themeData.border}`,
-          borderRadius: "10px",
-          overflow: "auto",
-          overflowY: "auto",
-          boxShadow: `0 4px 20px ${themeData.shadow}`,
-          background: themeData.background,
-          boxSizing: "border-box",
-        }}>
+          style={{
+            width: "95%",
+            maxWidth: "clamp(100%, 95vw, 1200px)",
+            height: "100%",
+            maxHeight: "100%",
+            border: `2px solid ${themeData.border}`,
+            borderRadius: "10px",
+            overflow: "auto",
+            overflowY: "auto",
+            boxShadow: `0 4px 20px ${themeData.shadow}`,
+            background: themeData.background,
+            boxSizing: "border-box",
+            position: "relative",
+          }}>
         {/* Przycisk powrotu do widoku tygodniowego */}
         {viewMode === 'single' && (
           <div style={{
@@ -1588,6 +2032,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
               const isCurrentHour = currentHour === timeHour && isToday;
               const isEvenHour = hourIndex % 2 === 0;
 
+          const isDragOver = dragOverCell?.date === selectedDate && dragOverCell?.time === time;
           return (
             <div
               key={time}
@@ -1595,31 +2040,36 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                     e.stopPropagation();
                     handleCellClick(selectedDate, time);
                   }}
+                  onDragOver={(e) => handleCellDragOver(e, selectedDate, time)}
+                  onDragLeave={handleCellDragLeave}
+                  onDrop={(e) => handleCellDrop(e, selectedDate, time)}
               style={{
                 display: "flex",
                 alignItems: "stretch",
                     gap: "20px",
                     padding: "16px 20px",
                     marginBottom: "12px",
-                    border: `2px solid ${hasBooking ? themeData.accent : themeData.border}`,
+                    border: `2px solid ${isDragOver ? themeData.success : (hasBooking ? themeData.accent : themeData.border)}`,
                     borderRadius: "12px",
-                    background: hasBooking
+                    background: isDragOver
+                      ? `${themeData.success}30`
+                      : (hasBooking
                       ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
                       : isCurrentHour
                       ? `${themeData.accent}20`
-                      : isEvenHour ? themeData.surfaceElevated : themeData.surface,
+                      : isEvenHour ? themeData.surfaceElevated : themeData.surface),
                 cursor: "pointer",
                     transition: "all 0.3s ease",
-                    boxShadow: hasBooking ? `0 4px 12px ${themeData.shadow}` : "none",
+                    boxShadow: isDragOver ? `0 0 20px ${themeData.successGlow}` : (hasBooking ? `0 4px 12px ${themeData.shadow}` : "none"),
                   }}
                   onMouseEnter={(e) => {
-                    if (!hasBooking) {
+                    if (!hasBooking && !isDragOver) {
                       e.currentTarget.style.background = themeData.surfaceElevated;
                       e.currentTarget.style.transform = "translateX(4px)";
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!hasBooking) {
+                    if (!hasBooking && !isDragOver) {
                       e.currentTarget.style.background = isEvenHour ? themeData.surfaceElevated : themeData.surface;
                       e.currentTarget.style.transform = "translateX(0)";
                     }
@@ -1645,9 +2095,13 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                       cellBookings.map((booking, idx) => {
                         const lead = booking.leadId ? leads?.find(l => l.id === booking.leadId) : null;
                         const displayName = lead?.name || booking.name || booking.description || "Wydarzenie";
+                        const isDragging = draggedBooking?.id === booking.id;
                         return (
                           <div
                             key={booking.id || `booking-${idx}`}
+                            draggable="true"
+                            onDragStart={(e) => handleBookingDragStart(e, booking)}
+                            onDragEnd={handleBookingDragEnd}
                             style={{
                               display: "flex",
                               flexDirection: "column",
@@ -1655,7 +2109,11 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                               alignItems: "flex-start",
                               color: "white",
                               width: "100%",
+                              cursor: "grab",
+                              opacity: isDragging ? 0.5 : 1,
+                              transition: "opacity 0.2s ease",
                             }}
+                            onMouseDown={(e) => e.stopPropagation()}
                           >
                             <div style={{ fontSize: "1rem", marginBottom: "4px", fontWeight: 700 }}>
                               {displayName}
@@ -1686,6 +2144,8 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
             display: "flex", 
             flex: 1, 
             position: "relative",
+            height: "100%",
+            maxHeight: "100%",
           }}>
           {/* Kolumna z godzinami */}
           <div
@@ -1744,7 +2204,12 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
       </div>
 
           {/* Kolumny z dniami */}
-          <div style={{ display: "flex", flex: 1, position: "relative" }}>
+          <div 
+            style={{ 
+              display: "flex", 
+              flex: 1, 
+              position: "relative",
+            }}>
             {/* Pasek aktualnej godziny - tylko dla dzisiejszego dnia */}
             {weekDays.map((day) => (
               <div
@@ -1769,6 +2234,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                   const timeHour = parseInt(time.split(":")[0]);
                   const isCurrentHour = currentHour === timeHour && isToday;
                   const isEvenHour = hourIndex % 2 === 0;
+                  const isDragOver = dragOverCell?.date === day && dragOverCell?.time === time;
           return (
             <div
               key={time}
@@ -1776,6 +2242,9 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                         e.stopPropagation();
                         handleCellClick(day, time);
                       }}
+                      onDragOver={(e) => handleCellDragOver(e, day, time)}
+                      onDragLeave={handleCellDragLeave}
+                      onDrop={(e) => handleCellDrop(e, day, time)}
               style={{
                         height: "60px",
                         minHeight: "60px",
@@ -1784,7 +2253,9 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                         borderTop: `1px solid transparent`,
                         borderLeft: "none",
                         borderRight: `1px solid ${themeData.border}`,
-                        background: (hasBooking 
+                        background: isDragOver
+                          ? `${themeData.success}30`
+                          : (hasBooking 
                           ? `linear-gradient(135deg, ${themeData.accent}15 0%, ${themeData.accentHover}10 100%)`
                           : isCurrentHour
                           ? `${themeData.accent}20`
@@ -1795,10 +2266,11 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                 cursor: "pointer",
                         position: "relative",
                         transition: "all 0.3s ease",
-                        zIndex: 1,
+                        zIndex: isDragOver ? 10 : 1,
                         pointerEvents: "auto",
                         flexShrink: 0,
                         boxSizing: "border-box",
+                        boxShadow: isDragOver ? `0 0 15px ${themeData.successGlow} inset` : "none",
                       }}
                       onMouseEnter={(e) => {
                         if (!isToday && !hasBooking && !isCurrentHour) {
@@ -1834,6 +2306,15 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                       )}
                       {hasBooking && (
                         <div
+                          draggable="true"
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            handleBookingDragStart(e, cellBookings[0]);
+                          }}
+                          onDragEnd={(e) => {
+                            e.stopPropagation();
+                            handleBookingDragEnd(e);
+                          }}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedBooking(cellBookings[0]);
@@ -1857,34 +2338,40 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                   fontSize: "0.65rem",
                             color: "#fff",
                             fontWeight: 600,
-                            cursor: "pointer",
-                            zIndex: 2,
+                            cursor: draggedBooking?.id === cellBookings[0].id ? "grabbing" : "grab",
+                            zIndex: draggedBooking?.id === cellBookings[0].id ? 100 : 2,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
                             textAlign: "center",
                             transition: "all 0.3s ease",
+                            opacity: draggedBooking?.id === cellBookings[0].id ? 0.3 : 1,
                             boxShadow: highlightedBookingId === cellBookings[0].id
                               ? (theme === 'night'
                                 ? "0 0 15px rgba(234, 179, 8, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4)"
                                 : `0 0 15px ${themeData.successGlow}, 0 2px 8px ${themeData.shadow}`)
                               : `0 0 12px ${themeData.glow}, 0 2px 8px ${themeData.shadow}`,
                           }}
+                          onMouseDown={(e) => e.stopPropagation()}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = "translate(-50%, -50%) translateY(-1px) scale(1.01)";
-                            e.currentTarget.style.boxShadow = highlightedBookingId === cellBookings[0].id
-                              ? (theme === 'night'
-                                ? "0 0 20px rgba(234, 179, 8, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4)"
-                                : `0 0 20px ${themeData.successGlow}, 0 4px 12px ${themeData.shadow}`)
-                              : `0 0 15px ${themeData.glow}, 0 4px 12px ${themeData.shadow}`;
+                            if (draggedBooking?.id !== cellBookings[0].id) {
+                              e.currentTarget.style.transform = "translate(-50%, -50%) translateY(-1px) scale(1.01)";
+                              e.currentTarget.style.boxShadow = highlightedBookingId === cellBookings[0].id
+                                ? (theme === 'night'
+                                  ? "0 0 20px rgba(234, 179, 8, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4)"
+                                  : `0 0 20px ${themeData.successGlow}, 0 4px 12px ${themeData.shadow}`)
+                                : `0 0 15px ${themeData.glow}, 0 4px 12px ${themeData.shadow}`;
+                            }
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "translate(-50%, -50%)";
-                            e.currentTarget.style.boxShadow = highlightedBookingId === cellBookings[0].id
-                              ? (theme === 'night'
-                                ? "0 0 15px rgba(234, 179, 8, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4)"
-                                : `0 0 15px ${themeData.successGlow}, 0 2px 8px ${themeData.shadow}`)
-                              : `0 0 12px ${themeData.glow}, 0 2px 8px ${themeData.shadow}`;
+                            if (draggedBooking?.id !== cellBookings[0].id) {
+                              e.currentTarget.style.transform = "translate(-50%, -50%)";
+                              e.currentTarget.style.boxShadow = highlightedBookingId === cellBookings[0].id
+                                ? (theme === 'night'
+                                  ? "0 0 15px rgba(234, 179, 8, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4)"
+                                  : `0 0 15px ${themeData.successGlow}, 0 2px 8px ${themeData.shadow}`)
+                                : `0 0 12px ${themeData.glow}, 0 2px 8px ${themeData.shadow}`;
+                            }
                           }}
                         >
                           <div style={{ display: "flex", alignItems: "center", gap: "3px", justifyContent: "center", flexWrap: "wrap" }}>
@@ -3618,5 +4105,6 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -4,7 +4,6 @@ import { useTheme } from "./ThemeContext.jsx";
 import LeadsPage from "./LeadsPage.jsx";
 import CalendarPage from "./CalendarPage.jsx";
 import StatisticsPage from "./StatisticsPage.jsx";
-import AuditLogPage from "./AuditLogPage.jsx";
 import LoginPage from "./LoginPage.jsx";
 import ChiropractorSelection from "./ChiropractorSelection.jsx";
 import WelcomeAnimation from "./WelcomeAnimation.jsx";
@@ -436,7 +435,6 @@ export default function App() {
   const isLeadsActive = location.pathname === "/";
   const isCalendarActive = location.pathname === "/calendar";
   const isStatisticsActive = location.pathname === "/statistics";
-  const isAuditLogActive = location.pathname === "/audit-log";
 
   // Debug logi
   console.log("App render state:", {
@@ -817,49 +815,6 @@ export default function App() {
               📊 Statystyki
             </Link>
 
-            <Link
-              to="/audit-log"
-              style={{
-                padding: "clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)",
-                borderRadius: 6,
-                textDecoration: "none",
-                background: isAuditLogActive 
-                  ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
-                  : themeData.surfaceElevated,
-                color: isAuditLogActive ? "white" : themeData.text,
-                fontWeight: isAuditLogActive ? 700 : 500,
-                transition: "all 0.3s ease",
-                border: isAuditLogActive ? `2px solid ${themeData.accent}` : `2px solid ${themeData.border}`,
-                boxShadow: isAuditLogActive ? `0 4px 16px ${themeData.glow}` : "none",
-                fontSize: "clamp(11px, 2.5vw, 13px)",
-                whiteSpace: "nowrap",
-                height: "32px",
-                maxHeight: "32px",
-                minHeight: "32px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                lineHeight: "1",
-                boxSizing: "border-box",
-              }}
-              onMouseEnter={(e) => {
-                if (!isAuditLogActive) {
-                  e.currentTarget.style.background = themeData.surfaceHover;
-                  e.currentTarget.style.color = themeData.text;
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isAuditLogActive) {
-                  e.currentTarget.style.background = themeData.surfaceElevated;
-                  e.currentTarget.style.color = themeData.text;
-                  e.currentTarget.style.transform = "translateY(0)";
-                }
-              }}
-            >
-              📋 Historia
-            </Link>
-
             {/* Przycisk zmiany motywu */}
             <button
               onClick={toggleTheme}
@@ -969,10 +924,6 @@ export default function App() {
                   bookings={currentBookings}
                 />
               }
-            />
-            <Route
-              path="/audit-log"
-              element={<AuditLogPage />}
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
