@@ -14,7 +14,7 @@
   ],
   "rewrites": [
     {
-      "source": "/(?!api/)(?!audit-log-diagnostics\\.html$).*",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ],
