@@ -1,5 +1,5 @@
-// POST /api/user-heartbeat – aktualizacja last_seen_at (użytkownik ma otwartą aplikację)
-// Body: { login }
+// POST /api/user-heartbeat – aktualizacja last_seen_at i chiropractor (użytkownik ma otwartą aplikację)
+// Body: { login, chiropractor? }
 
 import { supabase } from '../lib/supabase.js';
 
@@ -21,9 +21,13 @@ export default async function handler(req, res) {
 
     if (!supabase) return res.status(503).json({ error: 'Baza nie skonfigurowana' });
 
+    const payload = { last_seen_at: new Date().toISOString() };
+    const ch = req.body?.chiropractor;
+    if (ch != null && String(ch).trim() !== '') payload.chiropractor = String(ch).trim();
+
     const { error } = await supabase
       .from('app_users')
-      .update({ last_seen_at: new Date().toISOString() })
+      .update(payload)
       .eq('login', login);
 
     if (error) {

@@ -7,7 +7,7 @@ import { setAuditContextForAPI, extractUserContext } from '../lib/auditHelper.js
 export default async function handler(req, res) {
   // Obsługa CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -84,6 +84,84 @@ export default async function handler(req, res) {
         error: 'Internal server error',
         message: error.message 
       });
+    }
+  }
+
+  // PUT - aktualizuj lead
+  if (req.method === 'PUT') {
+    try {
+      const leadData = req.body;
+      const id = req.query.id || leadData.id;
+      if (!supabase || !id) {
+        return res.status(400).json({ error: 'Bad request', message: 'Brak ID leada (query: id).' });
+      }
+      const userContext = extractUserContext(leadData);
+      userContext.chiropractor = leadData.chiropractor || req.query.chiropractor || 'default';
+      await setAuditContextForAPI(userContext, req);
+
+      const toUpdate = {};
+      if (leadData.name !== undefined) toUpdate.name = leadData.name;
+      if (leadData.phone !== undefined) toUpdate.phone = leadData.phone || null;
+      if (leadData.email !== undefined) toUpdate.email = leadData.email || null;
+      if (leadData.description !== undefined) toUpdate.description = leadData.description || null;
+      if (leadData.notes !== undefined) toUpdate.notes = leadData.notes || null;
+      if (leadData.status !== undefined) toUpdate.status = leadData.status || 'Nowy kontakt';
+
+      if (Object.keys(toUpdate).length === 0) {
+        return res.status(400).json({ error: 'Bad request', message: 'Brak pól do aktualizacji.' });
+      }
+
+      let query = supabase.from('leads').update(toUpdate).eq('id', id);
+      if (userContext.chiropractor) query = query.eq('chiropractor', userContext.chiropractor);
+      const { data: updated, error } = await query.select().single();
+
+      if (error) {
+        console.error('❌ Błąd aktualizacji leada:', error);
+        return res.status(500).json({ error: 'Database error', message: error.message });
+      }
+
+      const mapped = {
+        id: updated.id,
+        name: updated.name,
+        phone: updated.phone || '',
+        email: updated.email || '',
+        description: updated.description || '',
+        notes: updated.notes || '',
+        status: updated.status,
+        chiropractor: updated.chiropractor,
+        source: updated.source || 'manual',
+        createdAt: updated.created_at || new Date().toISOString()
+      };
+      return res.status(200).json({ success: true, message: 'Lead zaktualizowany', lead: mapped });
+    } catch (e) {
+      console.error('❌ Błąd PUT /api/leads:', e);
+      return res.status(500).json({ error: 'Internal server error', message: e.message });
+    }
+  }
+
+  // DELETE - usuń lead
+  if (req.method === 'DELETE') {
+    try {
+      const id = req.query.id || (req.body && req.body.id);
+      if (!supabase || !id) {
+        return res.status(400).json({ error: 'Bad request', message: 'Brak ID leada (query: id).' });
+      }
+      const userContext = extractUserContext(req.body || {});
+      userContext.chiropractor = userContext.chiropractor || req.query.chiropractor || 'default';
+      await setAuditContextForAPI(userContext, req);
+
+      let query = supabase.from('leads').delete().eq('id', id);
+      if (userContext.chiropractor) query = query.eq('chiropractor', userContext.chiropractor);
+      const { error } = await query;
+
+      if (error) {
+        console.error('❌ Błąd usuwania leada:', error);
+        return res.status(500).json({ error: 'Database error', message: error.message });
+      }
+      return res.status(200).json({ success: true, message: 'Lead usunięty' });
+    } catch (e) {
+      console.error('❌ Błąd DELETE /api/leads:', e);
+      return res.status(500).json({ error: 'Internal server error', message: e.message });
     }
   }
 

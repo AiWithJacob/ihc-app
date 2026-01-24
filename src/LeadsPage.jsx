@@ -30,7 +30,7 @@ const getStatusColor = (status) => {
   }
 };
 
-function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
+function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, onUpdateLead, onDeleteLead }) {
   const { themeData, theme } = useTheme();
   const [newLead, setNewLead] = useState({
     name: "",
@@ -60,18 +60,15 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
 
   const addLead = () => {
     if (!newLead.name || !newLead.phone) return;
-
-    setLeads((prev) => [
-      {
-        id: Date.now(),
-        ...newLead,
-        notes: "",
-        status: "Nowy kontakt",
-        createdAt: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
-
+    const payload = {
+      name: newLead.name,
+      phone: newLead.phone,
+      description: newLead.description || "",
+      notes: "",
+      status: "Nowy kontakt",
+      createdAt: new Date().toISOString(),
+    };
+    onAddLead?.(payload);
     setNewLead({ name: "", phone: "", description: "" });
     setShowAddLeadModal(false);
   };
@@ -83,12 +80,9 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
   };
 
   const changeStatus = (id, newStatus) => {
-    setLeads((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, status: newStatus } : l))
-    );
+    onUpdateLead?.(id, { status: newStatus });
     if (selectedLead && selectedLead.id === id) {
       setSelectedLead((prev) => ({ ...prev, status: newStatus }));
-      // Zamknij modal jeśli status zmieniono na "Nie odebrał", "Sam się skontaktuje" lub "Zadzwoń później"
       if (newStatus === "Nie odebrał" || newStatus === "Sam się skontaktuje" || newStatus === "Zadzwoń później") {
         closeModal();
       }
@@ -97,38 +91,13 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
 
   const saveNotes = () => {
     if (!selectedLead) return;
-    setLeads((prev) =>
-      prev.map((l) =>
-        l.id === selectedLead.id ? { ...l, notes: noteDraft } : l
-      )
-    );
+    onUpdateLead?.(selectedLead.id, { notes: noteDraft });
     setSelectedLead((prev) => ({ ...prev, notes: noteDraft }));
   };
 
-  // Auto-save notatek z debounce podczas pisania
-  useEffect(() => {
-    if (!selectedLead) return;
-
-    const timeoutId = setTimeout(() => {
-      setLeads((prev) =>
-        prev.map((l) =>
-          l.id === selectedLead.id ? { ...l, notes: noteDraft } : l
-        )
-      );
-      setSelectedLead((prev) => ({ ...prev, notes: noteDraft }));
-    }, 1000); // Zapisz po 1 sekundzie bez zmian
-
-    return () => clearTimeout(timeoutId);
-  }, [noteDraft, selectedLead, setLeads]);
-
-  // Funkcja do zamykania modalu z automatycznym zapisem notatek
   const closeModal = () => {
     if (selectedLead && noteDraft !== undefined) {
-      setLeads((prev) =>
-        prev.map((l) =>
-          l.id === selectedLead.id ? { ...l, notes: noteDraft } : l
-        )
-      );
+      onUpdateLead?.(selectedLead.id, { notes: noteDraft });
     }
     setSelectedLead(null);
     setShowFullNoteModal(false);
@@ -1640,18 +1609,12 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
             <div style={{ marginTop: 12, display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button
                 onClick={() => {
-                  if (selectedLead && selectedLead.description) {
+                    if (selectedLead && selectedLead.description) {
                     const currentNotes = selectedLead.notes || "";
                     const newNotes = currentNotes 
                       ? `${selectedLead.description}\n\n${currentNotes}`
                       : selectedLead.description;
-                    
-                    setLeads((prev) =>
-                      prev.map((l) =>
-                        l.id === selectedLead.id ? { ...l, notes: newNotes } : l
-                      )
-                    );
-                    
+                    onUpdateLead?.(selectedLead.id, { notes: newNotes });
                     setSelectedLead((prev) => ({ ...prev, notes: newNotes }));
                     setNoteDraft(newNotes);
                     setShowFullDescriptionModal(false);

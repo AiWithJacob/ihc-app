@@ -521,7 +521,7 @@
                         <span style="color:var(--muted);font-size:0.85rem;">Ostatnie 5 min (last_seen)</span>
                         <button class="btn btn-sec" onclick="loadActiveNow()">Odśwież</button>
                     </div>
-                    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px;">Użytkownicy z aktywnością u tego chiropraktyka, którzy mieli heartbeat w ostatnich 5 minutach.</p>
+                    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px;">Użytkownicy z app_users.chiropractor = wybrany chiropraktyk i last_seen_at w ostatnich 5 minut (heartbeat z aplikacji). Zielone wiersze = pracują.</p>
                     <div id="activeNowList"></div>
                 </div>
             </div>
@@ -820,19 +820,20 @@
             if (!supabaseClient) { el.innerHTML = '<div class="msg err">Brak połączenia.</div>'; return; }
             el.innerHTML = '<div class="loading">Ładowanie…</div>';
             try {
-                const { data: logs } = await supabaseClient.from('audit_logs').select('user_login').eq('chiropractor', chiro()).not('user_login', 'is', null);
-                const logins = [...new Set((logs || []).map(l => l.user_login).filter(Boolean))];
-                if (logins.length === 0) { el.innerHTML = '<div class="msg info">Brak użytkowników z aktywnością u tego chiropraktyka.</div>'; return; }
                 const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-                const { data: rows, error } = await supabaseClient.from('app_users').select('login,email,last_seen_at').in('login', logins).gte('last_seen_at', fiveMinAgo).order('last_seen_at', { ascending: false });
+                const { data: rows, error } = await supabaseClient.from('app_users')
+                    .select('login,email,last_seen_at,chiropractor')
+                    .eq('chiropractor', chiro())
+                    .gte('last_seen_at', fiveMinAgo)
+                    .order('last_seen_at', { ascending: false });
                 if (error) throw error;
-                if (!rows || rows.length === 0) { el.innerHTML = '<div class="msg info">Nikt nie pracował w ostatnich 5 minut.</div>'; return; }
+                if (!rows || rows.length === 0) { el.innerHTML = '<div class="msg info">Nikt nie pracuje przy tym chiropraktyku w ostatnich 5 minut.</div>'; return; }
                 el.innerHTML = `
                     <div class="tbl-wrap">
                         <table>
                             <thead><tr><th>Login</th><th>Email</th><th>Ostatnia aktywność</th></tr></thead>
                             <tbody>${rows.map(r => `
-                                <tr>
+                                <tr class="row-active">
                                     <td><strong>${escapeHtml(r.login)}</strong></td>
                                     <td>${escapeHtml(r.email || '-')}</td>
                                     <td><span class="badge badge-i">${r.last_seen_at ? new Date(r.last_seen_at).toLocaleString('pl-PL') : '-'}</span></td>
@@ -840,7 +841,7 @@
                             `).join('')}</tbody>
                         </table>
                     </div>
-                    <div style="margin-top:10px;font-size:0.85rem;color:var(--muted)">${rows.length} aktywnych</div>
+                    <div style="margin-top:10px;font-size:0.85rem;color:var(--muted)">${rows.length} aktywnych (zielone = pracuje przy tym chiropraktyku)</div>
                 `;
             } catch (e) { el.innerHTML = '<div class="msg err">' + e.message + '</div>'; }
         }

@@ -91,6 +91,12 @@ function LoginPage({ onLogin }) {
     setRegisteredUsers(updatedUsers);
     localStorage.setItem("user", JSON.stringify(userData));
     onLogin(userData);
+    // Ostatnie logowanie (last_login_at) – do panelu Konta
+    fetch(`${API_URL}/api/user-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ login: userData.login }),
+    }).catch(() => {});
   };
 
   const handleQuickLogin = () => {

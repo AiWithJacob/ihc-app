@@ -134,13 +134,13 @@ export default function App() {
       fetch(`${API_URL}/api/user-heartbeat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ login: user.login }),
+        body: JSON.stringify({ login: user.login, chiropractor: user.chiropractor || null }),
       }).catch(() => {});
     };
     tick();
     const id = setInterval(tick, 2 * 60 * 1000);
     return () => clearInterval(id);
-  }, [user?.login]);
+  }, [user?.login, user?.chiropractor]);
 
   // Synchronizacja leadów z Supabase
   // Pobiera leady z bazy danych i synchronizuje z localStorage
@@ -153,105 +153,81 @@ export default function App() {
                       ? 'https://ihc-app.vercel.app'  // W dev mode używaj Vercel API
                       : window.location.origin);
 
-    // Funkcja do pobierania leadów z Supabase
+    // Pełne pobranie leadów z Supabase (bez since) – żeby widać leady dodane ręcznie przez innych i w panelu
     const syncLeadsFromSupabase = async () => {
       try {
-        // Pobierz czas ostatniego sprawdzenia
-        const lastCheckTime = localStorage.getItem('lastLeadsCheck') || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // Ostatnie 24h
-        
-        // Pobierz leady z Supabase przez API
-        const apiUrl = `${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}&since=${encodeURIComponent(lastCheckTime)}`;
-        console.log('🔍 Synchronizuję leady z Supabase:', {
-          url: apiUrl,
-          chiropractor: user.chiropractor,
-          since: lastCheckTime
-        });
-        
+        const apiUrl = `${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}`;
         const response = await fetch(apiUrl);
-        
         if (!response.ok) {
-          // API może nie być dostępne w dev mode - to OK
           console.log('⚠️ API nie jest dostępne (może być w trybie dev):', response.status, response.statusText);
           return;
         }
-
         const data = await response.json();
-        console.log('📥 Otrzymano dane z Supabase:', {
-          success: data.success,
-          count: data.count,
-          leads: data.leads?.length || 0,
-          chiropractor: user.chiropractor,
-          source: data.source
-        });
-        
-        if (data.success && data.leads && data.leads.length > 0) {
-          // Dodaj nowe leady do aplikacji
-          setLeads(prev => {
-            const existingIds = prev.map(l => l.id);
-            const newLeads = data.leads
-              .filter(l => !existingIds.includes(l.id))
-              .map(lead => ({
-                ...lead,
-                // Upewnij się, że lead ma przypisanego chiropraktyka
-                chiropractor: lead.chiropractor || user.chiropractor
-              }));
-            
-            if (newLeads.length > 0) {
-              console.log(`✅ Dodano ${newLeads.length} nowych leadów z Supabase:`, newLeads.map(l => l.name));
-              // Zaktualizuj czas ostatniego sprawdzenia
-              const newCheckTime = new Date().toISOString();
-              localStorage.setItem('lastLeadsCheck', newCheckTime);
-              return [...newLeads, ...prev];
-            } else {
-              console.log('ℹ️ Brak nowych leadów (wszystkie już istnieją)');
-            }
-            return prev;
-          });
-        } else {
-          console.log('ℹ️ Brak nowych leadów w Supabase dla chiropraktyka:', user.chiropractor);
+        if (data.success && Array.isArray(data.leads)) {
+          const list = data.leads.map(l => ({ ...l, chiropractor: l.chiropractor || user.chiropractor }));
+          setLeads(list);
+          console.log('📥 Zsynchronizowano leady z Supabase:', list.length);
         }
       } catch (error) {
-        // Loguj błędy dla debugowania
         console.error('❌ Błąd synchronizacji leadów z Supabase:', error.message);
       }
     };
 
-    // Funkcja do zapisywania leada w Supabase
     const saveLeadToSupabase = async (lead) => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 
-                        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                          ? 'https://ihc-app.vercel.app'
-                          : window.location.origin);
-        
-        // Dodaj kontekst użytkownika dla audit log
-        const response = await fetch(`${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+        const res = await fetch(`${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ...lead,
             chiropractor: lead.chiropractor || user.chiropractor,
-            // Kontekst użytkownika dla audit log
             user_id: user.id,
             user_login: user.login,
             user_email: user.email,
             source: 'ui'
           })
         });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Lead zapisany w Supabase:', data.lead?.name);
-          return data.lead;
-        } else {
-          console.error('❌ Błąd zapisywania leada w Supabase:', response.statusText);
+        if (res.ok) {
+          const d = await res.json();
+          return d.lead || null;
         }
-      } catch (error) {
-        console.error('❌ Błąd zapisywania leada w Supabase:', error.message);
-      }
+      } catch (e) { console.error('❌ saveLeadToSupabase:', e); }
       return null;
+    };
+
+    const updateLeadInSupabase = async (leadId, patch) => {
+      try {
+        const res = await fetch(`${API_URL}/api/leads?id=${encodeURIComponent(leadId)}&chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...patch,
+            chiropractor: user.chiropractor,
+            user_id: user.id,
+            user_login: user.login,
+            user_email: user.email,
+            source: 'ui'
+          })
+        });
+        return res.ok;
+      } catch (e) { console.error('❌ updateLeadInSupabase:', e); return false; }
+    };
+
+    const deleteLeadInSupabase = async (leadId) => {
+      try {
+        const res = await fetch(`${API_URL}/api/leads?id=${encodeURIComponent(leadId)}&chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chiropractor: user.chiropractor,
+            user_id: user.id,
+            user_login: user.login,
+            user_email: user.email,
+            source: 'ui'
+          })
+        });
+        return res.ok;
+      } catch (e) { console.error('❌ deleteLeadInSupabase:', e); return false; }
     };
 
     // Sprawdzaj co 30 sekund nowe leady z Supabase
@@ -280,52 +256,20 @@ export default function App() {
                       ? 'https://ihc-app.vercel.app'
                       : window.location.origin);
 
-    // Funkcja do pobierania rezerwacji z Supabase
+    // Pełne pobranie rezerwacji z Supabase (bez since) – kalendarz widzi rezerwacje innych użytkowników
     const syncBookingsFromSupabase = async () => {
       try {
-        const lastCheckTime = localStorage.getItem('lastBookingsCheck') || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        
-        const apiUrl = `${API_URL}/api/bookings?chiropractor=${encodeURIComponent(user.chiropractor)}&since=${encodeURIComponent(lastCheckTime)}`;
-        console.log('🔍 Synchronizuję rezerwacje z Supabase:', {
-          url: apiUrl,
-          chiropractor: user.chiropractor,
-          since: lastCheckTime
-        });
-        
+        const apiUrl = `${API_URL}/api/bookings?chiropractor=${encodeURIComponent(user.chiropractor)}`;
         const response = await fetch(apiUrl);
-        
         if (!response.ok) {
           console.log('⚠️ API nie jest dostępne (może być w trybie dev):', response.status, response.statusText);
           return;
         }
-
         const data = await response.json();
-        console.log('📥 Otrzymano rezerwacje z Supabase:', {
-          success: data.success,
-          count: data.count,
-          bookings: data.bookings?.length || 0,
-          chiropractor: user.chiropractor,
-          source: data.source
-        });
-        
-        if (data.success && data.bookings && data.bookings.length > 0) {
-          setBookings(prev => {
-            const existingIds = prev.map(b => b.id);
-            const newBookings = data.bookings
-              .filter(b => !existingIds.includes(b.id))
-              .map(booking => ({
-                ...booking,
-                chiropractor: booking.chiropractor || user.chiropractor
-              }));
-            
-            if (newBookings.length > 0) {
-              console.log(`✅ Dodano ${newBookings.length} nowych rezerwacji z Supabase`);
-              const newCheckTime = new Date().toISOString();
-              localStorage.setItem('lastBookingsCheck', newCheckTime);
-              return [...newBookings, ...prev];
-            }
-            return prev;
-          });
+        if (data.success && Array.isArray(data.bookings)) {
+          const list = data.bookings.map(b => ({ ...b, chiropractor: b.chiropractor || user.chiropractor }));
+          setBookings(list);
+          console.log('📥 Zsynchronizowano rezerwacje z Supabase:', list.length);
         }
       } catch (error) {
         console.error('❌ Błąd synchronizacji rezerwacji z Supabase:', error.message);
@@ -421,6 +365,7 @@ export default function App() {
   };
 
   const openAddLeadModalRef = useRef(null);
+  const leadApiRef = useRef({});
 
   const handleLogout = () => {
     if (window.confirm("Czy na pewno chcesz się wylogować?")) {
@@ -920,6 +865,18 @@ export default function App() {
                   bookings={currentBookings}
                   setBookings={setBookings}
                   onOpenAddLeadModal={(fn) => (openAddLeadModalRef.current = fn)}
+                  onAddLead={async (lead) => {
+                    const fn = leadApiRef.current.save;
+                    if (fn) { const s = await fn(lead); if (s) setLeads(prev => [s, ...prev]); }
+                  }}
+                  onUpdateLead={async (id, patch) => {
+                    const fn = leadApiRef.current.update;
+                    if (fn) { await fn(id, patch); setLeads(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l)); }
+                  }}
+                  onDeleteLead={async (id) => {
+                    const fn = leadApiRef.current.delete;
+                    if (fn) { await fn(id); setLeads(prev => prev.filter(l => l.id !== id)); }
+                  }}
                 />
               }
             />
