@@ -125,10 +125,12 @@ function LoginPage({ onLogin }) {
           position: "relative",
           zIndex: 1,
           opacity: isAnimating ? 1 : 0,
+          borderTop: "3px solid rgba(102, 126, 234, 0.8)",
           transform: isAnimating ? "translateY(0) scale(1)" : "translateY(30px) scale(0.95)",
           transition: "all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
           overflow: "visible",
           boxSizing: "border-box",
+          fontFamily: "'Space Grotesk', system-ui, sans-serif",
         }}
       >
         {/* Nagłówek "Witaj w Super Chiro" */}
@@ -144,10 +146,10 @@ function LoginPage({ onLogin }) {
             width: "calc(100% + 20px)",
           }}
         >
-          <h1
-            style={{
-              fontFamily: "'Segoe UI', 'Arial Black', 'Helvetica Neue', sans-serif",
-              fontSize: "clamp(24px, 5.5vw, 48px)",
+        <h1
+          style={{
+            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontSize: "clamp(24px, 5.5vw, 48px)",
               fontWeight: 900,
               background: "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)",
               WebkitBackgroundClip: "text",

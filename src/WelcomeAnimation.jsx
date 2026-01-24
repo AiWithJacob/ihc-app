@@ -6,25 +6,10 @@ function WelcomeAnimation({ chiropractor, onComplete }) {
   const [showChiropractor, setShowChiropractor] = useState(false);
 
   useEffect(() => {
-    // Opóźnienie przed pojawieniem się
-    const timer1 = setTimeout(() => {
-      setOpacity(1);
-    }, 200);
-
-    // Animacja powiększania głównego tekstu
-    const timer2 = setTimeout(() => {
-      setScale(1);
-    }, 400);
-
-    // Pojawienie się nazwiska chiropraktyka
-    const timer3 = setTimeout(() => {
-      setShowChiropractor(true);
-    }, 1200);
-
-    // Zakończenie animacji po 3 sekundach
-    const timer4 = setTimeout(() => {
-      onComplete();
-    }, 3000);
+    const timer1 = setTimeout(() => setOpacity(1), 0);
+    const timer2 = setTimeout(() => setScale(1), 80);
+    const timer3 = setTimeout(() => setShowChiropractor(true), 450);
+    const timer4 = setTimeout(() => onComplete(), 1200);
 
     return () => {
       clearTimeout(timer1);
@@ -48,7 +33,7 @@ function WelcomeAnimation({ chiropractor, onComplete }) {
         justifyContent: "center",
         zIndex: 10000,
         opacity: opacity,
-        transition: "opacity 0.5s ease-in",
+        transition: "opacity 0.2s ease-out",
         overflow: "visible",
         padding: "40px",
       }}
@@ -69,7 +54,7 @@ function WelcomeAnimation({ chiropractor, onComplete }) {
         style={{
           textAlign: "center",
           transform: `scale(${scale})`,
-          transition: "transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          transition: "transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
           position: "relative",
           zIndex: 1,
           overflow: "visible",
@@ -87,7 +72,7 @@ function WelcomeAnimation({ chiropractor, onComplete }) {
             marginBottom: "30px",
             textShadow: "0 0 40px rgba(255, 255, 255, 0.5), 0 2px 10px rgba(0, 0, 0, 0.3)",
             letterSpacing: "0px",
-            fontFamily: "'Segoe UI', 'Arial Black', 'Helvetica Neue', sans-serif",
+            fontFamily: "'Space Grotesk', system-ui, sans-serif",
             overflow: "visible",
             wordWrap: "break-word",
             lineHeight: "1.3",
@@ -106,7 +91,7 @@ function WelcomeAnimation({ chiropractor, onComplete }) {
           style={{
             opacity: showChiropractor ? 1 : 0,
             transform: showChiropractor ? "translateY(0)" : "translateY(20px)",
-            transition: "all 0.6s ease-out",
+            transition: "all 0.3s ease-out",
           }}
         >
           <p

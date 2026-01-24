@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext.jsx";
+import { IconCalendar } from "./Icons.jsx";
+import { formatDateDDMMRR } from "./utils/dateFormat.js";
 
 const STATUSES = [
   "Nowy kontakt",
@@ -264,6 +266,9 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
             transition: "all 0.3s ease",
             boxShadow: `0 4px 16px ${themeData.glow}`,
             whiteSpace: "nowrap",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
@@ -274,7 +279,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
             e.currentTarget.style.boxShadow = `0 4px 16px ${themeData.glow}`;
           }}
         >
-          📅 Kalendarz
+          <IconCalendar w={16} h={16} color="white" />
+          <span className="mobile-hidden">Kalendarz</span>
         </button>
       </div>
 
@@ -406,14 +412,26 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                 maxHeight: "100%",
                 WebkitOverflowScrolling: "touch",
               }}
-              onScroll={() => {
-                // Scroll handling removed - scrollableStatuses was unused
-              }}
             >
-              {leads
-                .filter((l) => l.status === status)
+              {statusLeads.length === 0 ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 100,
+                    color: themeData.textSecondary,
+                    fontSize: "12px",
+                    border: `2px dashed ${themeData.border}`,
+                    borderRadius: "var(--radius-md)",
+                    margin: "8px 0",
+                  }}
+                >
+                  Przeciągnij tutaj
+                </div>
+              ) : (
+              statusLeads
                 .sort((a, b) => {
-                  // Sortuj według daty dodania (najnowsze na górze)
                   const dateA = a.createdAt ? new Date(a.createdAt) : new Date(a.id);
                   const dateB = b.createdAt ? new Date(b.createdAt) : new Date(b.id);
                   return dateB - dateA;
@@ -563,7 +581,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                       }}
                     />
                   </div>
-                ))}
+                ))
+              )}
             </div>
             
             {/* Zakończenie lejka */}
@@ -1091,7 +1110,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal }) {
                 >
                   <strong>Umówiony:</strong>
                   <br />
-                  {leadBooking.date} {leadBooking.time}
+                  {formatDateDDMMRR(leadBooking.date)} {leadBooking.time}
                 </div>
               )}
 

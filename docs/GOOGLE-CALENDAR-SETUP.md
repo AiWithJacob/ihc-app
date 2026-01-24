@@ -250,6 +250,27 @@ To zainstaluje `googleapis` package.
 - Wydarzenie mogło zostać usunięte ręcznie z Google Calendar
 - System automatycznie pomija błąd i kontynuuje (nie przerywa procesu)
 
+### Problem: Godziny w Google Calendar są przesunięte (np. wpisuję 14:00, a widzę 8:00)
+
+Różnica 6 godzin oznacza, że **Google Calendar wyświetla czas w innej strefie** (np. Eastern USA zamiast Europy/Warszawy). Aplikacja wysyła poprawne godziny w strefie Europe/Warsaw – trzeba ustawić tę strefę w Google.
+
+**Rozwiązanie – ustaw strefę czasową w Google Calendar:**
+
+1. Otwórz **Google Calendar**: https://calendar.google.com
+2. Kliknij **⚙️ Ustawienia** (ikona zębatki) → **Ustawienia**
+3. W lewym menu: **Strefa czasowa**
+4. Ustaw:
+   - **Strefa czasowa kalendarza głównego:** `(GMT+01:00) Warszawa` albo `Europe/Warsaw`
+   - Opcjonalnie: **Wyświetl strefy czasowe** – możesz dodać „Warszawa”, żeby porównywać
+5. Kliknij **Zapisz** na dole strony
+
+**Dodatkowo – konto Google:**
+
+- Wejdź w [Konto Google](https://myaccount.google.com) → **Dane osobowe** → **Informacje ogólne** (lub **Język i strefa czasowa**)
+- Ustaw **Strefa czasowa** na `(GMT+01:00) Warszawa` / `Europe/Warsaw`
+
+Po ustawieniu strefy na Europe/Warsaw godziny w kalendarzu (np. 14:00) będą się zgadzały z wpisami z aplikacji.
+
 ---
 
 ## Checklist konfiguracji
@@ -278,6 +299,17 @@ Po wykonaniu wszystkich kroków:
 3. ✅ Integracja z bookings działa automatycznie
 
 **Wszystko gotowe!** 🎉
+
+---
+
+## Synchronizacja: usunięcie w Google → usunięcie w systemie
+
+Gdy usuniesz wizytę **w Google Calendar**, odpowiadająca jej wizyta w kalendarzu aplikacji zostanie usunięta w ciągu **ok. 15 minut**.
+
+- Działa **automatycznie**: crona co 15 min wywołuje `/api/google-calendar/sync-deleted`.
+- Aby zobaczyć zmianę w aplikacji: **odśwież kalendarz** (F5 lub przejdź na inną zakładkę i wróć).
+- Cron jest w `vercel.json`; na planie Hobby crona może wymagać konfiguracji w Vercel Dashboard (Cron Jobs).
+- Opcjonalnie: ustaw `CRON_SECRET` w Vercel, żeby chronić endpoint (cron w Vercelu wyśle ten nagłówek).
 
 ---
 

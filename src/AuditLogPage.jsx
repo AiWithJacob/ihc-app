@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "./ThemeContext.jsx";
 import { createClient } from '@supabase/supabase-js';
+import { formatDateTimeDDMMRR } from "./utils/dateFormat.js";
 
 // Inicjalizacja Supabase Client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -119,18 +120,7 @@ export default function AuditLogPage() {
     return names[tableName] || tableName;
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleString("pl-PL", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
-    });
-  };
+  const formatDate = (dateString) => formatDateTimeDDMMRR(dateString);
 
   const getChangedFields = (log) => {
     if (log.action !== "UPDATE" || !log.changed_fields || log.changed_fields.length === 0) {

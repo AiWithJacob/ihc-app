@@ -1,24 +1,39 @@
 <!doctype html>
-<html lang="en">
+<html lang="pl">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ihc-app</title>
+    <title>Super Chiro — System zarządzania</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root">
-      <div style="color: #ffffff; padding: 20px; background: #1a1a1a; min-height: 100vh; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-        <h1 style="color: #2563eb; margin-bottom: 20px;">🔄 Ładowanie aplikacji...</h1>
-        <p style="color: #ffffff;">Jeśli widzisz ten tekst, HTML się ładuje.</p>
-        <p style="color: #a0a0a0;">Sprawdź konsolę przeglądarki (F12) dla szczegółów.</p>
-        <p style="color: #ffaa00; margin-top: 20px;">Jeśli ten tekst nie zniknie, JavaScript się nie załadował.</p>
+      <div id="splash" class="splash">
+        <div class="splash__grid"></div>
+        <div class="splash__content">
+          <div class="splash__logo">Super Chiro</div>
+          <div class="splash__sub">System zarządzania</div>
+          <div class="splash__bar">
+            <div class="splash__bar-inner"></div>
+          </div>
+          <div class="splash__status">Inicjalizacja…</div>
+        </div>
       </div>
     </div>
+    <style>
+      .splash { position: fixed; inset: 0; background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 100%); display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', system-ui, sans-serif; overflow: hidden; }
+      .splash__grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(37,99,235,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.03) 1px, transparent 1px); background-size: 24px 24px; }
+      .splash__content { position: relative; z-index: 1; text-align: center; }
+      .splash__logo { font-size: clamp(24px, 6vw, 36px); font-weight: 700; color: #fff; letter-spacing: -0.5px; margin-bottom: 4px; }
+      .splash__sub { font-size: clamp(12px, 2.5vw, 14px); color: rgba(255,255,255,0.5); margin-bottom: 24px; }
+      .splash__bar { width: 200px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin: 0 auto 12px; }
+      .splash__bar-inner { width: 0; height: 100%; background: linear-gradient(90deg, #2563eb, #3b82f6); border-radius: 2px; animation: splashProgress 1.2s ease-in-out infinite; }
+      .splash__status { font-size: 11px; color: rgba(255,255,255,0.4); font-family: 'JetBrains Mono', monospace; }
+      @keyframes splashProgress { 0% { width: 0; margin-left: 0; } 50% { width: 70%; margin-left: 0; } 100% { width: 70%; margin-left: 30%; } }
+    </style>
     <script type="module" src="/src/main.jsx"></script>
-    <script>
-      console.log("📄 index.html script executed!");
-      console.log("Root element exists:", !!document.getElementById("root"));
-    </script>
   </body>
 </html>

@@ -8,37 +8,27 @@ import LoginPage from "./LoginPage.jsx";
 import ChiropractorSelection from "./ChiropractorSelection.jsx";
 import WelcomeAnimation from "./WelcomeAnimation.jsx";
 import GoodbyeAnimation from "./GoodbyeAnimation.jsx";
+import { IconContacts, IconCalendar, IconStats, IconAdd, IconLogout, IconSwap, IconMoon, IconSun, IconNight } from "./Icons.jsx";
 
-const INITIAL_LEADS = [
-  {
-    id: 1,
-    name: "Jan Testowy",
-    phone: "123456789",
-    description: "Ból pleców",
-    notes: "",
-    status: "Nowy kontakt",
-  },
-  {
-    id: 2,
-    name: "Anna Nowak",
-    phone: "987654321",
-    description: "Ból szyi",
-    notes: "",
-    status: "Sam się skontaktuje",
-  },
-];
+const APP_UI_VERSION = "ui2-clean";
 
 export default function App() {
-  console.log("✅ App component rendering...");
   const { themeData, toggleTheme, theme } = useTheme();
   const navigate = useNavigate();
+
+  // Jednorazowe czyszczenie leadów i rezerwacji przy pierwszym uruchomieniu po aktualizacji
+  useEffect(() => {
+    if (localStorage.getItem("appUiVersion") !== APP_UI_VERSION) {
+      localStorage.removeItem("leadsByChiropractor");
+      localStorage.removeItem("bookingsByChiropractor");
+      localStorage.setItem("appUiVersion", APP_UI_VERSION);
+    }
+  }, []);
   
   // Stan użytkownika
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem("user");
-    const parsed = stored ? JSON.parse(stored) : null;
-    console.log("User from localStorage:", parsed);
-    return parsed;
+    return stored ? JSON.parse(stored) : null;
   });
   
   const [showWelcome, setShowWelcome] = useState(false);
@@ -355,7 +345,6 @@ export default function App() {
   }, [user]);
 
   const handleLogin = (userData) => {
-    console.log("handleLogin called with:", userData);
     setUser(userData);
     // Zawsze pokazuj ekran wyboru chiropraktyka po zalogowaniu
     setShowChiropractorSelection(true);
@@ -436,27 +425,13 @@ export default function App() {
   const isCalendarActive = location.pathname === "/calendar";
   const isStatisticsActive = location.pathname === "/statistics";
 
-  // Debug logi
-  console.log("App render state:", {
-    hasUser: !!user,
-    isLoggedIn: user?.isLoggedIn,
-    chiropractor: user?.chiropractor,
-    showGoodbye,
-    showWelcome,
-    justLoggedIn,
-    showChiropractorSelection,
-    isTransitioning
-  });
-
   // Jeśli użytkownik nie jest zalogowany, pokaż stronę logowania
   if (!user || !user.isLoggedIn) {
-    console.log("Rendering LoginPage");
     return <LoginPage onLogin={handleLogin} />;
   }
 
   // Jeśli użytkownik jest zalogowany, zawsze pokaż ekran wyboru chiropraktyka
   if (showChiropractorSelection) {
-    console.log("Rendering ChiropractorSelection");
     return (
       <div
         key="chiropractor-selection"
@@ -476,7 +451,6 @@ export default function App() {
     );
   }
 
-  console.log("Rendering main app");
   return (
     <>
       {showGoodbye && (
@@ -551,6 +525,21 @@ export default function App() {
             flex: "1 1 0",
             minWidth: 0,
           }}>
+            <div
+              className="desktop-only"
+              style={{
+                fontSize: "11px",
+                fontWeight: 600,
+                color: themeData.textSecondary,
+                letterSpacing: "0.5px",
+                textTransform: "uppercase",
+                padding: "2px 8px",
+                borderRight: `1px solid ${themeData.border}`,
+                marginRight: "4px",
+              }}
+            >
+              Super Chiro
+            </div>
             <div style={{ 
               fontSize: "clamp(12px, 3vw, 18px)", 
               fontWeight: 700, 
@@ -630,7 +619,7 @@ export default function App() {
               }}
               title="Zmień chiropraktyka"
             >
-              <span>🔄</span>
+              <IconSwap w={14} h={14} />
               <span className="mobile-hidden">Zmień</span>
             </button>
           </div>
@@ -669,6 +658,7 @@ export default function App() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  gap: "6px",
                   lineHeight: "1",
                   boxSizing: "border-box",
                 }}
@@ -681,7 +671,8 @@ export default function App() {
                   e.currentTarget.style.boxShadow = `0 4px 16px ${themeData.glow}`;
                 }}
               >
-                ➕ <span className="mobile-hidden">Dodaj nowy lead</span>
+                <IconAdd w={14} h={14} color="white" />
+                <span className="mobile-hidden">Dodaj nowy lead</span>
               </button>
             )}
             
@@ -710,6 +701,7 @@ export default function App() {
                 lineHeight: "1",
                 textDecoration: "none",
                 boxSizing: "border-box",
+                gap: "6px",
               }}
               onMouseEnter={(e) => {
                 if (!isLeadsActive) {
@@ -726,7 +718,8 @@ export default function App() {
                 }
               }}
             >
-              Kontakty
+              <IconContacts w={14} h={14} color={isLeadsActive ? "white" : themeData.text} />
+              <span className="mobile-hidden">Kontakty</span>
             </button>
 
             <Link
@@ -735,6 +728,7 @@ export default function App() {
                 padding: "clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)",
                 borderRadius: 6,
                 textDecoration: "none",
+                gap: "6px",
                 background: isCalendarActive 
                   ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
                   : themeData.surfaceElevated,
@@ -769,7 +763,8 @@ export default function App() {
                 }
               }}
             >
-              Kalendarz
+              <IconCalendar w={14} h={14} color={isCalendarActive ? "white" : themeData.text} />
+              <span className="mobile-hidden">Kalendarz</span>
             </Link>
 
             <Link
@@ -778,6 +773,7 @@ export default function App() {
                 padding: "clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)",
                 borderRadius: 6,
                 textDecoration: "none",
+                gap: "6px",
                 background: isStatisticsActive 
                   ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`
                   : themeData.surfaceElevated,
@@ -812,7 +808,8 @@ export default function App() {
                 }
               }}
             >
-              📊 Statystyki
+              <IconStats w={14} h={14} color={isStatisticsActive ? "white" : themeData.text} />
+              <span className="mobile-hidden">Statystyki</span>
             </Link>
 
             {/* Przycisk zmiany motywu */}
@@ -850,7 +847,9 @@ export default function App() {
               }}
               title={`Tryb: ${themeData.name} (Kliknij aby zmienić)`}
             >
-              {themeData.icon}
+              {theme === "dark" && <IconMoon w={16} h={16} />}
+              {theme === "light" && <IconSun w={16} h={16} />}
+              {theme === "night" && <IconNight w={16} h={16} />}
             </button>
 
             <button
@@ -884,7 +883,7 @@ export default function App() {
                 e.currentTarget.style.boxShadow = "0 4px 12px rgba(220, 38, 38, 0.3)";
               }}
             >
-              <span>🚪</span>
+              <IconLogout w={14} h={14} color="white" />
               <span className="mobile-hidden">Wyloguj</span>
             </button>
           </div>

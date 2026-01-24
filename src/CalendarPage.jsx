@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext.jsx";
+import { IconCalendar } from "./Icons.jsx";
+import { formatDateDDMMRR } from "./utils/dateFormat.js";
 
-// Godziny 06:00-23:00 (wszystkie dostępne)
-const HOURS = Array.from({ length: 18 }, (_, i) => {
-  const hour = 6 + i;
-  return `${hour.toString().padStart(2, "0")}:00`;
+// Godziny 0:00-23:00 jak w Google Calendar (pełna doba)
+const HOURS = Array.from({ length: 24 }, (_, i) => {
+  return `${String(i).padStart(2, "0")}:00`;
 });
 
-// Godziny wyświetlane w kalendarzu (06:00-22:00)
-const HOURS_DISPLAYED = HOURS.slice(0, 17); // Wszystkie oprócz 23:00
+// Godziny wyświetlane w kalendarzu (0:00-23:00)
+const HOURS_DISPLAYED = HOURS;
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -257,8 +258,8 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
     const currentHour = currentTime.hours;
     const currentMinute = currentTime.minutes;
     
-    // Sprawdź czy aktualna godzina jest w zakresie 06:00-22:00
-    if (currentHour < 6 || currentHour > 22) return null;
+    // Sprawdź czy aktualna godzina jest w zakresie 0:00-23:00
+    if (currentHour < 0 || currentHour > 23) return null;
 
     // Znajdź najbliższą rezerwację w ciągu następnych 2 godzin
     const upcomingBookings = bookings.filter(booking => {
@@ -287,8 +288,8 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
 
     const bookingTimePart = nearestBooking.time.split(" - ")[0];
     const [bookingHour, bookingMinute] = bookingTimePart.split(":").map(Number);
-    const hourIndex = bookingHour - 6;
-    const cellHeight = 100;
+    const hourIndex = bookingHour;
+    const cellHeight = 60; // zgodne z wysokością wiersza w widoku tygodnia
     const positionFromTop = (hourIndex * cellHeight) + (bookingMinute / 60) * cellHeight;
 
     const todayIndex = weekDays.indexOf(todayDate);
@@ -331,11 +332,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
   };
 
   const getBooking = (date, time) => {
-    const result = bookings.find((b) => b.date === date && b.time === time);
-    if (time === "22:00") {
-      console.log("getBooking for 22:00, date:", date, "bookings:", bookings, "result:", result);
-    }
-    return result;
+    return bookings.find((b) => b.date === date && b.time === time);
   };
 
   // Funkcja do sprawdzania, czy w danej komórce jest wydarzenie
@@ -1227,7 +1224,12 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
           overflow: "visible",
         }}
       >
-        {/* Przycisk Wróć po lewej */}
+        {/* Kalendarz — etykieta i przycisk Wróć */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", fontWeight: 600, color: themeData.text }}>
+            <IconCalendar w={18} h={18} color={themeData.accent} />
+            <span className="mobile-hidden">Kalendarz</span>
+          </div>
       <button
         onClick={() => navigate("/")}
         style={{
@@ -1267,6 +1269,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
       >
           ← Wróć
       </button>
+        </div>
 
         {/* Centrum z datą i strzałkami */}
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -1761,9 +1764,6 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                     return dateA - dateB;
                   })
                   .map((booking) => {
-                    const bookingDate = new Date(booking.date + "T00:00:00");
-                    const day = bookingDate.getDate();
-                    const month = bookingDate.getMonth() + 1;
                     return (
                       <div
                         key={booking.id}
@@ -1800,7 +1800,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                           textTransform: "uppercase",
                           letterSpacing: "0.5px",
                         }}>
-                          {day}.{String(month).padStart(2, "0")}
+                          {new Date(booking.date + "T12:00:00").getDate()}
                         </div>
                         <div style={{ 
                           fontSize: "0.8rem", 
@@ -1908,7 +1908,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
               fontWeight: 700,
               color: themeData.text,
             }}>
-              {formatDayName(selectedDate).dayName}, {formatDayName(selectedDate).dayNum}.{formatDayName(selectedDate).month}
+              {formatDayName(selectedDate).dayName}, {formatDayName(selectedDate).dayNum}
             </div>
           </div>
         )}
@@ -1936,7 +1936,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
             background: themeData.surface,
           }}></div>
           {weekDays.map((day) => {
-            const { dayName, dayNum, month } = formatDayName(day);
+            const { dayName, dayNum } = formatDayName(day);
             const isToday = day === todayISO();
             const dayBookings = bookings.filter(b => b.date === day);
             const hasBookings = dayBookings.length > 0;
@@ -1997,7 +1997,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                   color: isToday ? "#fff" : themeData.text,
                   marginBottom: hasBookings ? "2px" : "0",
                 }}>
-                  {dayNum}.{month}
+                  {dayNum}
                 </div>
                 {hasBookings && (
                   <div style={{
@@ -2235,6 +2235,9 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                   const isCurrentHour = currentHour === timeHour && isToday;
                   const isEvenHour = hourIndex % 2 === 0;
                   const isDragOver = dragOverCell?.date === day && dragOverCell?.time === time;
+                  const booking = hasBooking ? cellBookings[0] : null;
+                  const lead = booking?.leadId ? leads?.find((l) => l.id === booking.leadId) : null;
+                  const displayName = lead?.name || booking?.name || booking?.description || "Wydarzenie";
           return (
             <div
               key={time}
@@ -2309,7 +2312,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                           draggable="true"
                           onDragStart={(e) => {
                             e.stopPropagation();
-                            handleBookingDragStart(e, cellBookings[0]);
+                            handleBookingDragStart(e, booking);
                           }}
                           onDragEnd={(e) => {
                             e.stopPropagation();
@@ -2317,36 +2320,36 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedBooking(cellBookings[0]);
+                            setSelectedBooking(booking);
                           }}
                 style={{
                             position: "absolute",
-                            top: "50%",
-                            left: "50%",
-                            transform: "translate(-50%, -50%)",
-                            width: "calc(100% - 16px)",
-                            background: highlightedBookingId === cellBookings[0].id 
+                            top: "4px",
+                            left: "4px",
+                            right: "4px",
+                            bottom: "4px",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "2px",
+                            background: highlightedBookingId === booking.id 
                               ? (theme === 'night' 
                                 ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
                                 : `linear-gradient(135deg, ${themeData.success} 0%, ${themeData.successDark} 100%)`)
                               : `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`,
-                            border: highlightedBookingId === cellBookings[0].id
+                            border: highlightedBookingId === booking.id
                               ? (theme === 'night' ? "2px solid #eab308" : `2px solid ${themeData.success}`)
                               : `2px solid ${themeData.accent}`,
-                            borderRadius: "4px",
-                            padding: "3px 6px",
-                  fontSize: "0.65rem",
+                            borderRadius: "6px",
+                            padding: "4px 6px",
                             color: "#fff",
-                            fontWeight: 600,
-                            cursor: draggedBooking?.id === cellBookings[0].id ? "grabbing" : "grab",
-                            zIndex: draggedBooking?.id === cellBookings[0].id ? 100 : 2,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            textAlign: "center",
+                            cursor: draggedBooking?.id === booking.id ? "grabbing" : "grab",
+                            zIndex: draggedBooking?.id === booking.id ? 100 : 2,
+                            minHeight: 0,
                             transition: "all 0.3s ease",
-                            opacity: draggedBooking?.id === cellBookings[0].id ? 0.3 : 1,
-                            boxShadow: highlightedBookingId === cellBookings[0].id
+                            opacity: draggedBooking?.id === booking.id ? 0.3 : 1,
+                            boxShadow: highlightedBookingId === booking.id
                               ? (theme === 'night'
                                 ? "0 0 15px rgba(234, 179, 8, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4)"
                                 : `0 0 15px ${themeData.successGlow}, 0 2px 8px ${themeData.shadow}`)
@@ -2354,9 +2357,9 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                           }}
                           onMouseDown={(e) => e.stopPropagation()}
                           onMouseEnter={(e) => {
-                            if (draggedBooking?.id !== cellBookings[0].id) {
-                              e.currentTarget.style.transform = "translate(-50%, -50%) translateY(-1px) scale(1.01)";
-                              e.currentTarget.style.boxShadow = highlightedBookingId === cellBookings[0].id
+                            if (draggedBooking?.id !== booking.id) {
+                              e.currentTarget.style.transform = "translateY(-1px) scale(1.02)";
+                              e.currentTarget.style.boxShadow = highlightedBookingId === booking.id
                                 ? (theme === 'night'
                                   ? "0 0 20px rgba(234, 179, 8, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4)"
                                   : `0 0 20px ${themeData.successGlow}, 0 4px 12px ${themeData.shadow}`)
@@ -2364,9 +2367,9 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                             }
                           }}
                           onMouseLeave={(e) => {
-                            if (draggedBooking?.id !== cellBookings[0].id) {
-                              e.currentTarget.style.transform = "translate(-50%, -50%)";
-                              e.currentTarget.style.boxShadow = highlightedBookingId === cellBookings[0].id
+                            if (draggedBooking?.id !== booking.id) {
+                              e.currentTarget.style.transform = "none";
+                              e.currentTarget.style.boxShadow = highlightedBookingId === booking.id
                                 ? (theme === 'night'
                                   ? "0 0 15px rgba(234, 179, 8, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4)"
                                   : `0 0 15px ${themeData.successGlow}, 0 2px 8px ${themeData.shadow}`)
@@ -2374,10 +2377,8 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                             }
                           }}
                         >
-                          <div style={{ display: "flex", alignItems: "center", gap: "3px", justifyContent: "center", flexWrap: "wrap" }}>
-                            <span style={{ fontSize: "0.7rem" }}>👤</span>
-                            <span>{cellBookings[0].time} - {cellBookings[0].name || cellBookings[0].description || "Wydarzenie"}</span>
-              </div>
+                          <span style={{ fontSize: "0.9rem", lineHeight: 1.1, opacity: 0.95 }}>👤</span>
+                          <span style={{ fontSize: "0.72rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%", lineHeight: 1.2 }}>{displayName}</span>
               </div>
                       )}
             </div>
@@ -2498,7 +2499,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                         e.currentTarget.style.boxShadow = `0 0 0 3px ${themeData.glow}`;
                       }}
                     >
-                      {editedBooking.date || "Wybierz datę"}
+                      {editedBooking.date ? formatDateDDMMRR(editedBooking.date) : "Wybierz datę"}
                     </div>
                     {showDatePickerInEdit && (
                       <div
@@ -2939,11 +2940,8 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                           <div style={{ display: "grid", gridTemplateColumns: editMode ? "repeat(3, 1fr)" : "repeat(4, 1fr)", gap: editMode ? "6px" : "8px" }}>
                             {(() => {
                               const times = [];
-                              for (let hour = 6; hour <= 23; hour++) {
-                                for (const minute of [0, 30]) {
-                                  const timeString = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-                                  times.push(timeString);
-                                }
+                              for (let hour = 0; hour <= 23; hour++) {
+                                times.push(`${String(hour).padStart(2, "0")}:00`);
                               }
                               return times.map((timeString) => {
                                 const isSelected = editedBooking.timeFrom === timeString;
@@ -3787,15 +3785,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                   }}
                 >
                   <span style={{ flex: 1, textAlign: "left" }}>
-                    {newEventData.date 
-                      ? (() => {
-                          const date = new Date(newEventData.date + "T00:00:00");
-                          const day = String(date.getDate()).padStart(2, "0");
-                          const month = String(date.getMonth() + 1).padStart(2, "0");
-                          const year = date.getFullYear();
-                          return `${day}-${month}-${year}`;
-                        })()
-                      : "Brak daty"}
+                    {newEventData.date ? formatDateDDMMRR(newEventData.date) : "Brak daty"}
                   </span>
                   <span style={{ marginLeft: 8, flexShrink: 0 }}>📅</span>
                 </div>

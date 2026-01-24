@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTheme } from "./ThemeContext.jsx";
+import { IconStats } from "./Icons.jsx";
 
 function StatisticsPage({ leads, bookings }) {
   const { themeData } = useTheme();
@@ -150,9 +151,13 @@ function StatisticsPage({ leads, bookings }) {
             fontWeight: 700,
             margin: 0,
             color: themeData.text,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
           }}
         >
-          📊 Statystyki
+          <IconStats w={24} h={24} color={themeData.accent} />
+          Statystyki
         </h1>
 
         {/* Przełącznik widoku */}

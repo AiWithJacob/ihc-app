@@ -88,6 +88,8 @@ function ChiropractorSelection({ onSelect, currentChiropractor, currentImage }) 
           boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
           position: "relative",
           opacity: isAnimating ? 1 : 0,
+          borderTop: "3px solid rgba(37, 99, 235, 0.8)",
+          fontFamily: "'Space Grotesk', system-ui, sans-serif",
           transform: isAnimating ? "translateY(0) scale(1)" : "translateY(30px) scale(0.95)",
           transition: "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}

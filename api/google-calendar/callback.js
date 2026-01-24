@@ -113,6 +113,9 @@ export default async function handler(req, res) {
               Google Calendar został połączony z Twoją aplikacją.<br>
               Możesz teraz zamknąć to okno.
             </p>
+            <p style="font-size: 14px; margin: 0 0 20px 0; opacity: 0.85; max-width: 420px; margin-left: auto; margin-right: auto;">
+              💡 <strong>Godziny się nie zgadzają?</strong> Ustaw w Google Calendar (⚙️ Ustawienia → Strefa czasowa) strefę <strong>Europe/Warsaw (Warszawa)</strong>.
+            </p>
             <a href="/" style="display: inline-block; padding: 12px 24px; background: white; color: #667eea; text-decoration: none; border-radius: 8px; font-weight: 600; transition: transform 0.2s;" 
                onmouseover="this.style.transform='scale(1.05)'" 
                onmouseout="this.style.transform='scale(1)'">

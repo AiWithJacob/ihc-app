@@ -5,20 +5,9 @@ function GoodbyeAnimation({ onComplete }) {
   const [opacity, setOpacity] = useState(0);
 
   useEffect(() => {
-    // Opóźnienie przed pojawieniem się
-    const timer1 = setTimeout(() => {
-      setOpacity(1);
-    }, 200);
-
-    // Animacja powiększania
-    const timer2 = setTimeout(() => {
-      setScale(1);
-    }, 400);
-
-    // Zakończenie animacji po 2.5 sekundy
-    const timer3 = setTimeout(() => {
-      onComplete();
-    }, 2500);
+    const timer1 = setTimeout(() => setOpacity(1), 0);
+    const timer2 = setTimeout(() => setScale(1), 80);
+    const timer3 = setTimeout(() => onComplete(), 1000);
 
     return () => {
       clearTimeout(timer1);
@@ -41,7 +30,7 @@ function GoodbyeAnimation({ onComplete }) {
         justifyContent: "center",
         zIndex: 10000,
         opacity: opacity,
-        transition: "opacity 0.5s ease-in",
+        transition: "opacity 0.2s ease-out",
         overflow: "visible",
         padding: "40px",
       }}
@@ -62,7 +51,7 @@ function GoodbyeAnimation({ onComplete }) {
         style={{
           textAlign: "center",
           transform: `scale(${scale})`,
-          transition: "transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          transition: "transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
           position: "relative",
           zIndex: 1,
           overflow: "visible",
@@ -80,7 +69,7 @@ function GoodbyeAnimation({ onComplete }) {
             marginBottom: "20px",
             textShadow: "0 0 40px rgba(255, 255, 255, 0.5), 0 2px 10px rgba(0, 0, 0, 0.3)",
             letterSpacing: "0px",
-            fontFamily: "'Segoe UI', 'Arial Black', 'Helvetica Neue', sans-serif",
+            fontFamily: "'Space Grotesk', system-ui, sans-serif",
             overflow: "visible",
             wordWrap: "break-word",
             lineHeight: "1.3",

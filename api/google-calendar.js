@@ -100,6 +100,81 @@ async function getRefreshTokenForChiropractor(chiropractor) {
   throw new Error(`No Google Calendar refresh token found for chiropractor: ${chiropractor}`);
 }
 
+// Klient Calendar API dla chiropraktyka (do sync i watch)
+async function getCalendarClient(chiropractor) {
+  const { refreshToken, calendarId } = await getRefreshTokenForChiropractor(chiropractor);
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI ||
+    'https://ihc-app.vercel.app/api/google-calendar/callback';
+  if (!clientId || !clientSecret) throw new Error('Google OAuth credentials not configured');
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+  return { calendar, calendarId };
+}
+
+// Synchronizacja: usuń z bazy wizyty, których wydarzenia już nie ma w Google Calendar
+async function syncOneChiropractor(chiropractor) {
+  const { calendar, calendarId } = await getCalendarClient(chiropractor);
+  const timeMin = new Date();
+  timeMin.setDate(timeMin.getDate() - 60);
+  const timeMax = new Date();
+  timeMax.setDate(timeMax.getDate() + 400);
+  const dMin = timeMin.toISOString().slice(0, 10);
+  const dMax = timeMax.toISOString().slice(0, 10);
+
+  const googleEventIds = new Set();
+  let pageToken;
+  do {
+    const res = await calendar.events.list({
+      calendarId,
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+      singleEvents: true,
+      pageToken
+    });
+    (res.data.items || []).forEach((ev) => { if (ev.id) googleEventIds.add(ev.id); });
+    pageToken = res.data.nextPageToken;
+  } while (pageToken);
+
+  const { data: bookings, error: fetchErr } = await supabase
+    .from('bookings')
+    .select('id, google_calendar_event_id')
+    .eq('chiropractor', chiropractor)
+    .not('google_calendar_event_id', 'is', null)
+    .gte('date', dMin)
+    .lte('date', dMax);
+
+  if (fetchErr || !bookings || bookings.length === 0) return;
+  const toDelete = bookings.filter((b) => !googleEventIds.has(b.google_calendar_event_id));
+  if (toDelete.length === 0) return;
+
+  const ids = toDelete.map((b) => b.id);
+  const { error: delErr } = await supabase.from('bookings').delete().in('id', ids);
+  if (delErr) {
+    console.error(`❌ sync-deleted: błąd usuwania bookingów dla ${chiropractor}:`, delErr);
+    return;
+  }
+  console.log(`✅ sync-deleted: usunięto ${toDelete.length} wizyt z bazy (usunięte w Google) dla ${chiropractor}`);
+}
+
+// Dla wszystkich chiropractorów z tokenem: usuń z bazy wizyty usunięte w Google
+export async function syncDeletedFromGoogle() {
+  if (!supabase) return;
+  const { data: rows, error } = await supabase
+    .from('google_calendar_tokens')
+    .select('chiropractor');
+  if (error || !rows || rows.length === 0) return;
+  for (const { chiropractor } of rows) {
+    try {
+      await syncOneChiropractor(chiropractor);
+    } catch (e) {
+      console.warn(`⚠️ sync-deleted: pomijam ${chiropractor}:`, e?.message || e);
+    }
+  }
+}
+
 // Funkcja pomocnicza do sprawdzania czy jest czas letni (DST) w Europe/Warsaw
 // Przyjmuje year, month (1-12), day
 function isDaylightSavingTime(year, month, day) {
@@ -134,28 +209,17 @@ function getLastSunday(year, month) {
   return lastDay;
 }
 
-// Funkcja pomocnicza do formatowania daty i czasu w timezone Europe/Warsaw
+// (year, month 1-12, day, hour, minute) = czas lokalny Europe/Warsaw
+// Zwraca RFC3339 z jawnym offsetem: "YYYY-MM-DDTHH:mm:ss+01:00" lub "+02:00"
+// Dzięki temu Google interpretuje dokładnie tę godzinę w Warszawie – bez konwersji UTC po naszej stronie
 function formatDateTimeForWarsaw(year, month, day, hour, minute) {
-  // Format: YYYY-MM-DDTHH:MM:SS+HH:MM (RFC3339)
-  // Używamy offsetu dla Europe/Warsaw (UTC+1 zimowy, UTC+2 letni)
-  const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
-  
-  // Sprawdź czy jest czas letni (DST) dla Europe/Warsaw
-  // Przekazujemy year, month (1-12), day bezpośrednio
   const isDST = isDaylightSavingTime(year, month, day);
-  
-  // Offset dla Europe/Warsaw
-  // Czas zimowy: UTC+1 (+01:00)
-  // Czas letni: UTC+2 (+02:00)
   const offset = isDST ? '+02:00' : '+01:00';
-  
-  // Zwróć czas lokalny z offsetem
-  // WAŻNE: Podajemy czas jako lokalny czas w Europe/Warsaw (np. 9:00)
-  // z odpowiednim offsetem (+01:00 lub +02:00)
-  // Google Calendar zrozumie to jako: "9:00 w strefie czasowej Europe/Warsaw"
-  // Dodatkowo mamy timeZone: 'Europe/Warsaw' w obiekcie event, co potwierdza timezone
-  return `${dateStr}T${timeStr}${offset}`;
+  const d = String(day).padStart(2, '0');
+  const m = String(month).padStart(2, '0');
+  const h = String(hour).padStart(2, '0');
+  const min = String(minute ?? 0).padStart(2, '0');
+  return `${year}-${m}-${d}T${h}:${min}:00${offset}`;
 }
 
 // Utwórz wydarzenie w Google Calendar
@@ -210,15 +274,19 @@ export async function createCalendarEvent(booking, chiropractor) {
     // Utwórz klienta Google Calendar z OAuth2 client
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-    // Przygotuj datę i czas
+    // Przygotuj datę i czas (fallback: time / "HH:MM - HH:MM")
     const dateStr = booking.date; // Format: YYYY-MM-DD
-    const timeFrom = booking.time_from || booking.timeFrom; // Format: HH:MM
-    const timeTo = booking.time_to || booking.timeTo || timeFrom; // Format: HH:MM
+    const timeFrom = booking.time_from || booking.timeFrom || (booking.time && booking.time.split(' - ')[0]) || '';
+    const timeTo = booking.time_to || booking.timeTo || (booking.time && booking.time.split(' - ')[1]) || timeFrom;
+
+    if (!timeFrom || !dateStr) {
+      throw new Error('Brak wymaganych pól: date i time_from (lub time) do utworzenia wydarzenia w Google Calendar.');
+    }
 
     // Parsuj datę i czas
     const [year, month, day] = dateStr.split('-').map(Number);
     const [fromHour, fromMinute] = timeFrom.split(':').map(Number);
-    const [toHour, toMinute] = timeTo.split(':').map(Number);
+    const [toHour, toMinute] = (timeTo || timeFrom).split(':').map(Number);
 
     // Formatuj datę i czas w timezone Europe/Warsaw
     const startDateTimeStr = formatDateTimeForWarsaw(year, month, day, fromHour, fromMinute);
@@ -306,14 +374,18 @@ export async function updateCalendarEvent(eventId, booking, chiropractor) {
     // Utwórz klienta Google Calendar z OAuth2 client
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-    // Przygotuj datę i czas
+    // Przygotuj datę i czas (fallback: time / "HH:MM - HH:MM")
     const dateStr = booking.date;
-    const timeFrom = booking.time_from || booking.timeFrom;
-    const timeTo = booking.time_to || booking.timeTo || timeFrom;
+    const timeFrom = booking.time_from || booking.timeFrom || (booking.time && booking.time.split(' - ')[0]) || '';
+    const timeTo = booking.time_to || booking.timeTo || (booking.time && booking.time.split(' - ')[1]) || timeFrom;
+
+    if (!timeFrom || !dateStr) {
+      throw new Error('Brak wymaganych pól: date i time_from (lub time) do aktualizacji wydarzenia w Google Calendar.');
+    }
 
     const [year, month, day] = dateStr.split('-').map(Number);
     const [fromHour, fromMinute] = timeFrom.split(':').map(Number);
-    const [toHour, toMinute] = timeTo.split(':').map(Number);
+    const [toHour, toMinute] = (timeTo || timeFrom).split(':').map(Number);
 
     // Formatuj datę i czas w timezone Europe/Warsaw
     const startDateTimeStr = formatDateTimeForWarsaw(year, month, day, fromHour, fromMinute);
