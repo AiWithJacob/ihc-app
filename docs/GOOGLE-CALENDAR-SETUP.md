@@ -304,12 +304,12 @@ Po wykonaniu wszystkich kroków:
 
 ## Synchronizacja: usunięcie w Google → usunięcie w systemie
 
-Gdy usuniesz wizytę **w Google Calendar**, odpowiadająca jej wizyta w kalendarzu aplikacji zostanie usunięta w ciągu **ok. 15 minut**.
+Gdy usuniesz wizytę **w Google Calendar**, odpowiadająca jej wizyta w kalendarzu aplikacji zostanie usunięta **raz na dobę** (cron o 4:00 UTC).
 
-- Działa **automatycznie**: crona co 15 min wywołuje `/api/google-calendar/sync-deleted`.
+- Działa **automatycznie**: crona raz dziennie wywołuje `/api/google-calendar/sync-deleted` (harmonogram: `0 4 * * *` w `vercel.json`).
+- **Plan Hobby:** Vercel zezwala tylko na crona 1×/dobę. Na planie **Pro** możesz zmienić w `vercel.json` na `*/15 * * * *`, żeby sync co 15 min.
 - Aby zobaczyć zmianę w aplikacji: **odśwież kalendarz** (F5 lub przejdź na inną zakładkę i wróć).
-- Cron jest w `vercel.json`; na planie Hobby crona może wymagać konfiguracji w Vercel Dashboard (Cron Jobs).
-- Opcjonalnie: ustaw `CRON_SECRET` w Vercel, żeby chronić endpoint (cron w Vercelu wyśle ten nagłówek).
+- Opcjonalnie: ustaw `CRON_SECRET` w Vercel, żeby chronić endpoint.
 
 ---
 

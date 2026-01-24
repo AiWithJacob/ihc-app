@@ -1,5 +1,5 @@
 // Sync: usuń z bazy wizyty, które zostały usunięte w Google Calendar
-// Wywoływane przez crona co 15 min lub ręcznie (GET)
+// Wywoływane przez crona raz dziennie (0 4 * * *) lub ręcznie GET (Hobby: 1×/dobę; Pro: można */15)
 
 import { syncDeletedFromGoogle } from '../google-calendar.js';
 
