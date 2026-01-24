@@ -29,10 +29,9 @@ function LoginPage({ onLogin }) {
     }
   }, []);
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    
-    // Sprawdź czy użytkownik już istnieje
+
     const existingUser = registeredUsers.find(
       (u) => u.email === formData.email || u.login === formData.login
     );
@@ -41,23 +40,49 @@ function LoginPage({ onLogin }) {
       return;
     }
 
-    // Zapisanie danych użytkownika (bez chiropraktyka)
-    const userData = {
-      ...formData,
-      id: Date.now(),
-      isLoggedIn: true,
-      chiropractor: null, // Będzie wybrany później
-    };
+    const API_URL = import.meta.env.VITE_API_URL ||
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? "https://ihc-app.vercel.app"
+        : window.location.origin);
 
-    // Zapisz do listy zarejestrowanych użytkowników
+    let userData;
+    try {
+      const r = await fetch(`${API_URL}/api/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          login: formData.login.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.id != null) {
+        userData = {
+          id: data.id,
+          login: formData.login.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+          isLoggedIn: true,
+          chiropractor: null,
+        };
+      } else {
+        if (r.status === 409) {
+          alert("Użytkownik o tym loginie lub emailu już istnieje w systemie.");
+          return;
+        }
+        alert(data?.error || "Serwer niedostępny. Spróbuj później.");
+        return;
+      }
+    } catch (err) {
+      alert("Błąd połączenia. Serwer może być niedostępny.");
+      return;
+    }
+
     const updatedUsers = [...registeredUsers, userData];
     localStorage.setItem("registeredUsers", JSON.stringify(updatedUsers));
     setRegisteredUsers(updatedUsers);
-    
-    // Zapisanie aktualnego użytkownika
     localStorage.setItem("user", JSON.stringify(userData));
-    
-    // Przejście do wyboru chiropraktyka
     onLogin(userData);
   };
 
@@ -75,13 +100,19 @@ function LoginPage({ onLogin }) {
       return;
     }
 
-    // Przywróć pełne dane użytkownika
-    const userData = {
-      ...selectedUser,
-      isLoggedIn: true,
-    };
+    const userData = { ...selectedUser, isLoggedIn: true };
     localStorage.setItem("user", JSON.stringify(userData));
     onLogin(userData);
+
+    const API_URL = import.meta.env.VITE_API_URL ||
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? "https://ihc-app.vercel.app"
+        : window.location.origin);
+    fetch(`${API_URL}/api/user-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ login: selectedUser.login }),
+    }).catch(() => {});
   };
 
   const handleDeleteUser = () => {

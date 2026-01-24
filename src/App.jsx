@@ -123,6 +123,25 @@ export default function App() {
     }
   }, [user?.chiropractor]);
 
+  // Heartbeat: last_seen_at (co 2 min) – do panelu „Kto pracuje”
+  useEffect(() => {
+    if (!user?.login) return;
+    const API_URL = import.meta.env.VITE_API_URL ||
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? "https://ihc-app.vercel.app"
+        : window.location.origin);
+    const tick = () => {
+      fetch(`${API_URL}/api/user-heartbeat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ login: user.login }),
+      }).catch(() => {});
+    };
+    tick();
+    const id = setInterval(tick, 2 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [user?.login]);
+
   // Synchronizacja leadów z Supabase
   // Pobiera leady z bazy danych i synchronizuje z localStorage
   useEffect(() => {

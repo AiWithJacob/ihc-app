@@ -3,7 +3,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!api/).*)",
+      "source": "/(?!api/)(?!audit-log-diagnostics\\.html$).*",
       "destination": "/index.html"
     }
   ],

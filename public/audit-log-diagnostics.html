@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel administracyjny – Super Chiro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: #13131a;
+            --border: #2a2a3a;
+            --muted: #6b7280;
+            --text: #f0f0f5;
+            --accent: #06b6d4;
+            --accent-hover: #22d3ee;
+            --danger: #f43f5e;
+            --success: #10b981;
+            --radius: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'DM Sans', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.55;
+            min-height: 100vh;
+        }
+        .app {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 28px 24px;
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+        h1 .accent { color: var(--accent); }
+        .top sub { font-size: 0.72em; color: var(--muted); font-weight: 400; }
+
+        .config {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            display: grid;
+            grid-template-columns: 1fr 1fr minmax(140px, auto) auto auto;
+            gap: 14px;
+            align-items: end;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+        }
+        @media (max-width: 900px) {
+            .config { grid-template-columns: 1fr 1fr 1fr; }
+        }
+        @media (max-width: 600px) {
+            .config { grid-template-columns: 1fr; }
+        }
+        .config label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+        .config input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+        .config input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background .2s, transform .1s;
+            font-family: inherit;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-prim {
+            background: var(--accent);
+            color: #0a0a0f;
+        }
+        .btn-prim:hover { background: var(--accent-hover); color: #0a0a0f; }
+        .btn-sec {
+            background: var(--border);
+            color: var(--text);
+        }
+        .btn-sec:hover { background: #333; }
+        .btn-danger {
+            background: rgba(239,68,68,0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+        .btn-danger:hover { background: rgba(239,68,68,0.25); }
+        .btn-ghost {
+            background: transparent;
+            color: var(--muted);
+            padding: 6px 10px;
+            font-size: 0.85rem;
+        }
+        .btn-ghost:hover { color: var(--text); }
+        #connectionStatus { grid-column: 1 / -1; font-size: 0.9rem; }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 11px 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: all .2s;
+        }
+        .tab:hover { color: var(--text); border-color: #3f3f50; background: #1a1a24; }
+        .tab.active {
+            background: var(--accent);
+            color: #0a0a0f;
+            border-color: var(--accent);
+        }
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .sec {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 22px;
+            border-left: 3px solid var(--accent);
+            box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+        }
+        .sec-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .sec-head h2 { font-size: 1.2rem; color: var(--text); font-weight: 600; letter-spacing: -0.01em; }
+        .bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .filters input, .filters select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.85rem;
+            min-width: 120px;
+        }
+
+        /* Tabela */
+        .tbl-wrap {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th {
+            padding: 14px 16px;
+            text-align: left;
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            background: rgba(0,0,0,0.2);
+        }
+        td {
+            padding: 13px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: rgba(255,255,255,0.03); }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .badge-i { background: rgba(34,197,94,0.2); color: #22c55e; }
+        .badge-u { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .badge-d { background: rgba(239,68,68,0.2); color: #ef4444; }
+        .badge-t { background: rgba(139,92,246,0.2); color: #a78bfa; }
+        .badge-reg { background: rgba(236,72,153,0.2); color: #ec4899; }
+        .cell-actions { display: flex; gap: 6px; }
+        .cell-actions .btn { padding: 6px 10px; font-size: 0.8rem; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 14px;
+        }
+        .stat {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+        .stat:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(6,182,212,0.08); }
+        .stat .l { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+        .stat .v { font-size: 1.9rem; font-weight: 700; color: var(--accent); letter-spacing: -0.02em; }
+
+        /* Komunikaty */
+        .msg {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin: 10px 0;
+        }
+        .msg.ok { background: rgba(34,197,94,0.1); border: 1px solid #22c55e; color: #22c55e; }
+        .msg.err { background: rgba(239,68,68,0.1); border: 1px solid #ef4444; color: #ef4444; }
+        .msg.warn { background: rgba(251,191,36,0.1); border: 1px solid #fbbf24; color: #fbbf24; }
+        .msg.info { background: rgba(59,130,246,0.1); border: 1px solid #3b82f6; color: #3b82f6; }
+        .loading { text-align: center; padding: 32px; color: var(--muted); }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal.on { display: flex; }
+        .modal-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            max-width: 480px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-head h3 { font-size: 1.1rem; }
+        .modal-body { padding: 20px; }
+        .modal-body label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+        .modal-body input, .modal-body select, .modal-body textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.95rem;
+            margin-bottom: 14px;
+        }
+        .modal-body textarea { min-height: 70px; resize: vertical; }
+        .modal-foot {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1.4rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+        }
+        .close-btn:hover { color: var(--text); }
+        pre {
+            background: var(--bg);
+            padding: 14px;
+            border-radius: 8px;
+            overflow: auto;
+            font-size: 0.8rem;
+            border: 1px solid var(--border);
+            max-height: 320px;
+        }
+
+        /* Dropdown chiropraktyk */
+        .chiro-wrap { position: relative; }
+        .chiro-drop {
+            position: absolute;
+            top: 100%; left: 0; right: 0;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 50;
+            display: none;
+        }
+        .chiro-drop.on { display: block; }
+        .chiro-opt {
+            padding: 10px 14px;
+            cursor: pointer;
+        }
+        .chiro-opt:hover { background: #1f1f1f; }
+        .chiro-opt.sel { background: rgba(20,184,166,0.15); color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="top">
+            <h1><span class="accent">Panel</span> administracyjny <sub>– Super Chiro</sub></h1>
+        </div>
+
+        <!-- Konfiguracja -->
+        <div class="config">
+            <div>
+                <label>Supabase URL</label>
+                <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
+            </div>
+            <div>
+                <label>Anon Key</label>
+                <input type="password" id="supabaseKey" placeholder="eyJ...">
+            </div>
+            <div class="chiro-wrap">
+                <label>Chiropraktyk</label>
+                <input type="text" id="chiropractor" placeholder="Wpisz lub wybierz" autocomplete="off">
+                <div class="chiro-drop" id="chiroDrop"></div>
+            </div>
+            <div>
+                <button class="btn btn-sec" onclick="loadChiropractors()" style="width:100%;">Wykryj</button>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-prim" onclick="connect()">Połącz</button>
+                <button class="btn btn-sec" onclick="saveConfig()">Zapisz</button>
+            </div>
+            <div id="connectionStatus"></div>
+        </div>
+
+        <div id="main" style="display:none;">
+            <div class="tabs">
+                <button class="tab active" data-tab="overview">Przegląd</button>
+                <button class="tab" data-tab="accounts">Konta</button>
+                <button class="tab" data-tab="active">Kto pracuje</button>
+                <button class="tab" data-tab="leads">Leady</button>
+                <button class="tab" data-tab="bookings">Rezerwacje</button>
+                <button class="tab" data-tab="logs">Historia</button>
+                <button class="tab" data-tab="diag">Diagnostyka</button>
+            </div>
+
+            <div class="filter-bar" style="margin-bottom:20px;padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                <span style="color:var(--muted);font-size:0.9rem;font-weight:500;">Filtr użytkownika:</span>
+                <select id="userFilterSelect" style="padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:0.9rem;min-width:200px;">
+                    <option value="">— Wszyscy —</option>
+                </select>
+                <button class="btn btn-ghost" onclick="clearUserFilter()">Wyczyść</button>
+            </div>
+
+            <!-- Przegląd -->
+            <div id="panel-overview" class="panel active">
+                <div class="sec">
+                    <div class="sec-head">
+                        <h2>Statystyki</h2>
+                        <button class="btn btn-sec" onclick="refreshStats()">Odśwież</button>
+                    </div>
+                    <div class="stats" id="statsGrid"></div>
+                </div>
+            </div>
+
+            <!-- Leady -->
+            <div id="panel-leads" class="panel">
+                <div class="sec">
+                    <div class="sec-head">
+                        <h2>Leady</h2>
+                        <div class="bar">
+                            <button class="btn btn-prim" onclick="openAddLead()">+ Dodaj lead</button>
+                            <button class="btn btn-sec" onclick="loadLeads()">Załaduj</button>
+                            <button class="btn btn-sec" onclick="exportCSV('leads')">CSV</button>
+                            <button class="btn btn-sec" onclick="exportJSON('leads')">JSON</button>
+                        </div>
+                    </div>
+                    <div class="filters">
+                        <input type="text" id="leadNameFilter" placeholder="Imię">
+                        <input type="text" id="leadPhoneFilter" placeholder="Telefon">
+                        <select id="leadStatusFilter">
+                            <option value="">Wszystkie statusy</option>
+                            <option value="Nowy kontakt">Nowy kontakt</option>
+                            <option value="Umówiony">Umówiony</option>
+                            <option value="Nie odebrał">Nie odebrał</option>
+                        </select>
+                    </div>
+                    <div id="leadsList"></div>
+                </div>
+            </div>
+
+            <!-- Rezerwacje -->
+            <div id="panel-bookings" class="panel">
+                <div class="sec">
+                    <div class="sec-head">
+                        <h2>Rezerwacje</h2>
+                        <div class="bar">
+                            <button class="btn btn-prim" onclick="openAddBooking()">+ Dodaj rezerwację</button>
+                            <button class="btn btn-sec" onclick="loadBookings()">Załaduj</button>
+                            <button class="btn btn-sec" onclick="exportCSV('bookings')">CSV</button>
+                            <button class="btn btn-sec" onclick="exportJSON('bookings')">JSON</button>
+                        </div>
+                    </div>
+                    <div class="filters">
+                        <input type="date" id="bookingDateFrom" placeholder="Od">
+                        <input type="date" id="bookingDateTo" placeholder="Do">
+                        <select id="bookingStatusFilter">
+                            <option value="">Wszystkie</option>
+                            <option value="scheduled">Zaplanowane</option>
+                            <option value="completed">Zakończone</option>
+                            <option value="cancelled">Anulowane</option>
+                        </select>
+                    </div>
+                    <div id="bookingsList"></div>
+                </div>
+            </div>
+
+            <!-- Historia (audit) -->
+            <div id="panel-logs" class="panel">
+                <div class="sec">
+                    <div class="sec-head">
+                        <h2>Historia zmian</h2>
+                        <div class="bar">
+                            <button class="btn btn-sec" onclick="loadAuditLogs()">Załaduj</button>
+                            <button class="btn btn-sec" onclick="exportCSV('audit')">CSV</button>
+                            <button class="btn btn-sec" onclick="exportJSON('audit')">JSON</button>
+                        </div>
+                    </div>
+                    <div class="filters">
+                        <select id="tableFilter">
+                            <option value="">Wszystkie tabele</option>
+                            <option value="app_users">Rejestracje (nowe konta)</option>
+                            <option value="leads">Leady</option>
+                            <option value="bookings">Rezerwacje</option>
+                            <option value="users">Użytkownicy</option>
+                        </select>
+                        <select id="actionFilter">
+                            <option value="">Wszystkie akcje</option>
+                            <option value="INSERT">Utworzenie</option>
+                            <option value="UPDATE">Modyfikacja</option>
+                            <option value="DELETE">Usunięcie</option>
+                        </select>
+                        <input type="text" id="userFilter" placeholder="Kto zmienił">
+                        <input type="number" id="limitFilter" value="100" min="1" max="500" style="width:90px;">
+                    </div>
+                    <div id="auditLogs"></div>
+                </div>
+            </div>
+
+            <!-- Konta (app_users) -->
+            <div id="panel-accounts" class="panel">
+                <div class="sec">
+                    <div class="sec-head">
+                        <h2>Konta</h2>
+                        <button class="btn btn-sec" onclick="loadAppAccounts()">Odśwież</button>
+                    </div>
+                    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px;">Rejestracje (app_users). Ostatnie logowanie i aktywność.</p>
+                    <div id="appAccountsList"></div>
+                </div>
+            </div>
+
+            <!-- Kto teraz pracuje -->
+            <div id="panel-active" class="panel">
+                <div class="sec">
+                    <div class="sec-head">
+                        <h2>Kto teraz pracuje</h2>
+                        <span style="color:var(--muted);font-size:0.85rem;">Ostatnie 5 min (last_seen)</span>
+                        <button class="btn btn-sec" onclick="loadActiveNow()">Odśwież</button>
+                    </div>
+                    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px;">Użytkownicy z aktywnością u tego chiropraktyka, którzy mieli heartbeat w ostatnich 5 minutach.</p>
+                    <div id="activeNowList"></div>
+                </div>
+            </div>
+
+            <!-- Diagnostyka -->
+            <div id="panel-diag" class="panel">
+                <div class="sec">
+                    <div class="sec-head">
+                        <h2>Diagnostyka</h2>
+                        <button class="btn btn-prim" onclick="runDiagnostics()">Uruchom</button>
+                    </div>
+                    <div id="diagnosticsResults"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: szczegóły -->
+    <div class="modal" id="modalDetails">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 id="modalTitle">Szczegóły</h3>
+                <button class="close-btn" onclick="closeModal('modalDetails')">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Dodaj lead -->
+    <div class="modal" id="modalAddLead">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>Dodaj lead</h3>
+                <button class="close-btn" onclick="closeModal('modalAddLead')">&times;</button>
+            </div>
+            <form id="formAddLead" onsubmit="return submitAddLead(event)">
+                <div class="modal-body">
+                    <label>Imię i nazwisko *</label>
+                    <input type="text" id="newLeadName" required>
+                    <label>Telefon</label>
+                    <input type="tel" id="newLeadPhone">
+                    <label>Email</label>
+                    <input type="email" id="newLeadEmail">
+                    <label>Status</label>
+                    <select id="newLeadStatus">
+                        <option value="Nowy kontakt">Nowy kontakt</option>
+                        <option value="Umówiony">Umówiony</option>
+                        <option value="Nie odebrał">Nie odebrał</option>
+                    </select>
+                    <label>Opis</label>
+                    <textarea id="newLeadDesc"></textarea>
+                    <label>Notatki</label>
+                    <textarea id="newLeadNotes"></textarea>
+                </div>
+                <div class="modal-foot">
+                    <button type="button" class="btn btn-sec" onclick="closeModal('modalAddLead')">Anuluj</button>
+                    <button type="submit" class="btn btn-prim">Dodaj</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Dodaj rezerwację -->
+    <div class="modal" id="modalAddBooking">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>Dodaj rezerwację</h3>
+                <button class="close-btn" onclick="closeModal('modalAddBooking')">&times;</button>
+            </div>
+            <form id="formAddBooking" onsubmit="return submitAddBooking(event)">
+                <div class="modal-body">
+                    <label>Nazwa *</label>
+                    <input type="text" id="newBookName" required>
+                    <label>Data *</label>
+                    <input type="date" id="newBookDate" required>
+                    <label>Godzina od *</label>
+                    <input type="time" id="newBookTimeFrom" required>
+                    <label>Godzina do</label>
+                    <input type="time" id="newBookTimeTo">
+                    <label>Status</label>
+                    <select id="newBookStatus">
+                        <option value="scheduled">Zaplanowane</option>
+                        <option value="completed">Zakończone</option>
+                        <option value="cancelled">Anulowane</option>
+                    </select>
+                    <label>Opis</label>
+                    <textarea id="newBookDesc"></textarea>
+                    <label>Notatki</label>
+                    <textarea id="newBookNotes"></textarea>
+                </div>
+                <div class="modal-foot">
+                    <button type="button" class="btn btn-sec" onclick="closeModal('modalAddBooking')">Anuluj</button>
+                    <button type="submit" class="btn btn-prim">Dodaj</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Potwierdź usunięcie -->
+    <div class="modal" id="modalConfirm">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>Usunąć?</h3>
+                <button class="close-btn" onclick="closeModal('modalConfirm')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmText">Czy na pewno chcesz usunąć ten element?</p>
+            </div>
+            <div class="modal-foot">
+                <button type="button" class="btn btn-sec" onclick="closeModal('modalConfirm')">Anuluj</button>
+                <button type="button" class="btn btn-danger" id="confirmBtn">Usuń</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let supabaseClient = null;
+        let data = { auditLogs: [], leads: [], bookings: [], userActivity: [] };
+        let chiroList = [];
+
+        // Init
+        (function() {
+            const s = localStorage.getItem('auditDiagnosticsConfig');
+            if (s) {
+                const c = JSON.parse(s);
+                document.getElementById('supabaseUrl').value = c.url || '';
+                document.getElementById('supabaseKey').value = c.key || '';
+                document.getElementById('chiropractor').value = c.chiropractor || '';
+            }
+            const p = new URLSearchParams(location.search);
+            if (p.get('url') && p.get('key')) {
+                document.getElementById('supabaseUrl').value = p.get('url');
+                document.getElementById('supabaseKey').value = p.get('key');
+                document.getElementById('chiropractor').value = p.get('chiropractor') || '';
+                setTimeout(connect, 100);
+            }
+            document.getElementById('chiropractor').addEventListener('input', filterChiro);
+            document.getElementById('chiropractor').addEventListener('focus', function() {
+                if (chiroList.length) document.getElementById('chiroDrop').classList.add('on');
+            });
+            document.querySelectorAll('.tab').forEach(t => {
+                t.addEventListener('click', function() {
+                    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+                    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+                    this.classList.add('active');
+                    const id = 'panel-' + this.dataset.tab;
+                    document.getElementById(id).classList.add('active');
+                    if (supabaseClient && this.dataset.tab === 'logs') loadAuditLogs();
+                    else if (supabaseClient && this.dataset.tab === 'leads') loadLeads();
+                    else if (supabaseClient && this.dataset.tab === 'bookings') loadBookings();
+                    else if (supabaseClient && this.dataset.tab === 'accounts') loadAppAccounts();
+                    else if (supabaseClient && this.dataset.tab === 'active') loadActiveNow();
+                });
+            });
+            document.getElementById('userFilterSelect').addEventListener('change', function() {
+                document.getElementById('userFilter').value = this.value || '';
+                if (document.getElementById('panel-logs').classList.contains('active')) loadAuditLogs();
+                if (document.getElementById('panel-bookings').classList.contains('active')) loadBookings();
+            });
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.chiro-wrap')) document.getElementById('chiroDrop').classList.remove('on');
+            });
+        })();
+
+        function chiro() { return document.getElementById('chiropractor').value; }
+        function status(id, msg, type) {
+            const el = document.getElementById(id);
+            el.innerHTML = '<div class="msg ' + (type || 'info') + '">' + msg + '</div>';
+            if (type === 'ok') setTimeout(() => { el.innerHTML = ''; }, 3000);
+        }
+
+        function saveConfig() {
+            const c = {
+                url: document.getElementById('supabaseUrl').value,
+                key: document.getElementById('supabaseKey').value,
+                chiropractor: chiro()
+            };
+            localStorage.setItem('auditDiagnosticsConfig', JSON.stringify(c));
+            status('connectionStatus', 'Zapisano.', 'ok');
+        }
+
+        async function loadChiropractors() {
+            if (!supabaseClient) { status('connectionStatus', 'Najpierw połącz.', 'warn'); return; }
+            try {
+                const [b, l] = await Promise.all([
+                    supabaseClient.from('bookings').select('chiropractor').not('chiropractor', 'is', null),
+                    supabaseClient.from('leads').select('chiropractor').not('chiropractor', 'is', null)
+                ]);
+                const set = new Set();
+                (b.data || []).forEach(x => set.add(x.chiropractor));
+                (l.data || []).forEach(x => set.add(x.chiropractor));
+                chiroList = [...set].sort();
+                const dd = document.getElementById('chiroDrop');
+                dd.innerHTML = chiroList.length
+                    ? chiroList.map(c => '<div class="chiro-opt' + (c === chiro() ? ' sel' : '') + '" onclick="pickChiro(\'' + c.replace(/'/g,"\\'") + '\')">' + c + '</div>').join('')
+                    : '<div class="chiro-opt" style="color:var(--muted)">Brak w bazie</div>';
+                status('connectionStatus', 'Znaleziono ' + chiroList.length + ' chiropraktyków.', 'ok');
+            } catch (e) { status('connectionStatus', 'Błąd: ' + e.message, 'err'); }
+        }
+
+        function filterChiro() {
+            const q = document.getElementById('chiropractor').value.toLowerCase();
+            const f = chiroList.filter(c => c.toLowerCase().includes(q));
+            const dd = document.getElementById('chiroDrop');
+            dd.innerHTML = f.length ? f.map(c => '<div class="chiro-opt" onclick="pickChiro(\'' + c.replace(/'/g,"\\'") + '\')">' + c + '</div>').join('') : '';
+            dd.classList.toggle('on', f.length > 0);
+        }
+
+        function pickChiro(c) {
+            document.getElementById('chiropractor').value = c;
+            document.getElementById('chiroDrop').classList.remove('on');
+        }
+
+        async function connect() {
+            status('connectionStatus', 'Łączenie…', 'info');
+
+            const url = (document.getElementById('supabaseUrl').value || '').trim();
+            const key = (document.getElementById('supabaseKey').value || '').trim();
+            if (!url || !key) { status('connectionStatus', 'Wpisz URL i klucz Supabase.', 'err'); return; }
+            if (!chiro() || !chiro().trim()) { status('connectionStatus', 'Wpisz nazwę chiropraktyka.', 'err'); return; }
+
+            try {
+                const sb = window.supabase;
+                if (!sb) {
+                    status('connectionStatus', 'Biblioteka Supabase nie załadowana. Odśwież stronę (F5). Jeśli otworzyłeś plik z dysku (file://), uruchom stronę przez serwer (np. npx serve).', 'err');
+                    return;
+                }
+                supabaseClient = (typeof sb === 'function')
+                    ? sb(url, key)
+                    : (sb.createClient ? sb.createClient(url, key) : (sb.default && sb.default.createClient ? sb.default.createClient(url, key) : null));
+                if (!supabaseClient) {
+                    status('connectionStatus', 'Nie znaleziono createClient w bibliotece Supabase. Odśwież stronę.', 'err');
+                    return;
+                }
+                document.getElementById('main').style.display = 'block';
+                status('connectionStatus', 'Połączono.', 'ok');
+                await loadChiropractors();
+                await loadUserFilterOptions();
+                refreshStats();
+            } catch (e) { status('connectionStatus', 'Błąd: ' + (e && e.message ? e.message : String(e)), 'err'); }
+        }
+
+        async function loadUserFilterOptions() {
+            if (!supabaseClient) return;
+            try {
+                const [r1, r2] = await Promise.all([
+                    supabaseClient.from('audit_logs').select('user_login').eq('chiropractor', chiro()).not('user_login', 'is', null),
+                    supabaseClient.from('audit_logs').select('user_login').eq('table_name', 'app_users').not('user_login', 'is', null)
+                ]);
+                const logins = [...new Set([...(r1.data || []).map(x => x.user_login), ...(r2.data || []).map(x => x.user_login)].filter(Boolean))].sort();
+                const sel = document.getElementById('userFilterSelect');
+                sel.innerHTML = '<option value="">— Wszyscy —</option>' + logins.map(l => '<option value="' + escapeHtml(l) + '">' + escapeHtml(l) + '</option>').join('');
+            } catch (e) { console.warn('loadUserFilterOptions:', e); }
+        }
+
+        function clearUserFilter() {
+            document.getElementById('userFilterSelect').value = '';
+            document.getElementById('userFilter').value = '';
+            if (document.getElementById('panel-logs').classList.contains('active')) loadAuditLogs();
+            if (document.getElementById('panel-bookings').classList.contains('active')) loadBookings();
+        }
+
+        async function loadAppAccounts() {
+            const el = document.getElementById('appAccountsList');
+            if (!supabaseClient) { el.innerHTML = '<div class="msg err">Brak połączenia.</div>'; return; }
+            el.innerHTML = '<div class="loading">Ładowanie…</div>';
+            try {
+                const { data: rows, error } = await supabaseClient.from('app_users').select('id,login,email,created_at,last_login_at,last_seen_at').order('created_at', { ascending: false });
+                if (error) throw error;
+                if (!rows || rows.length === 0) { el.innerHTML = '<div class="msg info">Brak kont (app_users). Rejestracje trafiają tu po wdrożeniu /api/register.</div>'; return; }
+                el.innerHTML = `
+                    <div class="tbl-wrap">
+                        <table>
+                            <thead><tr><th>Login</th><th>Email</th><th>Rejestracja</th><th>Ostatnie logowanie</th><th>Ostatnia aktywność</th></tr></thead>
+                            <tbody>${rows.map(r => `
+                                <tr>
+                                    <td><strong>${escapeHtml(r.login)}</strong></td>
+                                    <td>${escapeHtml(r.email || '-')}</td>
+                                    <td>${r.created_at ? new Date(r.created_at).toLocaleString('pl-PL') : '-'}</td>
+                                    <td>${r.last_login_at ? new Date(r.last_login_at).toLocaleString('pl-PL') : '-'}</td>
+                                    <td>${r.last_seen_at ? new Date(r.last_seen_at).toLocaleString('pl-PL') : '-'}</td>
+                                </tr>
+                            `).join('')}</tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:10px;font-size:0.85rem;color:var(--muted)">${rows.length} kont</div>
+                `;
+            } catch (e) { el.innerHTML = '<div class="msg err">' + e.message + '</div>'; }
+        }
+
+        async function loadActiveNow() {
+            const el = document.getElementById('activeNowList');
+            if (!supabaseClient) { el.innerHTML = '<div class="msg err">Brak połączenia.</div>'; return; }
+            el.innerHTML = '<div class="loading">Ładowanie…</div>';
+            try {
+                const { data: logs } = await supabaseClient.from('audit_logs').select('user_login').eq('chiropractor', chiro()).not('user_login', 'is', null);
+                const logins = [...new Set((logs || []).map(l => l.user_login).filter(Boolean))];
+                if (logins.length === 0) { el.innerHTML = '<div class="msg info">Brak użytkowników z aktywnością u tego chiropraktyka.</div>'; return; }
+                const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+                const { data: rows, error } = await supabaseClient.from('app_users').select('login,email,last_seen_at').in('login', logins).gte('last_seen_at', fiveMinAgo).order('last_seen_at', { ascending: false });
+                if (error) throw error;
+                if (!rows || rows.length === 0) { el.innerHTML = '<div class="msg info">Nikt nie pracował w ostatnich 5 minut.</div>'; return; }
+                el.innerHTML = `
+                    <div class="tbl-wrap">
+                        <table>
+                            <thead><tr><th>Login</th><th>Email</th><th>Ostatnia aktywność</th></tr></thead>
+                            <tbody>${rows.map(r => `
+                                <tr>
+                                    <td><strong>${escapeHtml(r.login)}</strong></td>
+                                    <td>${escapeHtml(r.email || '-')}</td>
+                                    <td><span class="badge badge-i">${r.last_seen_at ? new Date(r.last_seen_at).toLocaleString('pl-PL') : '-'}</span></td>
+                                </tr>
+                            `).join('')}</tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:10px;font-size:0.85rem;color:var(--muted)">${rows.length} aktywnych</div>
+                `;
+            } catch (e) { el.innerHTML = '<div class="msg err">' + e.message + '</div>'; }
+        }
+
+        async function refreshStats() {
+            if (!supabaseClient) return;
+            try {
+                const [a, l, b, today, appCnt, regCnt] = await Promise.all([
+                    supabaseClient.from('audit_logs').select('id', { count: 'exact', head: true }).eq('chiropractor', chiro()),
+                    supabaseClient.from('leads').select('id', { count: 'exact', head: true }).eq('chiropractor', chiro()),
+                    supabaseClient.from('bookings').select('id', { count: 'exact', head: true }).eq('chiropractor', chiro()),
+                    supabaseClient.from('audit_logs').select('id', { count: 'exact', head: true }).eq('chiropractor', chiro()).gte('created_at', new Date().toISOString().slice(0,10)),
+                    supabaseClient.from('app_users').select('id', { count: 'exact', head: true }),
+                    supabaseClient.from('audit_logs').select('id', { count: 'exact', head: true }).eq('table_name', 'app_users')
+                ]);
+                document.getElementById('statsGrid').innerHTML = `
+                    <div class="stat" onclick="document.querySelector('[data-tab=logs]').click()">
+                        <div class="l">Zmiany (audit)</div>
+                        <div class="v">${a.count || 0}</div>
+                    </div>
+                    <div class="stat" onclick="document.querySelector('[data-tab=accounts]').click()">
+                        <div class="l">Konta</div>
+                        <div class="v">${appCnt?.count ?? 0}</div>
+                    </div>
+                    <div class="stat" onclick="document.getElementById('tableFilter').value='app_users'; document.querySelector('[data-tab=logs]').click(); setTimeout(loadAuditLogs, 80);">
+                        <div class="l">Rejestracje</div>
+                        <div class="v">${regCnt?.count ?? 0}</div>
+                    </div>
+                    <div class="stat" onclick="document.querySelector('[data-tab=leads]').click()">
+                        <div class="l">Leady</div>
+                        <div class="v">${l.count || 0}</div>
+                    </div>
+                    <div class="stat" onclick="document.querySelector('[data-tab=bookings]').click()">
+                        <div class="l">Rezerwacje</div>
+                        <div class="v">${b.count || 0}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="l">Zmiany dzisiaj</div>
+                        <div class="v">${today.count || 0}</div>
+                    </div>
+                `;
+            } catch (e) { document.getElementById('statsGrid').innerHTML = '<div class="msg err">' + e.message + '</div>'; }
+        }
+
+        // —— LEADY —————————————————————————————————————————————————————————————
+        async function loadLeads() {
+            if (!supabaseClient) { document.getElementById('leadsList').innerHTML = '<div class="msg err">Brak połączenia.</div>'; return; }
+            document.getElementById('leadsList').innerHTML = '<div class="loading">Ładowanie…</div>';
+            try {
+                let q = supabaseClient.from('leads').select('*').eq('chiropractor', chiro()).order('created_at', { ascending: false });
+                const n = document.getElementById('leadNameFilter').value;
+                const p = document.getElementById('leadPhoneFilter').value;
+                const s = document.getElementById('leadStatusFilter').value;
+                if (n) q = q.ilike('name', '%' + n + '%');
+                if (p) q = q.ilike('phone', '%' + p + '%');
+                if (s) q = q.eq('status', s);
+                const { data: rows, error } = await q;
+                if (error) throw error;
+                data.leads = rows || [];
+                renderLeads(data.leads);
+            } catch (e) { document.getElementById('leadsList').innerHTML = '<div class="msg err">' + e.message + '</div>'; }
+        }
+
+        function renderLeads(rows) {
+            data.leads = rows;
+            const c = document.getElementById('leadsList');
+            if (!rows || rows.length === 0) { c.innerHTML = '<div class="msg info">Brak leadów.</div>'; return; }
+            c.innerHTML = `
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>Imię</th><th>Telefon</th><th>Email</th><th>Status</th><th>Źródło</th><th>Data</th><th></th></tr></thead>
+                        <tbody>
+                            ${rows.map(r => `
+                                <tr>
+                                    <td><strong>${escapeHtml(r.name || '-')}</strong></td>
+                                    <td>${escapeHtml(r.phone || '-')}</td>
+                                    <td>${escapeHtml(r.email || '-')}</td>
+                                    <td><span class="badge badge-u">${escapeHtml(r.status || '-')}</span></td>
+                                    <td>${escapeHtml(r.source || '-')}</td>
+                                    <td>${r.created_at ? new Date(r.created_at).toLocaleDateString('pl-PL') : '-'}</td>
+                                    <td class="cell-actions">
+                                        <button class="btn btn-ghost" onclick="showDetails('lead', ${r.id})" title="Szczegóły">📄</button>
+                                        <button class="btn btn-ghost" onclick="confirmDelete('lead', ${r.id}, '${escapeJs(r.name || 'Lead')}')" title="Usuń">🗑️</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:10px;font-size:0.85rem;color:var(--muted)">${rows.length} leadów</div>
+            `;
+        }
+
+        function openAddLead() {
+            document.getElementById('newLeadName').value = '';
+            document.getElementById('newLeadPhone').value = '';
+            document.getElementById('newLeadEmail').value = '';
+            document.getElementById('newLeadStatus').value = 'Nowy kontakt';
+            document.getElementById('newLeadDesc').value = '';
+            document.getElementById('newLeadNotes').value = '';
+            document.getElementById('modalAddLead').classList.add('on');
+        }
+
+        async function submitAddLead(ev) {
+            ev.preventDefault();
+            if (!supabaseClient) { alert('Brak połączenia.'); return false; }
+            const row = {
+                name: document.getElementById('newLeadName').value.trim(),
+                phone: document.getElementById('newLeadPhone').value.trim() || null,
+                email: document.getElementById('newLeadEmail').value.trim() || null,
+                status: document.getElementById('newLeadStatus').value,
+                description: document.getElementById('newLeadDesc').value.trim() || null,
+                notes: document.getElementById('newLeadNotes').value.trim() || null,
+                chiropractor: chiro(),
+                source: 'manual'
+            };
+            try {
+                const { data, error } = await supabaseClient.from('leads').insert([row]).select().single();
+                if (error) throw error;
+                closeModal('modalAddLead');
+                loadLeads();
+                refreshStats();
+                status('connectionStatus', 'Dodano lead.', 'ok');
+            } catch (e) { alert('Błąd: ' + e.message); }
+            return false;
+        }
+
+        // —— REZERWACJE —————————————————————————————————────────────────———————
+        async function loadBookings() {
+            if (!supabaseClient) { document.getElementById('bookingsList').innerHTML = '<div class="msg err">Brak połączenia.</div>'; return; }
+            document.getElementById('bookingsList').innerHTML = '<div class="loading">Ładowanie…</div>';
+            try {
+                let q = supabaseClient.from('bookings').select('*').eq('chiropractor', chiro()).order('date', { ascending: false });
+                const df = document.getElementById('bookingDateFrom').value;
+                const dt = document.getElementById('bookingDateTo').value;
+                const st = document.getElementById('bookingStatusFilter').value;
+                const uf = document.getElementById('userFilterSelect')?.value || '';
+                if (df) q = q.gte('date', df);
+                if (dt) q = q.lte('date', dt);
+                if (st) q = q.eq('status', st);
+                if (uf) q = q.eq('created_by_user_login', uf);
+                const { data: rows, error } = await q;
+                if (error) throw error;
+                data.bookings = rows || [];
+                renderBookings(data.bookings);
+            } catch (e) { document.getElementById('bookingsList').innerHTML = '<div class="msg err">' + e.message + '</div>'; }
+        }
+
+        function renderBookings(rows) {
+            data.bookings = rows;
+            const c = document.getElementById('bookingsList');
+            if (!rows || rows.length === 0) { c.innerHTML = '<div class="msg info">Brak rezerwacji.</div>'; return; }
+            c.innerHTML = `
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>Nazwa</th><th>Data</th><th>Godzina</th><th>Status</th><th>Opis</th><th></th></tr></thead>
+                        <tbody>
+                            ${rows.map(r => `
+                                <tr>
+                                    <td><strong>${escapeHtml(r.name || '-')}</strong></td>
+                                    <td>${r.date ? new Date(r.date).toLocaleDateString('pl-PL') : '-'}</td>
+                                    <td>${escapeHtml(r.time_from || '')}${r.time_to ? ' – ' + r.time_to : ''}</td>
+                                    <td><span class="badge badge-u">${escapeHtml(r.status || '-')}</span></td>
+                                    <td>${escapeHtml((r.description || '').slice(0,40))}${(r.description||'').length>40?'…':''}</td>
+                                    <td class="cell-actions">
+                                        <button class="btn btn-ghost" onclick="showDetails('booking', ${r.id})" title="Szczegóły">📄</button>
+                                        <button class="btn btn-ghost" onclick="confirmDelete('booking', ${r.id}, '${escapeJs(r.name || 'Rezerwacja')}')" title="Usuń">🗑️</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:10px;font-size:0.85rem;color:var(--muted)">${rows.length} rezerwacji</div>
+            `;
+        }
+
+        function openAddBooking() {
+            document.getElementById('newBookName').value = '';
+            document.getElementById('newBookDate').value = new Date().toISOString().slice(0,10);
+            document.getElementById('newBookTimeFrom').value = '09:00';
+            document.getElementById('newBookTimeTo').value = '';
+            document.getElementById('newBookStatus').value = 'scheduled';
+            document.getElementById('newBookDesc').value = '';
+            document.getElementById('newBookNotes').value = '';
+            document.getElementById('modalAddBooking').classList.add('on');
+        }
+
+        async function submitAddBooking(ev) {
+            ev.preventDefault();
+            if (!supabaseClient) { alert('Brak połączenia.'); return false; }
+            const row = {
+                chiropractor: chiro(),
+                name: document.getElementById('newBookName').value.trim() || null,
+                date: document.getElementById('newBookDate').value,
+                time_from: document.getElementById('newBookTimeFrom').value || '09:00',
+                time_to: document.getElementById('newBookTimeTo').value || null,
+                status: document.getElementById('newBookStatus').value,
+                description: document.getElementById('newBookDesc').value.trim() || null,
+                notes: document.getElementById('newBookNotes').value.trim() || null
+            };
+            try {
+                const { data, error } = await supabaseClient.from('bookings').insert([row]).select().single();
+                if (error) throw error;
+                closeModal('modalAddBooking');
+                loadBookings();
+                refreshStats();
+                status('connectionStatus', 'Dodano rezerwację.', 'ok');
+            } catch (e) { alert('Błąd: ' + e.message); }
+            return false;
+        }
+
+        // —— USUWANIE —————————————————————————————————————————————————────────——
+        let toDelete = { type: null, id: null };
+
+        function confirmDelete(type, id, label) {
+            toDelete = { type, id };
+            document.getElementById('confirmText').textContent = 'Czy na pewno usunąć: „' + label + '”?';
+            document.getElementById('confirmBtn').onclick = doDelete;
+            document.getElementById('modalConfirm').classList.add('on');
+        }
+
+        async function doDelete() {
+            if (!supabaseClient || !toDelete.type || !toDelete.id) { closeModal('modalConfirm'); return; }
+            try {
+                const { error } = await supabaseClient.from(toDelete.type === 'lead' ? 'leads' : 'bookings').delete().eq('id', toDelete.id);
+                if (error) throw error;
+                closeModal('modalConfirm');
+                if (toDelete.type === 'lead') loadLeads(); else loadBookings();
+                refreshStats();
+                status('connectionStatus', 'Usunięto.', 'ok');
+            } catch (e) { alert('Błąd: ' + e.message); }
+            toDelete = { type: null, id: null };
+        }
+
+        // —— SZCZEGÓŁY (modal) —————————————————————————————————────────────────—
+        function showDetails(type, id) {
+            const arr = type === 'lead' ? data.leads : data.bookings;
+            const r = (arr || []).find(x => x.id === id);
+            if (!r) return;
+            document.getElementById('modalTitle').textContent = type === 'lead' ? 'Lead' : 'Rezerwacja';
+            document.getElementById('modalBody').innerHTML = '<pre>' + escapeHtml(JSON.stringify(r, null, 2)) + '</pre>';
+            document.getElementById('modalDetails').classList.add('on');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('on');
+        }
+
+        // —— AUDIT LOGS —————————————————————————————————────────────────────────
+        async function loadAuditLogs() {
+            if (!supabaseClient) { document.getElementById('auditLogs').innerHTML = '<div class="msg err">Brak połączenia.</div>'; return; }
+            document.getElementById('auditLogs').innerHTML = '<div class="loading">Ładowanie…</div>';
+            try {
+                const tb = document.getElementById('tableFilter').value;
+                const ac = document.getElementById('actionFilter').value;
+                const uf = document.getElementById('userFilter').value;
+                const lim = parseInt(document.getElementById('limitFilter').value) || 100;
+                let q = supabaseClient.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(lim);
+                if (tb === 'app_users') {
+                    q = q.eq('table_name', 'app_users');
+                } else {
+                    q = q.eq('chiropractor', chiro());
+                    if (tb) q = q.eq('table_name', tb);
+                }
+                if (ac) q = q.eq('action', ac);
+                if (uf) q = q.ilike('user_login', '%' + uf + '%');
+                const { data: rows, error } = await q;
+                if (error) throw error;
+                data.auditLogs = rows || [];
+                renderAuditLogs(data.auditLogs);
+            } catch (e) {
+                document.getElementById('auditLogs').innerHTML = '<div class="msg err">' + e.message + '</div>';
+            }
+        }
+
+        function renderAuditLogs(rows) {
+            data.auditLogs = rows;
+            const c = document.getElementById('auditLogs');
+            if (!rows || rows.length === 0) { c.innerHTML = '<div class="msg info">Brak wpisów.</div>'; return; }
+            c.innerHTML = `
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>Data</th><th>Akcja</th><th>Tabela</th><th>ID</th><th>Kto</th><th>Źródło</th><th></th></tr></thead>
+                        <tbody>
+                            ${rows.map(r => {
+                                const src = (r.metadata && r.metadata.source) || 'database';
+                                const srcL = src === 'ui' ? 'UI' : src === 'api' ? 'API' : src === 'webhook' ? 'Webhook' : 'Baza';
+                                return `
+                                <tr>
+                                    <td>${new Date(r.created_at).toLocaleString('pl-PL')}</td>
+                                    <td><span class="badge badge-${r.action === 'INSERT' ? 'i' : r.action === 'DELETE' ? 'd' : 'u'}">${r.action}</span></td>
+                                    <td><span class="badge ${r.table_name === 'app_users' ? 'badge-reg' : 'badge-t'}">${r.table_name === 'app_users' ? 'Rejestracja' : r.table_name}</span></td>
+                                    <td>#${r.record_id}</td>
+                                    <td>${escapeHtml(r.user_login || 'System')}</td>
+                                    <td>${srcL}</td>
+                                    <td><button class="btn btn-ghost" onclick='showLogDetail(${JSON.stringify(r)})'>📄</button></td>
+                                </tr>
+                            `; }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:10px;font-size:0.85rem;color:var(--muted)">${rows.length} wpisów</div>
+            `;
+        }
+
+        function showLogDetail(log) {
+            document.getElementById('modalTitle').textContent = 'Szczegóły zmiany #' + log.id;
+            document.getElementById('modalBody').innerHTML = '<pre>' + escapeHtml(JSON.stringify({ ...log, old_data: log.old_data, new_data: log.new_data, metadata: log.metadata }, null, 2)) + '</pre>';
+            document.getElementById('modalDetails').classList.add('on');
+        }
+
+        // —— DIAGNOSTYKA —————————————————————————————————────────────────────────
+        async function runDiagnostics() {
+            if (!supabaseClient) return;
+            const el = document.getElementById('diagnosticsResults');
+            el.innerHTML = '<div class="loading">Uruchamianie…</div>';
+            const res = [];
+            try {
+                res.push({ t: 'Połączenie', s: 'ok', m: 'OK' });
+                for (const tab of ['audit_logs', 'leads', 'bookings']) {
+                    const { error } = await supabaseClient.from(tab).select('id').limit(1);
+                    res.push({ t: 'Tabela ' + tab, s: error ? 'err' : 'ok', m: error ? error.message : 'OK' });
+                }
+                const { error: appErr } = await supabaseClient.from('app_users').select('id').limit(1);
+                res.push({ t: 'Tabela app_users', s: appErr ? 'err' : 'ok', m: appErr ? appErr.message : 'OK' });
+                const { count } = await supabaseClient.from('audit_logs').select('id', { count: 'exact', head: true }).eq('chiropractor', chiro());
+                res.push({ t: 'Rekordy audit', s: 'ok', m: (count || 0) + ' rekordów' });
+                el.innerHTML = res.map(r => '<div class="msg ' + r.s + '"><strong>' + r.t + ':</strong> ' + r.m + '</div>').join('');
+            } catch (e) { el.innerHTML = '<div class="msg err">' + e.message + '</div>'; }
+        }
+
+        // —— EKSPORT —————————————————————————————————────────────────────────────
+        function exportCSV(typ) {
+            const arr = typ === 'audit' ? data.auditLogs : typ === 'leads' ? data.leads : data.bookings;
+            if (!arr || !arr.length) { alert('Brak danych.'); return; }
+            let csv = '';
+            if (typ === 'audit') {
+                csv = 'ID,Data,Tabela,Rekord,Akcja,Kto,Źródło\n' + arr.map(l => [l.id, l.created_at, l.table_name, l.record_id, l.action, l.user_login||'', (l.metadata&&l.metadata.source)||''].map(x => '"' + String(x).replace(/"/g,'""') + '"').join(',')).join('\n');
+            } else if (typ === 'leads') {
+                csv = 'ID,Imię,Telefon,Email,Status,Źródło\n' + arr.map(l => [l.id, l.name, l.phone, l.email, l.status, l.source].map(x => '"' + String(x||'').replace(/"/g,'""') + '"').join(',')).join('\n');
+            } else {
+                csv = 'ID,Nazwa,Data,Godzina,Status\n' + arr.map(b => [b.id, b.name, b.date, (b.time_from||'')+(b.time_to?'-'+b.time_to:''), b.status].map(x => '"' + String(x||'').replace(/"/g,'""') + '"').join(',')).join('\n');
+            }
+            const a = document.createElement('a');
+            a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+            a.download = typ + '_' + Date.now() + '.csv';
+            a.click();
+        }
+
+        function exportJSON(typ) {
+            const arr = typ === 'audit' ? data.auditLogs : typ === 'leads' ? data.leads : data.bookings;
+            if (!arr || !arr.length) { alert('Brak danych.'); return; }
+            const a = document.createElement('a');
+            a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(arr, null, 2));
+            a.download = typ + '_' + Date.now() + '.json';
+            a.click();
+        }
+
+        function escapeHtml(s) { if (s == null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        function escapeJs(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' '); }
+
+        window.connect = connect;
+        window.saveConfig = saveConfig;
+        window.loadChiropractors = loadChiropractors;
+        window.pickChiro = pickChiro;
+    </script>
+</body>
+</html>

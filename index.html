@@ -34,6 +34,22 @@
       .splash__status { font-size: 11px; color: rgba(255,255,255,0.4); font-family: 'JetBrains Mono', monospace; }
       @keyframes splashProgress { 0% { width: 0; margin-left: 0; } 50% { width: 70%; margin-left: 0; } 100% { width: 70%; margin-left: 30%; } }
     </style>
+    <script>
+      (function() {
+        function showErr(msg) {
+          var s = document.getElementById('splash');
+          if (!s) return;
+          var c = s.querySelector('.splash__content');
+          if (c) c.innerHTML = '<div class="splash__logo" style="color:#ff6b6b;">Błąd ładowania</div><div class="splash__sub" style="color:rgba(255,255,255,0.85);max-width:340px;margin:0 auto 16px;line-height:1.5;">' + (msg || 'Aplikacja nie załadowała się.') + '</div><div style="font-size:13px;color:rgba(255,255,255,0.6);">Uruchom w folderze <b>ihc-app</b>: <code style="background:rgba(0,0,0,0.4);padding:4px 10px;border-radius:6px;display:inline-block;margin-top:8px;">npm run dev</code></div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:12px;">Potem wejdź na <b>http://localhost:5173</b></div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;">Konsola (F12) → szukaj błędów</div>';
+        }
+        window.addEventListener('error', function(e) { if (document.getElementById('splash')) showErr((e.message || 'Błąd') + ''); });
+        setTimeout(function() {
+          if (document.getElementById('splash')) {
+            showErr('Inicjalizacja trwa za długo. Uruchom <code>npm run dev</code> w folderze ihc-app i wejdź na http://localhost:5173');
+          }
+        }, 5500);
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
