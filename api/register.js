@@ -1,7 +1,7 @@
 // POST /api/register – rejestracja do app_users (Supabase)
 // Body: { login, email, password }
 
-import { supabase } from './supabase.js';
+import { supabase } from '../lib/supabase.js';
 import bcrypt from 'bcryptjs';
 
 const CORS = {

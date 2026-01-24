@@ -2,7 +2,7 @@
 // Funkcje do tworzenia, aktualizowania i usuwania wydarzeń w Google Calendar
 
 import { google } from 'googleapis';
-import { supabase } from './supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 // Pobierz access token z refresh token
 async function getAccessToken(refreshToken) {

@@ -1,7 +1,7 @@
 // POST /api/user-login – aktualizacja last_login_at (po zalogowaniu)
 // Body: { login }
 
-import { supabase } from './supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

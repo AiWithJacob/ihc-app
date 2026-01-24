@@ -1,8 +1,8 @@
 // Vercel Serverless Function - Endpoint do odbierania leadów z Make.com/Facebook
 // Leady są zapisywane bezpośrednio w Supabase - działa między wszystkimi instancjami Vercel
 
-import { supabase } from './supabase.js';
-import { setAuditContextForAPI, extractUserContext } from './auditHelper.js';
+import { supabase } from '../lib/supabase.js';
+import { setAuditContextForAPI, extractUserContext } from '../lib/auditHelper.js';
 
 export default async function handler(req, res) {
   // Obsługa CORS - DODANE

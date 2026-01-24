@@ -1,8 +1,8 @@
 // Vercel Serverless Function - Endpoint do pobierania i zapisywania rezerwacji
 // Rezerwacje są zapisywane bezpośrednio w Supabase - działa między wszystkimi instancjami Vercel
 
-import { supabase } from './supabase.js';
-import { setAuditContextForAPI, extractUserContext } from './auditHelper.js';
+import { supabase } from '../lib/supabase.js';
+import { setAuditContextForAPI, extractUserContext } from '../lib/auditHelper.js';
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from './google-calendar.js';
 
 export default async function handler(req, res) {

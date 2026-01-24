@@ -1,8 +1,8 @@
 // Vercel Serverless Function - Endpoint do pobierania leadów
 // Pobiera leady z Supabase - działa między wszystkimi instancjami Vercel
 
-import { supabase } from './supabase.js';
-import { setAuditContextForAPI, extractUserContext } from './auditHelper.js';
+import { supabase } from '../lib/supabase.js';
+import { setAuditContextForAPI, extractUserContext } from '../lib/auditHelper.js';
 
 export default async function handler(req, res) {
   // Obsługa CORS

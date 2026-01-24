@@ -1,7 +1,7 @@
 // POST /api/user-heartbeat – aktualizacja last_seen_at (użytkownik ma otwartą aplikację)
 // Body: { login }
 
-import { supabase } from './supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

@@ -1,6 +1,6 @@
 // GET /api/register-check – diagnostyka: czy Supabase jest skonfigurowane na Vercel
 
-import { supabase } from './supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
