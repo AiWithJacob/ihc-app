@@ -11,6 +11,7 @@ function LoginPage({ onLogin }) {
   });
   const [loginPassword, setLoginPassword] = useState("");
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   // Animacja pojawienia się przy załadowaniu
   useEffect(() => {
@@ -31,6 +32,7 @@ function LoginPage({ onLogin }) {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (isRegistering) return;
 
     const existingUser = registeredUsers.find(
       (u) => u.email === formData.email || u.login === formData.login
@@ -45,6 +47,7 @@ function LoginPage({ onLogin }) {
         ? "https://ihc-app.vercel.app"
         : window.location.origin);
 
+    setIsRegistering(true);
     let userData;
     try {
       const r = await fetch(`${API_URL}/api/register`, {
@@ -71,12 +74,16 @@ function LoginPage({ onLogin }) {
           alert("Użytkownik o tym loginie lub emailu już istnieje w systemie.");
           return;
         }
+        console.warn("Rejestracja — błąd API:", r.status, data);
         alert(data?.error || "Serwer niedostępny. Spróbuj później.");
         return;
       }
     } catch (err) {
+      console.error("Rejestracja — błąd połączenia:", err);
       alert("Błąd połączenia. Serwer może być niedostępny.");
       return;
+    } finally {
+      setIsRegistering(false);
     }
 
     const updatedUsers = [...registeredUsers, userData];
@@ -554,20 +561,25 @@ function LoginPage({ onLogin }) {
 
             <button
               type="submit"
+              disabled={isRegistering}
               style={{
                 width: "100%",
                 padding: "16px",
                 borderRadius: "8px",
                 border: "none",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                background: isRegistering
+                  ? "#555"
+                  : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                 color: "white",
                 fontSize: "20px",
                 fontWeight: 600,
-                cursor: "pointer",
+                cursor: isRegistering ? "wait" : "pointer",
                 transition: "all 0.3s",
                 boxShadow: "0 4px 15px rgba(102, 126, 234, 0.4)",
+                opacity: isRegistering ? 0.9 : 1,
               }}
               onMouseOver={(e) => {
+                if (isRegistering) return;
                 e.target.style.transform = "translateY(-2px)";
                 e.target.style.boxShadow = "0 6px 20px rgba(102, 126, 234, 0.6)";
               }}
@@ -576,7 +588,7 @@ function LoginPage({ onLogin }) {
                 e.target.style.boxShadow = "0 4px 15px rgba(102, 126, 234, 0.4)";
               }}
             >
-              Zarejestruj się
+              {isRegistering ? "Rejestracja…" : "Zarejestruj się"}
             </button>
           </form>
         )}
