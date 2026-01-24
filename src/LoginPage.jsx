@@ -84,6 +84,28 @@ function LoginPage({ onLogin }) {
     onLogin(userData);
   };
 
+  const handleDeleteUser = () => {
+    if (!selectedUser) {
+      alert("Wybierz użytkownika do usunięcia.");
+      return;
+    }
+    if (!confirm(`Czy na pewno chcesz usunąć użytkownika „${selectedUser.login}” (${selectedUser.email})?`)) {
+      return;
+    }
+    const updated = registeredUsers.filter((u) => u.id !== selectedUser.id);
+    localStorage.setItem("registeredUsers", JSON.stringify(updated));
+    setRegisteredUsers(updated);
+    setSelectedUser(null);
+    setLoginPassword("");
+    // Wyczyść zapisaną sesję, jeśli usunięto aktualnie zalogowanego
+    try {
+      const cur = JSON.parse(localStorage.getItem("user") || "{}");
+      if (cur && cur.id === selectedUser.id) {
+        localStorage.removeItem("user");
+      }
+    } catch (_) {}
+  };
+
   return (
     <div
       style={{
@@ -248,30 +270,52 @@ function LoginPage({ onLogin }) {
                   >
                     Wybierz użytkownika
                   </label>
-                  <select
-                    value={selectedUser?.id || ""}
-                    onChange={(e) => {
-                      const user = registeredUsers.find((u) => u.id === parseInt(e.target.value));
-                      setSelectedUser(user);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px",
-                      borderRadius: "8px",
-                      border: "1px solid #444",
-                      background: "#222",
-                      color: "white",
-                      fontSize: "16px",
-                      boxSizing: "border-box",
-                    }}
-                  >
-                    <option value="">-- Wybierz użytkownika --</option>
-                    {registeredUsers.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.login} ({user.email})
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <select
+                      value={selectedUser?.id || ""}
+                      onChange={(e) => {
+                        const user = registeredUsers.find((u) => u.id === parseInt(e.target.value));
+                        setSelectedUser(user);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "1px solid #444",
+                        background: "#222",
+                        color: "white",
+                        fontSize: "16px",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <option value="">-- Wybierz użytkownika --</option>
+                      {registeredUsers.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.login} ({user.email})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleDeleteUser}
+                      disabled={!selectedUser}
+                      title="Usuń użytkownika"
+                      style={{
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border: "1px solid #dc2626",
+                        background: "transparent",
+                        color: "#dc2626",
+                        fontSize: "15px",
+                        cursor: selectedUser ? "pointer" : "not-allowed",
+                        opacity: selectedUser ? 1 : 0.5,
+                        transition: "all 0.2s",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      🗑️ Usuń
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ marginBottom: "30px" }}>
