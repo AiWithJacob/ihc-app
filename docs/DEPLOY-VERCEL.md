@@ -80,3 +80,12 @@ Lub ręcznie:
 ```bash
 vercel --prod
 ```
+
+---
+
+## Ostatni deploy (panel admin, leady, rezerwacje, „Kto pracuje”)
+
+- **GitHub:** push na `main` wykonany (repo: `AiWithJacob/ihc-app`).
+- **Vercel:** jeśli projekt jest połączony z tym repozytorium, wdrożenie uruchomi się po pushu. Sprawdź: [vercel.com/dashboard](https://vercel.com/dashboard) → projekt → Deployments.
+- **Supabase:** uruchom migrację `006_app_users_chiropractor.sql` (kolumna `app_users.chiropractor` dla „Kto pracuje”):
+  - Supabase Dashboard → SQL Editor → wklej zawartość `supabase/migrations/006_app_users_chiropractor.sql` → Run.
