@@ -17,8 +17,13 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { login, email, password } = req.body || {};
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch (_) { body = {}; }
+    }
+    const { login, email, password } = body || {};
     if (!login || !email || !password) {
+      console.warn('register: brak login/email/hasło. body:', typeof req.body, req.body && typeof req.body === 'object' ? Object.keys(req.body) : '(nie obiekt)');
       return res.status(400).json({ error: 'Brak login, email lub hasła' });
     }
 

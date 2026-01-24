@@ -786,12 +786,15 @@
 
         async function loadAppAccounts() {
             const el = document.getElementById('appAccountsList');
-            if (!supabaseClient) { el.innerHTML = '<div class="msg err">Brak połączenia.</div>'; return; }
+            if (!supabaseClient) { el.innerHTML = '<div class="msg err">Brak połączenia. Wpisz Supabase URL, Anon Key i Chiropraktyk (np. default), potem Połącz.</div>'; return; }
             el.innerHTML = '<div class="loading">Ładowanie…</div>';
             try {
                 const { data: rows, error } = await supabaseClient.from('app_users').select('id,login,email,created_at,last_login_at,last_seen_at').order('created_at', { ascending: false });
                 if (error) throw error;
-                if (!rows || rows.length === 0) { el.innerHTML = '<div class="msg info">Brak kont (app_users). Rejestracje trafiają tu po wdrożeniu /api/register.</div>'; return; }
+                if (!rows || rows.length === 0) {
+                    el.innerHTML = '<div class="msg warn">Brak kont w zapytaniu (0 wierszy). Sprawdź: Supabase URL i Anon Key muszą być z tego samego projektu, w którym masz app_users (np. w Table Editor widać kutas1@wp.pl). Skopiuj URL z Supabase → Project Settings → API.</div>';
+                    return;
+                }
                 el.innerHTML = `
                     <div class="tbl-wrap">
                         <table>
