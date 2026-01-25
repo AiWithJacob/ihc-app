@@ -205,13 +205,14 @@ export default async function handler(req, res) {
         .insert([leadToInsert])
         .select()
         .single();
-      
+
       if (error) {
         console.error('❌ Błąd zapisywania leada do Supabase:', error);
-        return res.status(500).json({ 
-          error: 'Database error',
-          message: error.message 
-        });
+        console.error('   leadToInsert:', JSON.stringify(leadToInsert));
+        const msg = error.message + (error.message?.includes('does not exist')
+          ? ' → Uruchom 000_leads_table.sql w Supabase (SQL Editor).'
+          : '');
+        return res.status(500).json({ error: 'Database error', message: msg });
       }
       
       // Mapuj z powrotem na format aplikacji
@@ -228,6 +229,7 @@ export default async function handler(req, res) {
         createdAt: insertedLead.created_at
       };
       
+      console.log('✅ POST /api/leads: lead zapisany w Supabase:', insertedLead.id, insertedLead.name, 'dla', insertedLead.chiropractor);
       return res.status(200).json({
         success: true,
         message: 'Lead saved to Supabase',

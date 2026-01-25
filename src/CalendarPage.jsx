@@ -16,6 +16,11 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Normalizacja "HH:MM:SS" → "HH:MM" (Postgres TIME, API) – porównania w getBooking/getBookingsForCell
+function toHHMM(t) {
+  return (t != null && String(t).length >= 5) ? String(t).slice(0, 5) : (t != null ? String(t) : '');
+}
+
 // Funkcja do pobrania dni tygodnia dla wybranej daty
 function getWeekDays(dateString) {
   const date = new Date(dateString + "T12:00:00"); // Używamy południa, aby uniknąć problemów z timezone
@@ -54,7 +59,8 @@ function formatMonthName(dateString) {
   return months[date.getMonth()];
 }
 
-export default function CalendarPage({ bookings, setBookings, leads, setLeads }) {
+export default function CalendarPage({ user, bookings, setBookings, leads, setLeads }) {
+  const getUser = () => user || JSON.parse(localStorage.getItem('user') || '{}');
   const { themeData, theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -173,7 +179,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
       if (bookingsToUpdate.length > 0) {
         console.log(`📋 Znaleziono ${bookingsToUpdate.length} rezerwacji do automatycznego oznaczenia jako completed`);
         
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const u = getUser();
         const API_URL = import.meta.env.VITE_API_URL || 
                         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
                           ? 'https://ihc-app.vercel.app'
@@ -195,12 +201,9 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
         // Zaktualizuj w Supabase dla każdej rezerwacji
         bookingsToUpdate.forEach(async (booking) => {
           try {
-            if (user.chiropractor && booking.id) {
+            if (u.chiropractor && booking.id) {
               const timeFrom = booking.time?.split(" - ")[0] || booking.time || booking.time_from || '';
-              
-              console.log(`🔄 Aktualizuję booking ${booking.id} w Supabase...`);
-              
-              const response = await fetch(`${API_URL}/api/bookings?id=${booking.id}&chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+              const response = await fetch(`${API_URL}/api/bookings?id=${booking.id}&chiropractor=${encodeURIComponent(u.chiropractor)}`, {
                 method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json',
@@ -208,14 +211,13 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
                 body: JSON.stringify({
                   ...booking,
                   status: 'completed',
-                  chiropractor: user.chiropractor,
+                  chiropractor: u.chiropractor,
                   timeFrom: timeFrom,
                   date: booking.date,
-                  // Kontekst użytkownika dla audit log
-                  user_id: user.id,
-                  user_login: user.login,
-                  user_email: user.email,
-                  source: 'auto' // Oznacz jako automatyczna zmiana
+                  user_id: u.id,
+                  user_login: u.login,
+                  user_email: u.email,
+                  source: 'auto'
                 })
               });
 
@@ -332,21 +334,19 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
   };
 
   const getBooking = (date, time) => {
-    return bookings.find((b) => b.date === date && b.time === time);
+    const d = String(date || '').slice(0, 10);
+    return bookings.find((b) => String(b.date || '').slice(0, 10) === d && toHHMM(b.time) === toHHMM(time));
   };
 
-  // Funkcja do sprawdzania, czy w danej komórce jest wydarzenie
+  // Czy w danej komórce jest wydarzenie (date YYYY-MM-DD; toHHMM: "12:00:00" z API = "12:00" w slotach)
   const getBookingsForCell = (date, time) => {
+    const d = String(date || '').slice(0, 10);
     return bookings.filter((b) => {
-      if (b.date !== date) return false;
-      
-      // Parsuj czas wydarzenia (może być "10:00" lub "10:00 - 11:30")
-      const timeParts = b.time.split(" - ");
-      const startTime = timeParts[0];
-      const endTime = timeParts[1] || startTime;
-      
-      // Sprawdź, czy dana godzina mieści się w zakresie wydarzenia
-      const cellTime = time;
+      if (String(b.date || '').slice(0, 10) !== d || !b.time) return false;
+      const timeParts = (b.time || '').split(" - ");
+      const startTime = toHHMM(timeParts[0]);
+      const endTime = toHHMM(timeParts[1] || timeParts[0]);
+      const cellTime = toHHMM(time);
       return cellTime >= startTime && cellTime <= endTime;
     });
   };
@@ -603,42 +603,38 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
 
     // Zaktualizuj w Supabase i Google Calendar
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      if (user.chiropractor && draggedBooking.id) {
+      const u = getUser();
+      if (u.chiropractor && draggedBooking.id) {
         const API_URL = import.meta.env.VITE_API_URL || 
                         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
                           ? 'https://ihc-app.vercel.app'
                           : window.location.origin);
         
-        const response = await fetch(`${API_URL}/api/bookings?id=${draggedBooking.id}&chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+        const response = await fetch(`${API_URL}/api/bookings?id=${draggedBooking.id}&chiropractor=${encodeURIComponent(u.chiropractor)}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             ...updatedBooking,
-            chiropractor: user.chiropractor,
+            chiropractor: u.chiropractor,
             timeFrom: targetTime,
-            // Kontekst użytkownika dla audit log
-            user_id: user.id,
-            user_login: user.login,
-            user_email: user.email,
+            user_id: u.id,
+            user_login: u.login,
+            user_email: u.email,
             source: 'ui'
           })
         });
         
         if (response.ok) {
           const data = await response.json();
-          console.log('✅ Rezerwacja zaktualizowana (przez przeciągnięcie):', data.booking?.id);
-          
-          // Jeśli booking miał Google Calendar event ID, zaktualizuj w Google Calendar
           if (updatedBooking.google_calendar_event_id || draggedBooking.google_calendar_event_id) {
             try {
               const { updateCalendarEvent } = await import('../api/google-calendar.js');
               await updateCalendarEvent(
                 updatedBooking.google_calendar_event_id || draggedBooking.google_calendar_event_id,
                 updatedBooking,
-                user.chiropractor
+                u.chiropractor
               );
               console.log('✅ Wydarzenie zaktualizowane w Google Calendar');
             } catch (calendarError) {
@@ -666,36 +662,16 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
   };
 
   const handleCellClick = (date, time) => {
-    // Jeśli przeciągamy booking, nie otwieraj modala
     if (draggedBooking) return;
-    
-    console.log("handleCellClick called:", date, time);
-    // Sprawdź zarówno dokładne dopasowanie, jak i zakres czasowy
     const exactBooking = getBooking(date, time);
     const cellBookings = getBookingsForCell(date, time);
-    console.log("Exact booking for", date, time, ":", exactBooking);
-    console.log("Cell bookings for", date, time, ":", cellBookings);
-    
-    // Jeśli jest dokładne dopasowanie, pokaż szczegóły
-    // Jeśli jest booking w zakresie, ale nie dokładne dopasowanie, też pokaż szczegóły pierwszego
     const existing = exactBooking || (cellBookings.length > 0 ? cellBookings[0] : null);
-
     if (existing) {
-      console.log("Found existing booking, showing details");
-      // Pokaż szczegóły
       setSelectedBooking(existing);
     } else {
-      console.log("No existing booking, opening add event modal");
-      // Otwórz modal do dodawania wydarzenia z automatycznie ustawioną datą i godziną "od"
-      setNewEventData({
-        date,
-        timeFrom: time,
-        description: "",
-      });
+      setNewEventData({ date, timeFrom: time, description: "" });
       setDatePickerViewDateForModal(date);
-      console.log("Setting showAddEventModal to true");
       setShowAddEventModal(true);
-      console.log("showAddEventModal should now be true");
     }
   };
 
@@ -709,7 +685,7 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
 
     const newBooking = {
       id: Date.now(),
-      date: newEventData.date,
+      date: String(newEventData.date || '').slice(0, 10),
       time: timeDisplay,
       name: leadFromState ? leadFromState.name : (newEventData.description || "Wydarzenie"),
       phone: leadFromState ? leadFromState.phone : "",
@@ -718,50 +694,51 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
     };
 
     setBookings((prev) => [...prev, newBooking]);
-    
-    // Zapisz do Supabase
+    if (typeof window !== 'undefined') window.skipBookingsSyncUntil = Date.now() + 15000;
+
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      if (user.chiropractor) {
+      const u = getUser();
+      if (u.chiropractor) {
         const API_URL = import.meta.env.VITE_API_URL || 
                         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
                           ? 'https://ihc-app.vercel.app'
                           : window.location.origin);
         
-        const response = await fetch(`${API_URL}/api/bookings?chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+        const response = await fetch(`${API_URL}/api/bookings?chiropractor=${encodeURIComponent(u.chiropractor)}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             ...newBooking,
-            chiropractor: user.chiropractor,
+            chiropractor: u.chiropractor,
             timeFrom: timeDisplay,
-            // Kontekst użytkownika dla audit log
-            user_id: user.id,
-            user_login: user.login,
-            user_email: user.email,
+            user_id: u.id,
+            user_login: u.login,
+            user_email: u.email,
             source: 'ui'
           })
         });
         
         if (response.ok) {
           const data = await response.json();
-          console.log('✅ Rezerwacja zapisana w Supabase:', data.booking?.name);
-          // Zaktualizuj ID z bazy danych
           if (data.booking?.id) {
-            setBookings((prev) => 
-              prev.map(b => b.id === newBooking.id ? { ...b, id: data.booking.id } : b)
+            const b = { ...data.booking, date: String(data.booking.date || '').slice(0, 10) };
+            setBookings((prev) =>
+              prev.map(x => x.id === newBooking.id ? b : x)
             );
           }
+          // Nie wywołujemy sync od razu – stan jest z data.booking; wczesny sync mógł nadpisać przed zapisem w DB.
         } else {
           console.error('❌ Błąd zapisywania rezerwacji w Supabase:', response.statusText);
+          alert('Nie udało się zapisać rezerwacji. Sprawdź konsolę (F12).');
         }
       }
     } catch (error) {
       console.error('❌ Błąd zapisywania rezerwacji w Supabase:', error.message);
+      alert('Błąd zapisywania rezerwacji: ' + (error.message || 'nieznany'));
     }
-    
+
     // Automatycznie zmień status leada na "Umówiony", jeśli wizyta jest powiązana z leadem
     if (leadFromState && leadFromState.id) {
       setLeads((prev) =>
@@ -881,24 +858,23 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
     
     // Usuń z Supabase dla wszystkich bookingów z ID
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      if (user.chiropractor && bookingId) {
+      const u = getUser();
+      if (u.chiropractor && bookingId) {
         const API_URL = import.meta.env.VITE_API_URL || 
                         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
                           ? 'https://ihc-app.vercel.app'
                           : window.location.origin);
         
-        const response = await fetch(`${API_URL}/api/bookings?id=${bookingId}&chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+        const response = await fetch(`${API_URL}/api/bookings?id=${bookingId}&chiropractor=${encodeURIComponent(u.chiropractor)}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            // Kontekst użytkownika dla audit log
-            user_id: user.id,
-            user_login: user.login,
-            user_email: user.email,
-            chiropractor: user.chiropractor,
+            user_id: u.id,
+            user_login: u.login,
+            user_email: u.email,
+            chiropractor: u.chiropractor,
             source: 'ui'
           })
         });
@@ -966,29 +942,26 @@ export default function CalendarPage({ bookings, setBookings, leads, setLeads })
     
     setSelectedBooking(updatedBooking);
     
-    // Zapisz zmiany do Supabase
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      if (user.chiropractor && selectedBooking.id) {
-        // Próbuj zaktualizować w Supabase dla wszystkich bookingów z ID
+      const u = getUser();
+      if (u.chiropractor && selectedBooking.id) {
         const API_URL = import.meta.env.VITE_API_URL || 
                         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
                           ? 'https://ihc-app.vercel.app'
                           : window.location.origin);
         
-        const response = await fetch(`${API_URL}/api/bookings?id=${selectedBooking.id}&chiropractor=${encodeURIComponent(user.chiropractor)}`, {
+        const response = await fetch(`${API_URL}/api/bookings?id=${selectedBooking.id}&chiropractor=${encodeURIComponent(u.chiropractor)}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             ...updatedBooking,
-            chiropractor: user.chiropractor,
+            chiropractor: u.chiropractor,
             timeFrom: timeDisplay,
-            // Kontekst użytkownika dla audit log
-            user_id: user.id,
-            user_login: user.login,
-            user_email: user.email,
+            user_id: u.id,
+            user_login: u.login,
+            user_email: u.email,
             source: 'ui'
           })
         });

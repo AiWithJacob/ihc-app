@@ -59,7 +59,10 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
 
 
   const addLead = () => {
-    if (!newLead.name || !newLead.phone) return;
+    if (!newLead.name || !newLead.phone) {
+      alert('Wypełnij imię i nazwisko oraz telefon.');
+      return;
+    }
     const payload = {
       name: newLead.name,
       phone: newLead.phone,

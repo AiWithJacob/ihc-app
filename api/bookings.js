@@ -5,6 +5,10 @@ import { supabase } from '../lib/supabase.js';
 import { setAuditContextForAPI, extractUserContext } from '../lib/auditHelper.js';
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from './google-calendar.js';
 
+// Postgres TIME zwraca "HH:MM:SS" – kalendarz porównuje sloty "HH:00". Normalizacja zapobiega
+// znikaniu wydarzeń z siatki po sync (np. "12:00" vs "12:00:00").
+const toHHMM = (t) => (t != null && String(t).length >= 5) ? String(t).slice(0, 5) : (t != null ? String(t) : '');
+
 export default async function handler(req, res) {
   // Obsługa CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -28,18 +32,16 @@ export default async function handler(req, res) {
         });
       }
       
-      // Buduj zapytanie do Supabase
+      // Buduj zapytanie do Supabase (limit: PostgREST ma domyślny ceiling; bez niego można nie dostać części wizyt)
       let query = supabase
         .from('bookings')
         .select('*')
-        .order('date', { ascending: false });
+        .order('date', { ascending: false })
+        .limit(5000);
       
-      // Filtruj po chiropraktyku
       if (chiropractor) {
         query = query.eq('chiropractor', chiropractor);
       }
-      
-      // Filtruj po dacie (od)
       if (since) {
         query = query.gt('created_at', since);
       }
@@ -54,14 +56,14 @@ export default async function handler(req, res) {
         });
       }
       
-      // Mapuj dane z bazy na format aplikacji
+      // Mapuj dane z bazy (date zawsze YYYY-MM-DD; toHHMM: "12:00:00" → "12:00")
       const mappedBookings = (bookings || []).map(booking => ({
         id: booking.id,
         leadId: booking.lead_id,
-        date: booking.date,
-        time: booking.time_from + (booking.time_to ? ` - ${booking.time_to}` : ''),
-        timeFrom: booking.time_from,
-        timeTo: booking.time_to,
+        date: String(booking.date || '').slice(0, 10),
+        time: toHHMM(booking.time_from) + (booking.time_to ? ` - ${toHHMM(booking.time_to)}` : ''),
+        timeFrom: toHHMM(booking.time_from),
+        timeTo: toHHMM(booking.time_to),
         name: booking.name || '',
         phone: '', // Phone nie jest w tabeli bookings
         description: booking.description || '',
@@ -202,14 +204,14 @@ export default async function handler(req, res) {
         });
       }
       
-      // Mapuj z powrotem na format aplikacji
+      // Mapuj z powrotem na format aplikacji (toHHMM dla spójności z siatką kalendarza)
       const mappedBooking = {
         id: insertedBooking.id,
         leadId: insertedBooking.lead_id,
-        date: insertedBooking.date,
-        time: insertedBooking.time_from + (insertedBooking.time_to ? ` - ${insertedBooking.time_to}` : ''),
-        timeFrom: insertedBooking.time_from,
-        timeTo: insertedBooking.time_to,
+        date: String(insertedBooking.date || '').slice(0, 10),
+        time: toHHMM(insertedBooking.time_from) + (insertedBooking.time_to ? ` - ${toHHMM(insertedBooking.time_to)}` : ''),
+        timeFrom: toHHMM(insertedBooking.time_from),
+        timeTo: toHHMM(insertedBooking.time_to),
         name: insertedBooking.name || '',
         phone: '',
         description: insertedBooking.description || '',
@@ -307,14 +309,14 @@ export default async function handler(req, res) {
         }
       }
       
-      // Mapuj z powrotem na format aplikacji
+      // Mapuj z powrotem na format aplikacji (toHHMM dla spójności z siatką kalendarza)
       const mappedBooking = {
         id: updatedBooking.id,
         leadId: updatedBooking.lead_id,
-        date: updatedBooking.date,
-        time: updatedBooking.time_from + (updatedBooking.time_to ? ` - ${updatedBooking.time_to}` : ''),
-        timeFrom: updatedBooking.time_from,
-        timeTo: updatedBooking.time_to,
+        date: String(updatedBooking.date || '').slice(0, 10),
+        time: toHHMM(updatedBooking.time_from) + (updatedBooking.time_to ? ` - ${toHHMM(updatedBooking.time_to)}` : ''),
+        timeFrom: toHHMM(updatedBooking.time_from),
+        timeTo: toHHMM(updatedBooking.time_to),
         name: updatedBooking.name || '',
         phone: '',
         description: updatedBooking.description || '',

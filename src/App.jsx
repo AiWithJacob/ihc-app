@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Routes, Route, Link, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext.jsx";
 import LeadsPage from "./LeadsPage.jsx";
@@ -53,43 +53,32 @@ export default function App() {
   const currentLeads = user?.chiropractor ? (leadsByChiropractor[user.chiropractor] || []) : [];
   const currentBookings = user?.chiropractor ? (bookingsByChiropractor[user.chiropractor] || []) : [];
 
-  // Funkcje do aktualizacji leads i bookings dla aktualnego chiropraktyka
-  // Obsługują zarówno bezpośrednią wartość, jak i funkcję (jak setState)
-  const setLeads = (newLeadsOrFunction) => {
+  // Funkcje do aktualizacji leads i bookings – useCallback, żeby nie wywoływać effectów w pętli
+  const setLeads = useCallback((newLeadsOrFunction) => {
     if (!user?.chiropractor) return;
-    
     setLeadsByChiropractor(prev => {
       const currentLeads = prev[user.chiropractor] || [];
-      const newLeads = typeof newLeadsOrFunction === 'function' 
+      const newLeads = typeof newLeadsOrFunction === 'function'
         ? newLeadsOrFunction(currentLeads)
         : newLeadsOrFunction;
-      
-      const updated = {
-        ...prev,
-        [user.chiropractor]: newLeads,
-      };
+      const updated = { ...prev, [user.chiropractor]: newLeads };
       localStorage.setItem("leadsByChiropractor", JSON.stringify(updated));
       return updated;
     });
-  };
+  }, [user?.chiropractor]);
 
-  const setBookings = (newBookingsOrFunction) => {
+  const setBookings = useCallback((newBookingsOrFunction) => {
     if (!user?.chiropractor) return;
-    
     setBookingsByChiropractor(prev => {
       const currentBookings = prev[user.chiropractor] || [];
       const newBookings = typeof newBookingsOrFunction === 'function'
         ? newBookingsOrFunction(currentBookings)
         : newBookingsOrFunction;
-      
-      const updated = {
-        ...prev,
-        [user.chiropractor]: newBookings,
-      };
+      const updated = { ...prev, [user.chiropractor]: newBookings };
       localStorage.setItem("bookingsByChiropractor", JSON.stringify(updated));
       return updated;
     });
-  };
+  }, [user?.chiropractor]);
 
   // Zapis do localStorage przy zmianie chiropraktyka
   useEffect(() => {
@@ -165,8 +154,11 @@ export default function App() {
         const data = await response.json();
         if (data.success && Array.isArray(data.leads)) {
           const list = data.leads.map(l => ({ ...l, chiropractor: l.chiropractor || user.chiropractor }));
-          setLeads(list);
-          console.log('📥 Zsynchronizowano leady z Supabase:', list.length);
+          setLeads(prev => {
+            const localOnly = prev.filter(p => !list.some(l => l.id === p.id));
+            return [...localOnly, ...list];
+          });
+          if (list.length > 0) console.log('📥 Zsynchronizowano leady z Supabase:', list.length);
         }
       } catch (error) {
         console.error('❌ Błąd synchronizacji leadów z Supabase:', error.message);
@@ -175,24 +167,23 @@ export default function App() {
 
     const saveLeadToSupabase = async (lead) => {
       try {
-        const res = await fetch(`${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...lead,
-            chiropractor: lead.chiropractor || user.chiropractor,
-            user_id: user.id,
-            user_login: user.login,
-            user_email: user.email,
-            source: 'ui'
-          })
-        });
+        const url = `${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}`;
+        const body = { ...lead, chiropractor: lead.chiropractor || user.chiropractor, user_id: user.id, user_login: user.login, user_email: user.email, source: 'ui' };
+        console.log('📤 POST /api/leads:', lead.name, '→', url);
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         if (res.ok) {
           const d = await res.json();
-          return d.lead || null;
+          return { ok: true, lead: d.lead || null };
         }
-      } catch (e) { console.error('❌ saveLeadToSupabase:', e); }
-      return null;
+        const txt = await res.text();
+        let msg = txt;
+        try { const j = JSON.parse(txt); msg = j.message || j.error || txt; } catch (_) {}
+        console.error('❌ saveLeadToSupabase:', res.status, msg);
+        return { ok: false, error: msg };
+      } catch (e) {
+        console.error('❌ saveLeadToSupabase:', e);
+        return { ok: false, error: e.message || 'Błąd sieci' };
+      }
     };
 
     const updateLeadInSupabase = async (leadId, patch) => {
@@ -230,17 +221,20 @@ export default function App() {
       } catch (e) { console.error('❌ deleteLeadInSupabase:', e); return false; }
     };
 
-    // Sprawdzaj co 30 sekund nowe leady z Supabase
+    // Co 30 s; pierwszy sync po 5 s (spójność z rezerwacjami)
     const interval = setInterval(syncLeadsFromSupabase, 30000);
+    const timeout = setTimeout(syncLeadsFromSupabase, 5000);
     
-    // Sprawdź od razu przy załadowaniu (z małym opóźnieniem)
-    const timeout = setTimeout(syncLeadsFromSupabase, 2000);
-    
-    // Dodaj funkcje do ręcznego użycia (dla debugowania)
+    // Przypisz do ref – onAddLead / onUpdateLead / onDeleteLead wywołują leadApiRef.current.save/update/delete
+    leadApiRef.current = {
+      save: saveLeadToSupabase,
+      update: updateLeadInSupabase,
+      delete: deleteLeadInSupabase,
+    };
+
     window.syncLeadsFromSupabase = syncLeadsFromSupabase;
     window.saveLeadToSupabase = saveLeadToSupabase;
-    console.log('💡 Możesz ręcznie synchronizować leady wpisując w konsoli: syncLeadsFromSupabase()');
-    
+
     return () => {
       clearInterval(interval);
       clearTimeout(timeout);
@@ -256,9 +250,9 @@ export default function App() {
                       ? 'https://ihc-app.vercel.app'
                       : window.location.origin);
 
-    // Pełne pobranie rezerwacji z Supabase (bez since) – kalendarz widzi rezerwacje innych użytkowników
     const syncBookingsFromSupabase = async () => {
       try {
+        if (typeof window !== 'undefined' && window.skipBookingsSyncUntil != null && Date.now() < window.skipBookingsSyncUntil) return;
         const apiUrl = `${API_URL}/api/bookings?chiropractor=${encodeURIComponent(user.chiropractor)}`;
         const response = await fetch(apiUrl);
         if (!response.ok) {
@@ -267,19 +261,28 @@ export default function App() {
         }
         const data = await response.json();
         if (data.success && Array.isArray(data.bookings)) {
-          const list = data.bookings.map(b => ({ ...b, chiropractor: b.chiropractor || user.chiropractor }));
-          setBookings(list);
-          console.log('📥 Zsynchronizowano rezerwacje z Supabase:', list.length);
+          const list = data.bookings.map(b => ({
+            ...b,
+            chiropractor: b.chiropractor || user.chiropractor,
+            date: String(b.date || '').slice(0, 10),
+          }));
+          setBookings(prev => {
+            const localOnly = prev.filter(p => !list.some(l => String(l.id) === String(p.id)));
+            return [...localOnly, ...list];
+          });
+          if (list.length > 0) console.log('📥 Zsynchronizowano rezerwacje z Supabase:', list.length);
         }
       } catch (error) {
         console.error('❌ Błąd synchronizacji rezerwacji z Supabase:', error.message);
       }
     };
 
-    // Sprawdzaj co 30 sekund nowe rezerwacje z Supabase
+    window.syncBookingsFromSupabase = syncBookingsFromSupabase;
+
+    // Co 30 s; pierwszy sync po 5 s (bufor po dodaniu wizyty – unikamy nadpisania przed zapisem w DB)
     const interval = setInterval(syncBookingsFromSupabase, 30000);
-    const timeout = setTimeout(syncBookingsFromSupabase, 2000);
-    
+    const timeout = setTimeout(syncBookingsFromSupabase, 5000);
+
     return () => {
       clearInterval(interval);
       clearTimeout(timeout);
@@ -866,8 +869,21 @@ export default function App() {
                   setBookings={setBookings}
                   onOpenAddLeadModal={(fn) => (openAddLeadModalRef.current = fn)}
                   onAddLead={async (lead) => {
-                    const fn = leadApiRef.current.save;
-                    if (fn) { const s = await fn(lead); if (s) setLeads(prev => [s, ...prev]); }
+                    const fn = leadApiRef.current?.save;
+                    if (!fn) {
+                      console.error('❌ leadApiRef.save nie jest ustawione – odśwież stronę (F5)');
+                      alert('Nie udało się dodać leada. Odśwież stronę (F5) i spróbuj ponownie.');
+                      return;
+                    }
+                    const s = await fn(lead);
+                    if (s?.ok && s?.lead) {
+                      setLeads(prev => [s.lead, ...prev]);
+                      setTimeout(() => { window.syncLeadsFromSupabase?.(); }, 1500);
+                    } else if (s?.error) {
+                      alert('Nie udało się zapisać leada: ' + s.error);
+                    } else {
+                      alert('Nie udało się zapisać leada. Sprawdź konsolę (F12).');
+                    }
                   }}
                   onUpdateLead={async (id, patch) => {
                     const fn = leadApiRef.current.update;
@@ -884,6 +900,7 @@ export default function App() {
               path="/calendar"
               element={
                 <CalendarPage
+                  user={user}
                   bookings={currentBookings}
                   setBookings={setBookings}
                   leads={currentLeads}

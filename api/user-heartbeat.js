@@ -21,14 +21,29 @@ export default async function handler(req, res) {
 
     if (!supabase) return res.status(503).json({ error: 'Baza nie skonfigurowana' });
 
-    const payload = { last_seen_at: new Date().toISOString() };
+    const lastSeen = { last_seen_at: new Date().toISOString() };
     const ch = req.body?.chiropractor;
-    if (ch != null && String(ch).trim() !== '') payload.chiropractor = String(ch).trim();
+    const payload = ch != null && String(ch).trim() !== ''
+      ? { ...lastSeen, chiropractor: String(ch).trim() }
+      : lastSeen;
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from('app_users')
       .update(payload)
       .eq('login', login);
+
+    // Gdy kolumna chiropractor nie istnieje (migracja 006 nie uruchomiona), próbuj tylko last_seen_at
+    if (error && payload.chiropractor != null && /chiropractor/i.test(error.message) && /schema cache/i.test(error.message)) {
+      const { error: err2 } = await supabase
+        .from('app_users')
+        .update(lastSeen)
+        .eq('login', login);
+      if (!err2) {
+        console.warn('⚠️ user-heartbeat: zaktualizowano last_seen_at (chiropractor pominięty – uruchom migrację 006_app_users_chiropractor.sql)');
+        return res.status(200).json({ ok: true });
+      }
+      error = err2;
+    }
 
     if (error) {
       console.warn('⚠️ user-heartbeat update error:', error.message);

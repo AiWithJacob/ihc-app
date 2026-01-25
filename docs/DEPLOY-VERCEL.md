@@ -89,3 +89,25 @@ vercel --prod
 - **Vercel:** jeśli projekt jest połączony z tym repozytorium, wdrożenie uruchomi się po pushu. Sprawdź: [vercel.com/dashboard](https://vercel.com/dashboard) → projekt → Deployments.
 - **Supabase:** uruchom migrację `006_app_users_chiropractor.sql` (kolumna `app_users.chiropractor` dla „Kto pracuje”):
   - Supabase Dashboard → SQL Editor → wklej zawartość `supabase/migrations/006_app_users_chiropractor.sql` → Run.
+
+## Ostrzeżenie DEP0169 (`url.parse()` / WHATWG URL) w logach Vercel
+
+W logach może się pojawić:
+
+```
+(node:4) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized...
+```
+
+To pochodzi z zależności (np. **googleapis**), nie z Twojego kodu. Aplikacja działa poprawnie; to tylko ostrzeżenie.
+
+**Jak ukryć to ostrzeżenie w Vercel:**
+
+1. Vercel → **projekt** → **Settings** → **Environment Variables**
+2. Dodaj zmienną:
+   - **Name:** `NODE_OPTIONS`
+   - **Value:** `--disable-warning=DEP0169`
+   - **Environments:** Production, Preview, Development (zaznacz wszystkie)
+3. **Save** → **Redeploy** (Deployments → ⋮ przy ostatnim deployu → Redeploy)
+
+Jeśli `--disable-warning=DEP0169` nie działa (starsza Node), spróbuj:  
+`NODE_OPTIONS=--no-pending-deprecation`
