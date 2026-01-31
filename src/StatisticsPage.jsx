@@ -126,8 +126,8 @@ function StatisticsPage({ leads, bookings }) {
   return (
     <div
       style={{
-        padding: "clamp(12px, 2vw, 16px)",
-        background: themeData.background,
+        padding: "clamp(16px, 3vw, 24px)",
+        background: "transparent",
         minHeight: "100%",
         color: themeData.text,
         overflowY: "auto",
@@ -164,11 +164,13 @@ function StatisticsPage({ leads, bookings }) {
         <div
           style={{
             display: "flex",
-            gap: "8px",
-            background: themeData.surface,
+            gap: "4px",
+            background: themeData.surfaceElevated,
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
             padding: "4px",
-            borderRadius: "8px",
-            border: `2px solid ${themeData.border}`,
+            borderRadius: "12px",
+            border: `1px solid ${themeData.border}`,
           }}
         >
           <button
@@ -226,9 +228,19 @@ function StatisticsPage({ leads, bookings }) {
             <div
               style={{
                 background: `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`,
-                padding: "16px",
-                borderRadius: "12px",
-                boxShadow: `0 4px 12px ${themeData.glow}`,
+                padding: "20px",
+                borderRadius: "16px",
+                boxShadow: `0 8px 32px ${themeData.glow}`,
+                border: `1px solid rgba(255,255,255,0.1)`,
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = `0 12px 40px ${themeData.glowStrong}`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = `0 8px 32px ${themeData.glow}`;
               }}
             >
               <div style={{ fontSize: "11px", opacity: 0.9, marginBottom: "6px", color: "white", fontWeight: 500 }}>
@@ -241,9 +253,19 @@ function StatisticsPage({ leads, bookings }) {
             <div
               style={{
                 background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
-                padding: "16px",
-                borderRadius: "12px",
-                boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)",
+                padding: "20px",
+                borderRadius: "16px",
+                boxShadow: "0 8px 32px rgba(34, 197, 94, 0.3)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 12px 40px rgba(34, 197, 94, 0.5)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 8px 32px rgba(34, 197, 94, 0.3)";
               }}
             >
               <div style={{ fontSize: "11px", opacity: 0.9, marginBottom: "6px", color: "white", fontWeight: 500 }}>

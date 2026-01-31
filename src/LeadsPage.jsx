@@ -167,25 +167,13 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
       display: "flex", 
       flexDirection: "column", 
       overflow: "hidden",
-      background: themeData.background,
+      background: "transparent",
       position: "relative",
       width: "100%",
       boxSizing: "border-box",
       marginTop: "0px",
       marginBottom: "0px",
     }}>
-      {/* Futurystyczne tło z gradientem */}
-      <div style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: "120px",
-        background: themeData.gradient,
-        opacity: 0.3,
-        pointerEvents: "none",
-        zIndex: 0,
-      }} />
       
       <div
         style={{
@@ -282,11 +270,11 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, status)}
             style={{
-              border: `2px solid`,
+              border: `1px solid`,
               borderColor: dragOverStatus === status 
                 ? statusColor 
                 : themeData.border,
-              borderRadius: 12,
+              borderRadius: 16,
               padding: "clamp(8px, 2vw, 12px)",
               flex: "1 1 0",
               minWidth: 0,
@@ -295,16 +283,18 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               height: "100%",
               maxHeight: "100%",
               background: dragOverStatus === status 
-                ? themeData.cardBackground
-                : themeData.surface,
+                ? themeData.cardBackgroundHover
+                : themeData.cardBackground,
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
-              transition: "all 0.3s ease",
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               position: "relative",
               boxShadow: dragOverStatus === status 
-                ? `0 8px 32px ${themeData.shadow}, 0 0 0 1px ${statusColor}40`
-                : `0 4px 16px ${themeData.shadow}`,
+                ? `0 8px 32px ${themeData.shadow}, 0 0 20px ${statusColor}30`
+                : `0 4px 20px ${themeData.shadow}`,
               boxSizing: "border-box",
             }}
             onMouseEnter={(e) => {
@@ -385,24 +375,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                 WebkitOverflowScrolling: "touch",
               }}
             >
-              {statusLeads.length === 0 ? (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minHeight: 100,
-                    color: themeData.textSecondary,
-                    fontSize: "12px",
-                    border: `2px dashed ${themeData.border}`,
-                    borderRadius: "var(--radius-md)",
-                    margin: "8px 0",
-                  }}
-                >
-                  Przeciągnij tutaj
-                </div>
-              ) : (
-              statusLeads
+              {statusLeads
                 .sort((a, b) => {
                   const dateA = a.createdAt ? new Date(a.createdAt) : new Date(a.id);
                   const dateB = b.createdAt ? new Date(b.createdAt) : new Date(b.id);
@@ -417,25 +390,27 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                     onClick={() => openLead(l)}
                     style={{
                       cursor: "grab",
-                      border: `2px solid ${themeData.border}`,
-                      borderRadius: 10,
-                      padding: "12px 16px",
-                      marginBottom: 8,
+                      border: `1px solid ${themeData.border}`,
+                      borderRadius: 12,
+                      padding: "14px 16px",
+                      marginBottom: 10,
                       height: "auto",
                       minHeight: "90px",
                       maxHeight: "none",
                       background: draggedLead?.id === l.id 
                         ? themeData.surfaceElevated 
-                        : themeData.cardBackground,
+                        : themeData.surfaceElevated,
+                      backdropFilter: "blur(8px)",
+                      WebkitBackdropFilter: "blur(8px)",
                       fontSize: "14px",
                       lineHeight: "1.4",
-                      transition: "all 0.3s ease",
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                       opacity: draggedLead?.id === l.id ? 0.5 : 1,
                       position: "relative",
                       display: "flex",
                       alignItems: "flex-start",
                       justifyContent: "space-between",
-                      boxShadow: `0 2px 8px ${themeData.shadow}`,
+                      boxShadow: `0 4px 12px ${themeData.shadow}`,
                       overflow: "hidden",
                       boxSizing: "border-box",
                     }}
@@ -553,8 +528,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                       }}
                     />
                   </div>
-                ))
-              )}
+                ))}
             </div>
             
             {/* Zakończenie lejka */}
@@ -621,17 +595,19 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
             className="hide-scrollbar"
             style={{
               padding: "32px",
-              background: themeData.surface,
-              borderRadius: 16,
+              background: themeData.surfaceSolid || themeData.surface,
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              borderRadius: 20,
               width: "90%",
               maxWidth: 520,
               maxHeight: "85vh",
-              boxShadow: `0 12px 48px ${themeData.shadow}`,
+              boxShadow: `0 25px 80px ${themeData.shadow}`,
               margin: "0 auto",
               display: "flex",
               flexDirection: "column",
               overflowY: "auto",
-              border: `2px solid ${themeData.border}`,
+              border: `1px solid ${themeData.border}`,
               position: "relative",
               overflow: "hidden",
             }}

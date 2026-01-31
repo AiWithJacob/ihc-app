@@ -446,19 +446,68 @@ export default function App() {
           transform: isTransitioning ? "translateY(20px)" : "translateY(0)",
           transition: "all 0.5s ease-out",
           boxSizing: "border-box",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        {/* Górny pasek nawigacji */}
+        {/* Animated background orbs */}
+        <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
+          <div style={{
+            position: "absolute",
+            top: "-20%",
+            left: "-10%",
+            width: "40%",
+            height: "40%",
+            background: `radial-gradient(circle, ${themeData.glow} 0%, transparent 70%)`,
+            filter: "blur(80px)",
+            animation: "float1 20s ease-in-out infinite",
+          }} />
+          <div style={{
+            position: "absolute",
+            bottom: "-20%",
+            right: "-10%",
+            width: "50%",
+            height: "50%",
+            background: `radial-gradient(circle, ${theme === 'night' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(118, 75, 162, 0.2)'} 0%, transparent 70%)`,
+            filter: "blur(80px)",
+            animation: "float2 25s ease-in-out infinite",
+          }} />
+          <div style={{
+            position: "absolute",
+            top: "40%",
+            right: "30%",
+            width: "30%",
+            height: "30%",
+            background: `radial-gradient(circle, ${themeData.glow} 0%, transparent 70%)`,
+            filter: "blur(60px)",
+            opacity: 0.3,
+            animation: "float3 15s ease-in-out infinite",
+          }} />
+          {/* Grid pattern */}
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `
+              linear-gradient(${themeData.border} 1px, transparent 1px),
+              linear-gradient(90deg, ${themeData.border} 1px, transparent 1px)
+            `,
+            backgroundSize: "60px 60px",
+            opacity: 0.3,
+          }} />
+        </div>
+        {/* Górny pasek nawigacji - glassmorphism */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             padding: "clamp(4px, 1vw, 6px) clamp(12px, 3vw, 20px)",
-            borderBottom: `2px solid ${themeData.border}`,
-            background: themeData.gradient,
+            borderBottom: `1px solid ${themeData.border}`,
+            background: themeData.navBackground,
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
             flexShrink: 0,
-            boxShadow: `0 4px 16px ${themeData.shadow}`,
+            boxShadow: `0 4px 30px ${themeData.shadow}`,
             position: "relative",
             overflow: "hidden",
             flexWrap: "wrap",
@@ -467,6 +516,7 @@ export default function App() {
             height: "56px",
             maxHeight: "56px",
             boxSizing: "border-box",
+            zIndex: 10,
           }}
         >
           {/* Efekt świetlny na górze */}
@@ -518,8 +568,10 @@ export default function App() {
               textOverflow: "ellipsis",
               display: "flex",
               alignItems: "center",
+              gap: "4px",
             }}>
-              <span className="desktop-only">Pracujesz dla </span>{user.chiropractor}
+              <span className="desktop-only">Pracujesz dla</span>
+              <span>{user.chiropractor}</span>
             </div>
             {user.chiropractorImage && (
               <div style={{
@@ -857,7 +909,7 @@ export default function App() {
         </div>
 
         {/* Widoki stron */}
-        <div style={{ flex: 1, overflow: "auto", overflowY: "auto", display: "flex", flexDirection: "column", width: "100%", minHeight: 0, height: "100%" }}>
+        <div style={{ flex: 1, overflow: "auto", overflowY: "auto", display: "flex", flexDirection: "column", width: "100%", minHeight: 0, height: "100%", position: "relative", zIndex: 1 }}>
           <Routes>
             <Route
               path="/"
@@ -920,6 +972,26 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
+
+        {/* Animacje CSS */}
+        <style>{`
+          @keyframes float1 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(30px, 30px) rotate(5deg); }
+          }
+          @keyframes float2 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-40px, -20px) rotate(-5deg); }
+          }
+          @keyframes float3 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, -30px); }
+          }
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+        `}</style>
       </div>
       )}
     </>
