@@ -270,7 +270,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, status)}
             style={{
-              border: `1px solid`,
+              border: `2px solid`,
               borderColor: dragOverStatus === status 
                 ? statusColor 
                 : themeData.border,
@@ -285,8 +285,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               background: dragOverStatus === status 
                 ? themeData.cardBackgroundHover
                 : themeData.cardBackground,
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
@@ -390,7 +388,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                     onClick={() => openLead(l)}
                     style={{
                       cursor: "grab",
-                      border: `1px solid ${themeData.border}`,
+                      border: `2px solid ${themeData.border}`,
                       borderRadius: 12,
                       padding: "14px 16px",
                       marginBottom: 10,
@@ -398,10 +396,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                       minHeight: "90px",
                       maxHeight: "none",
                       background: draggedLead?.id === l.id 
-                        ? themeData.surfaceElevated 
+                        ? themeData.surfaceHover 
                         : themeData.surfaceElevated,
-                      backdropFilter: "blur(8px)",
-                      WebkitBackdropFilter: "blur(8px)",
                       fontSize: "14px",
                       lineHeight: "1.4",
                       transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -410,7 +406,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                       display: "flex",
                       alignItems: "flex-start",
                       justifyContent: "space-between",
-                      boxShadow: `0 4px 12px ${themeData.shadow}`,
+                      boxShadow: `0 4px 16px ${themeData.shadow}`,
                       overflow: "hidden",
                       boxSizing: "border-box",
                     }}
@@ -596,8 +592,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
             style={{
               padding: "32px",
               background: themeData.surfaceSolid || themeData.surface,
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
               borderRadius: 20,
               width: "90%",
               maxWidth: 520,
@@ -607,7 +601,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               display: "flex",
               flexDirection: "column",
               overflowY: "auto",
-              border: `1px solid ${themeData.border}`,
+              border: `2px solid ${themeData.border}`,
               position: "relative",
               overflow: "hidden",
             }}

@@ -495,19 +495,17 @@ export default function App() {
             opacity: 0.3,
           }} />
         </div>
-        {/* Górny pasek nawigacji - glassmorphism */}
+        {/* Górny pasek nawigacji */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             padding: "clamp(4px, 1vw, 6px) clamp(12px, 3vw, 20px)",
-            borderBottom: `1px solid ${themeData.border}`,
+            borderBottom: `2px solid ${themeData.border}`,
             background: themeData.navBackground,
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
             flexShrink: 0,
-            boxShadow: `0 4px 30px ${themeData.shadow}`,
+            boxShadow: `0 4px 20px ${themeData.shadow}`,
             position: "relative",
             overflow: "hidden",
             flexWrap: "wrap",

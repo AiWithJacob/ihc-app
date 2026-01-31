@@ -1183,15 +1183,13 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
       <div
         style={{
           padding: "12px 20px",
-          borderBottom: `1px solid ${themeData.border}`,
+          borderBottom: `2px solid ${themeData.border}`,
           background: themeData.navBackground,
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
           display: "flex",
           alignItems: "center",
           gap: 10,
           flexShrink: 0,
-          boxShadow: `0 4px 20px ${themeData.shadow}`,
+          boxShadow: `0 4px 16px ${themeData.shadow}`,
           marginTop: 0,
           minHeight: "56px",
           height: "56px",
