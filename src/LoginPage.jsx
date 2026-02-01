@@ -2,40 +2,28 @@ import { useState, useEffect } from "react";
 
 function LoginPage({ onLogin }) {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [registeredUsers, setRegisteredUsers] = useState([]);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     login: "",
   });
-  const [loginPassword, setLoginPassword] = useState("");
+  const [loginFormData, setLoginFormData] = useState({
+    login: "",
+    password: "",
+  });
   const [isAnimating, setIsAnimating] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
+  const [loginError, setLoginError] = useState("");
 
   useEffect(() => {
     setTimeout(() => setIsAnimating(true), 100);
   }, []);
 
-  useEffect(() => {
-    const stored = localStorage.getItem("registeredUsers");
-    if (stored) {
-      setRegisteredUsers(JSON.parse(stored));
-    }
-  }, []);
-
   const handleRegister = async (e) => {
     e.preventDefault();
     if (isRegistering) return;
-
-    const existingUser = registeredUsers.find(
-      (u) => u.email === formData.email || u.login === formData.login
-    );
-    if (existingUser) {
-      alert("Użytkownik o tym emailu lub loginie już istnieje!");
-      return;
-    }
 
     const API_URL = import.meta.env.VITE_API_URL ||
       (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
@@ -43,7 +31,8 @@ function LoginPage({ onLogin }) {
         : window.location.origin);
 
     setIsRegistering(true);
-    let userData;
+    setLoginError("");
+    
     try {
       const r = await fetch(`${API_URL}/api/register`, {
         method: "POST",
@@ -55,87 +44,83 @@ function LoginPage({ onLogin }) {
         }),
       });
       const data = await r.json().catch(() => ({}));
+      
       if (r.ok && data.id != null) {
-        userData = {
+        const userData = {
           id: data.id,
           login: formData.login.trim(),
           email: formData.email.trim(),
-          password: formData.password,
           isLoggedIn: true,
           chiropractor: null,
         };
+        localStorage.setItem("user", JSON.stringify(userData));
+        onLogin(userData);
       } else {
         if (r.status === 409) {
-          alert("Użytkownik o tym loginie lub emailu już istnieje w systemie.");
-          return;
+          setLoginError("Użytkownik o tym loginie lub emailu już istnieje.");
+        } else {
+          setLoginError(data?.error || "Serwer niedostępny. Spróbuj później.");
         }
-        console.warn("Rejestracja — błąd API:", r.status, data);
-        alert(data?.error || "Serwer niedostępny. Spróbuj później.");
-        return;
       }
     } catch (err) {
       console.error("Rejestracja — błąd połączenia:", err);
-      alert("Błąd połączenia. Serwer może być niedostępny.");
-      return;
+      setLoginError("Błąd połączenia. Serwer może być niedostępny.");
     } finally {
       setIsRegistering(false);
     }
-
-    const updatedUsers = [...registeredUsers, userData];
-    localStorage.setItem("registeredUsers", JSON.stringify(updatedUsers));
-    setRegisteredUsers(updatedUsers);
-    localStorage.setItem("user", JSON.stringify(userData));
-    onLogin(userData);
-    fetch(`${API_URL}/api/user-login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ login: userData.login }),
-    }).catch(() => {});
   };
 
-  const handleQuickLogin = () => {
-    if (!selectedUser) {
-      alert("Wybierz użytkownika!");
-      return;
-    }
-    if (!loginPassword) {
-      alert("Wprowadź hasło!");
-      return;
-    }
-    if (selectedUser.password !== loginPassword) {
-      alert("Nieprawidłowe hasło!");
-      return;
-    }
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (isLoggingIn) return;
 
-    const userData = { ...selectedUser, isLoggedIn: true };
-    localStorage.setItem("user", JSON.stringify(userData));
-    onLogin(userData);
+    if (!loginFormData.login.trim()) {
+      setLoginError("Wprowadź login!");
+      return;
+    }
+    if (!loginFormData.password) {
+      setLoginError("Wprowadź hasło!");
+      return;
+    }
 
     const API_URL = import.meta.env.VITE_API_URL ||
       (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
         ? "https://ihc-app.vercel.app"
         : window.location.origin);
-    fetch(`${API_URL}/api/user-login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ login: selectedUser.login }),
-    }).catch(() => {});
-  };
 
-  const handleDeleteUser = () => {
-    if (!selectedUser) return;
-    if (!confirm(`Czy na pewno chcesz usunąć użytkownika „${selectedUser.login}"?`)) return;
-    const updated = registeredUsers.filter((u) => u.id !== selectedUser.id);
-    localStorage.setItem("registeredUsers", JSON.stringify(updated));
-    setRegisteredUsers(updated);
-    setSelectedUser(null);
-    setLoginPassword("");
+    setIsLoggingIn(true);
+    setLoginError("");
+
     try {
-      const cur = JSON.parse(localStorage.getItem("user") || "{}");
-      if (cur && cur.id === selectedUser.id) {
-        localStorage.removeItem("user");
+      const r = await fetch(`${API_URL}/api/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          login: loginFormData.login.trim(),
+          password: loginFormData.password,
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+
+      if (r.ok && data.success && data.user) {
+        const userData = {
+          id: data.user.id,
+          login: data.user.login,
+          email: data.user.email,
+          isLoggedIn: true,
+          chiropractor: null,
+        };
+        localStorage.setItem("user", JSON.stringify(userData));
+        onLogin(userData);
+      } else {
+        setLoginError(data?.error || "Nieprawidłowy login lub hasło");
       }
-    } catch (_) {}
+    } catch (err) {
+      console.error("Logowanie — błąd połączenia:", err);
+      setLoginError("Błąd połączenia. Serwer może być niedostępny.");
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   // Ikony SVG
@@ -406,7 +391,10 @@ function LoginPage({ onLogin }) {
                 <button
                   key={label}
                   type="button"
-                  onClick={() => setIsRegisterMode(i === 1)}
+                  onClick={() => {
+                    setIsRegisterMode(i === 1);
+                    setLoginError("");
+                  }}
                   style={{
                     flex: 1,
                     padding: "12px 16px",
@@ -428,137 +416,131 @@ function LoginPage({ onLogin }) {
             })}
           </div>
 
+          {/* Error message */}
+          {loginError && (
+            <div style={{
+              padding: "12px 16px",
+              marginBottom: "20px",
+              background: "rgba(239, 68, 68, 0.15)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              borderRadius: "10px",
+              color: "#ef4444",
+              fontSize: "14px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              {loginError}
+            </div>
+          )}
+
           {!isRegisterMode ? (
             // Login form
-            <div>
-              {registeredUsers.length > 0 ? (
-                <>
-                  <div style={{ marginBottom: "20px" }}>
-                    <label style={{
-                      display: "block",
-                      color: "rgba(255,255,255,0.7)",
-                      marginBottom: "8px",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                    }}>
-                      Użytkownik
-                    </label>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <div style={{ flex: 1, position: "relative" }}>
-                        <div style={iconStyle(focusedField === 'user')}>
-                          <UserIcon />
-                        </div>
-                        <select
-                          value={selectedUser?.id || ""}
-                          onChange={(e) => {
-                            const user = registeredUsers.find((u) => u.id === parseInt(e.target.value));
-                            setSelectedUser(user);
-                          }}
-                          onFocus={() => setFocusedField('user')}
-                          onBlur={() => setFocusedField(null)}
-                          style={{
-                            ...inputStyle(focusedField === 'user'),
-                            appearance: "none",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <option value="">Wybierz użytkownika</option>
-                          {registeredUsers.map((user) => (
-                            <option key={user.id} value={user.id} style={{ background: "#1a1a2e", color: "white" }}>
-                              {user.login}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleDeleteUser}
-                        disabled={!selectedUser}
-                        style={{
-                          padding: "0 16px",
-                          borderRadius: "12px",
-                          border: "2px solid rgba(239, 68, 68, 0.3)",
-                          background: "transparent",
-                          color: "#ef4444",
-                          fontSize: "18px",
-                          cursor: selectedUser ? "pointer" : "not-allowed",
-                          opacity: selectedUser ? 1 : 0.4,
-                          transition: "all 0.3s",
-                        }}
-                        title="Usuń użytkownika"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: "28px" }}>
-                    <label style={{
-                      display: "block",
-                      color: "rgba(255,255,255,0.7)",
-                      marginBottom: "8px",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                    }}>
-                      Hasło
-                    </label>
-                    <div style={{ position: "relative" }}>
-                      <div style={iconStyle(focusedField === 'password')}>
-                        <LockIcon />
-                      </div>
-                      <input
-                        type="password"
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        onFocus={() => setFocusedField('password')}
-                        onBlur={() => setFocusedField(null)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleQuickLogin()}
-                        style={inputStyle(focusedField === 'password')}
-                        placeholder="Wprowadź hasło"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleQuickLogin}
-                    style={{
-                      width: "100%",
-                      padding: "16px",
-                      borderRadius: "12px",
-                      border: "none",
-                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      color: "white",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.3s",
-                      boxShadow: "0 8px 30px rgba(102, 126, 234, 0.4)",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = "translateY(-2px)";
-                      e.target.style.boxShadow = "0 12px 40px rgba(102, 126, 234, 0.5)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = "translateY(0)";
-                      e.target.style.boxShadow = "0 8px 30px rgba(102, 126, 234, 0.4)";
-                    }}
-                  >
-                    Zaloguj się
-                  </button>
-                </>
-              ) : (
-                <div style={{
-                  textAlign: "center",
-                  padding: "40px 20px",
-                  color: "rgba(255,255,255,0.5)",
+            <form onSubmit={handleLogin}>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{
+                  display: "block",
+                  color: "rgba(255,255,255,0.7)",
+                  marginBottom: "8px",
+                  fontSize: "14px",
+                  fontWeight: 500,
                 }}>
-                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>👤</div>
-                  <p style={{ marginBottom: "8px" }}>Brak kont użytkowników</p>
-                  <p style={{ fontSize: "14px" }}>Przejdź do rejestracji aby utworzyć konto</p>
+                  Login
+                </label>
+                <div style={{ position: "relative" }}>
+                  <div style={iconStyle(focusedField === 'loginField')}>
+                    <UserIcon />
+                  </div>
+                  <input
+                    type="text"
+                    value={loginFormData.login}
+                    onChange={(e) => setLoginFormData({ ...loginFormData, login: e.target.value })}
+                    onFocus={() => setFocusedField('loginField')}
+                    onBlur={() => setFocusedField(null)}
+                    style={inputStyle(focusedField === 'loginField')}
+                    placeholder="Wprowadź swój login"
+                    autoComplete="username"
+                  />
                 </div>
-              )}
-            </div>
+              </div>
+
+              <div style={{ marginBottom: "28px" }}>
+                <label style={{
+                  display: "block",
+                  color: "rgba(255,255,255,0.7)",
+                  marginBottom: "8px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                }}>
+                  Hasło
+                </label>
+                <div style={{ position: "relative" }}>
+                  <div style={iconStyle(focusedField === 'password')}>
+                    <LockIcon />
+                  </div>
+                  <input
+                    type="password"
+                    value={loginFormData.password}
+                    onChange={(e) => setLoginFormData({ ...loginFormData, password: e.target.value })}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
+                    style={inputStyle(focusedField === 'password')}
+                    placeholder="Wprowadź hasło"
+                    autoComplete="current-password"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoggingIn}
+                style={{
+                  width: "100%",
+                  padding: "16px",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: isLoggingIn
+                    ? "rgba(102, 126, 234, 0.5)"
+                    : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  color: "white",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  cursor: isLoggingIn ? "wait" : "pointer",
+                  transition: "all 0.3s",
+                  boxShadow: "0 8px 30px rgba(102, 126, 234, 0.4)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                }}
+                onMouseEnter={(e) => {
+                  if (isLoggingIn) return;
+                  e.target.style.transform = "translateY(-2px)";
+                  e.target.style.boxShadow = "0 12px 40px rgba(102, 126, 234, 0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = "translateY(0)";
+                  e.target.style.boxShadow = "0 8px 30px rgba(102, 126, 234, 0.4)";
+                }}
+              >
+                {isLoggingIn && (
+                  <div style={{
+                    width: "18px",
+                    height: "18px",
+                    border: "2px solid transparent",
+                    borderTopColor: "white",
+                    borderRadius: "50%",
+                    animation: "spin 0.8s linear infinite",
+                  }} />
+                )}
+                {isLoggingIn ? "Logowanie..." : "Zaloguj się"}
+              </button>
+            </form>
           ) : (
             // Register form
             <form onSubmit={handleRegister}>
@@ -585,6 +567,7 @@ function LoginPage({ onLogin }) {
                     onBlur={() => setFocusedField(null)}
                     style={inputStyle(focusedField === 'email')}
                     placeholder="twoj@email.com"
+                    autoComplete="email"
                   />
                 </div>
               </div>
@@ -612,6 +595,7 @@ function LoginPage({ onLogin }) {
                     onBlur={() => setFocusedField(null)}
                     style={inputStyle(focusedField === 'login')}
                     placeholder="Twój login"
+                    autoComplete="username"
                   />
                 </div>
               </div>
@@ -639,6 +623,7 @@ function LoginPage({ onLogin }) {
                     onBlur={() => setFocusedField(null)}
                     style={inputStyle(focusedField === 'regPassword')}
                     placeholder="Minimum 6 znaków"
+                    autoComplete="new-password"
                   />
                 </div>
               </div>
@@ -727,11 +712,6 @@ function LoginPage({ onLogin }) {
           .show-on-mobile {
             display: block !important;
           }
-        }
-        
-        select option {
-          background: #1a1a2e;
-          color: white;
         }
       `}</style>
     </div>

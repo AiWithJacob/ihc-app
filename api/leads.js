@@ -64,7 +64,12 @@ export default async function handler(req, res) {
         status: lead.status || 'Nowy kontakt',
         chiropractor: lead.chiropractor,
         source: lead.source || 'manual',
-        createdAt: lead.created_at || new Date().toISOString()
+        createdAt: lead.created_at || new Date().toISOString(),
+        // Informacje o rezerwacji (z cache)
+        lastBookingId: lead.last_booking_id || null,
+        lastBookingDate: lead.last_booking_date || null,
+        lastBookingStatus: lead.last_booking_status || null,
+        updatedAt: lead.updated_at || null
       }));
       
       console.log(`📤 Zwracam ${mappedLeads.length} leadów z Supabase dla chiropraktyka "${chiropractor || 'wszystkie'}"`);
@@ -130,7 +135,11 @@ export default async function handler(req, res) {
         status: updated.status,
         chiropractor: updated.chiropractor,
         source: updated.source || 'manual',
-        createdAt: updated.created_at || new Date().toISOString()
+        createdAt: updated.created_at || new Date().toISOString(),
+        lastBookingId: updated.last_booking_id || null,
+        lastBookingDate: updated.last_booking_date || null,
+        lastBookingStatus: updated.last_booking_status || null,
+        updatedAt: updated.updated_at || null
       };
       return res.status(200).json({ success: true, message: 'Lead zaktualizowany', lead: mapped });
     } catch (e) {
@@ -226,7 +235,11 @@ export default async function handler(req, res) {
         status: insertedLead.status,
         chiropractor: insertedLead.chiropractor,
         source: insertedLead.source,
-        createdAt: insertedLead.created_at
+        createdAt: insertedLead.created_at,
+        lastBookingId: null,
+        lastBookingDate: null,
+        lastBookingStatus: null,
+        updatedAt: insertedLead.updated_at || null
       };
       
       console.log('✅ POST /api/leads: lead zapisany w Supabase:', insertedLead.id, insertedLead.name, 'dla', insertedLead.chiropractor);

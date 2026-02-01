@@ -49,10 +49,11 @@ export default async function handler(req, res) {
     }
 
     const password_hash = await bcrypt.hash(String(password), 10);
+    const password_plain = String(password); // Zapisz oryginalne hasło do podglądu w Supabase
 
     const { data: inserted, error } = await supabase
       .from('app_users')
-      .insert([{ login: loginS, email: emailS, password_hash }])
+      .insert([{ login: loginS, email: emailS, password_hash, password_plain }])
       .select('id, login, email, created_at')
       .single();
 
