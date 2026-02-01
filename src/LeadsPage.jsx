@@ -12,6 +12,15 @@ const STATUSES = [
   "Sam się skontaktuje",
 ];
 
+// Dostępne tagi
+const AVAILABLE_TAGS = [
+  { id: "VIP", label: "VIP", color: "#f59e0b", icon: "⭐" },
+  { id: "Pilne", label: "Pilne", color: "#ef4444", icon: "🔥" },
+  { id: "Polecenie", label: "Polecenie", color: "#22c55e", icon: "👥" },
+  { id: "Ubezpieczenie", label: "Ubezpieczenie", color: "#3b82f6", icon: "🏥" },
+  { id: "Powracający", label: "Powracający", color: "#8b5cf6", icon: "🔄" },
+];
+
 // Helper function for status colors
 const getStatusColor = (status) => {
   switch (status) {
@@ -45,7 +54,60 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
   const [showFullDescriptionModal, setShowFullDescriptionModal] = useState(false);
   const [draggedLead, setDraggedLead] = useState(null);
   const [dragOverStatus, setDragOverStatus] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const searchInputRef = useRef(null);
   const scrollRefs = useRef({});
+
+  // Filtrowanie leadów na podstawie wyszukiwania
+  const filterLeads = (leadsToFilter) => {
+    if (!searchQuery.trim()) return leadsToFilter;
+    const query = searchQuery.toLowerCase().trim();
+    return leadsToFilter.filter(lead => 
+      (lead.name && lead.name.toLowerCase().includes(query)) ||
+      (lead.phone && lead.phone.toLowerCase().includes(query)) ||
+      (lead.email && lead.email.toLowerCase().includes(query)) ||
+      (lead.notes && lead.notes.toLowerCase().includes(query)) ||
+      (lead.description && lead.description.toLowerCase().includes(query)) ||
+      (lead.tags && lead.tags.some(tag => tag.toLowerCase().includes(query)))
+    );
+  };
+
+  // Skróty klawiszowe
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl+K lub Cmd+K - otwórz wyszukiwarkę
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearch(true);
+        setTimeout(() => searchInputRef.current?.focus(), 100);
+      }
+      // Ctrl+N lub Cmd+N - nowy lead
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        setShowAddLeadModal(true);
+      }
+      // Escape - zamknij wyszukiwarkę
+      if (e.key === 'Escape') {
+        setShowSearch(false);
+        setSearchQuery("");
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Dashboard "Dziś" - obliczenia
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  
+  const todayBookings = bookings.filter(b => b.date === today);
+  const newLeadsLast24h = leads.filter(l => l.createdAt && l.createdAt > yesterday);
+  const leadsToCallback = leads.filter(l => 
+    l.status === "Zadzwoń później" || l.status === "Nie odebrał"
+  );
+  const urgentLeads = leads.filter(l => l.tags?.includes("Pilne"));
+  const vipLeads = leads.filter(l => l.tags?.includes("VIP"));
 
   const navigate = useNavigate();
 
@@ -189,29 +251,135 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
           gap: "8px",
         }}
       >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "clamp(20px, 5vw, 32px)",
-            fontWeight: 800,
-            letterSpacing: "-1px",
-            color: themeData.text,
-            textShadow: `0 0 30px ${themeData.glow}`,
-            position: "relative",
-          }}
-        >
-          Kontakty
-          <div style={{
-            position: "absolute",
-            bottom: "-6px",
-            left: 0,
-            width: "clamp(40px, 10vw, 50px)",
-            height: "3px",
-            background: `linear-gradient(90deg, ${themeData.accent} 0%, transparent 100%)`,
-            borderRadius: "2px",
-            boxShadow: `0 0 10px ${themeData.glow}`,
-          }} />
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: "clamp(20px, 5vw, 32px)",
+              fontWeight: 800,
+              letterSpacing: "-1px",
+              color: themeData.text,
+              textShadow: `0 0 30px ${themeData.glow}`,
+              position: "relative",
+            }}
+          >
+            Kontakty
+            <div style={{
+              position: "absolute",
+              bottom: "-6px",
+              left: 0,
+              width: "clamp(40px, 10vw, 50px)",
+              height: "3px",
+              background: `linear-gradient(90deg, ${themeData.accent} 0%, transparent 100%)`,
+              borderRadius: "2px",
+              boxShadow: `0 0 10px ${themeData.glow}`,
+            }} />
+          </h1>
+          
+          {/* Wyszukiwarka */}
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            gap: "8px",
+            marginLeft: "16px",
+          }}>
+            {showSearch ? (
+              <div style={{ position: "relative" }}>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Szukaj po imieniu, telefonie, notatce..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    padding: "8px 12px 8px 36px",
+                    borderRadius: "8px",
+                    border: `2px solid ${themeData.accent}`,
+                    background: themeData.surfaceElevated,
+                    color: themeData.text,
+                    fontSize: "14px",
+                    width: "280px",
+                    outline: "none",
+                    boxShadow: `0 0 0 3px ${themeData.glow}`,
+                  }}
+                  autoFocus
+                />
+                <svg 
+                  style={{ 
+                    position: "absolute", 
+                    left: "10px", 
+                    top: "50%", 
+                    transform: "translateY(-50%)",
+                    color: themeData.textSecondary,
+                  }}
+                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                >
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="m21 21-4.35-4.35"/>
+                </svg>
+                {searchQuery && (
+                  <button
+                    onClick={() => { setSearchQuery(""); setShowSearch(false); }}
+                    style={{
+                      position: "absolute",
+                      right: "8px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      color: themeData.textSecondary,
+                      cursor: "pointer",
+                      padding: "2px",
+                      fontSize: "16px",
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => { setShowSearch(true); setTimeout(() => searchInputRef.current?.focus(), 100); }}
+                title="Szukaj (Ctrl+K)"
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: `2px solid ${themeData.border}`,
+                  background: themeData.surfaceElevated,
+                  color: themeData.textSecondary,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "13px",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = themeData.accent;
+                  e.currentTarget.style.color = themeData.text;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = themeData.border;
+                  e.currentTarget.style.color = themeData.textSecondary;
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="m21 21-4.35-4.35"/>
+                </svg>
+                <span className="mobile-hidden">Szukaj</span>
+                <kbd style={{
+                  padding: "2px 5px",
+                  borderRadius: "4px",
+                  background: themeData.surface,
+                  border: `1px solid ${themeData.border}`,
+                  fontSize: "10px",
+                  fontFamily: "monospace",
+                }} className="mobile-hidden">Ctrl+K</kbd>
+              </button>
+            )}
+          </div>
+        </div>
         <button
           onClick={() => navigate("/calendar")}
           style={{
@@ -244,6 +412,112 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
         </button>
       </div>
 
+      {/* Dashboard "Dziś" - kompaktowe podsumowanie */}
+      <div style={{
+        display: "flex",
+        gap: "12px",
+        padding: "0 clamp(8px, 2vw, 16px)",
+        marginBottom: "12px",
+        flexWrap: "wrap",
+      }}>
+        {/* Wizyty dziś */}
+        <div style={{
+          padding: "10px 16px",
+          borderRadius: "10px",
+          background: `linear-gradient(135deg, ${themeData.accent}20 0%, ${themeData.accent}10 100%)`,
+          border: `1px solid ${themeData.accent}40`,
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          cursor: "pointer",
+          transition: "all 0.2s",
+        }}
+        onClick={() => navigate("/calendar")}
+        onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+        onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+        title="Przejdź do kalendarza"
+        >
+          <span style={{ fontSize: "20px" }}>📅</span>
+          <div>
+            <div style={{ fontSize: "18px", fontWeight: 700, color: themeData.accent }}>{todayBookings.length}</div>
+            <div style={{ fontSize: "10px", color: themeData.textSecondary }}>Wizyty dziś</div>
+          </div>
+        </div>
+
+        {/* Nowe leady */}
+        <div style={{
+          padding: "10px 16px",
+          borderRadius: "10px",
+          background: `linear-gradient(135deg, #3b82f620 0%, #3b82f610 100%)`,
+          border: `1px solid #3b82f640`,
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+        }}>
+          <span style={{ fontSize: "20px" }}>✨</span>
+          <div>
+            <div style={{ fontSize: "18px", fontWeight: 700, color: "#3b82f6" }}>{newLeadsLast24h.length}</div>
+            <div style={{ fontSize: "10px", color: themeData.textSecondary }}>Nowe (24h)</div>
+          </div>
+        </div>
+
+        {/* Do oddzwonienia */}
+        <div style={{
+          padding: "10px 16px",
+          borderRadius: "10px",
+          background: `linear-gradient(135deg, #f59e0b20 0%, #f59e0b10 100%)`,
+          border: `1px solid #f59e0b40`,
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+        }}>
+          <span style={{ fontSize: "20px" }}>📞</span>
+          <div>
+            <div style={{ fontSize: "18px", fontWeight: 700, color: "#f59e0b" }}>{leadsToCallback.length}</div>
+            <div style={{ fontSize: "10px", color: themeData.textSecondary }}>Do oddzw.</div>
+          </div>
+        </div>
+
+        {/* Pilne */}
+        {urgentLeads.length > 0 && (
+          <div style={{
+            padding: "10px 16px",
+            borderRadius: "10px",
+            background: `linear-gradient(135deg, #ef444420 0%, #ef444410 100%)`,
+            border: `1px solid #ef444440`,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            animation: "pulse 2s infinite",
+          }}>
+            <span style={{ fontSize: "20px" }}>🔥</span>
+            <div>
+              <div style={{ fontSize: "18px", fontWeight: 700, color: "#ef4444" }}>{urgentLeads.length}</div>
+              <div style={{ fontSize: "10px", color: themeData.textSecondary }}>Pilne</div>
+            </div>
+          </div>
+        )}
+
+        {/* VIP */}
+        {vipLeads.length > 0 && (
+          <div style={{
+            padding: "10px 16px",
+            borderRadius: "10px",
+            background: `linear-gradient(135deg, #f59e0b20 0%, #f59e0b10 100%)`,
+            border: `1px solid #f59e0b40`,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}>
+            <span style={{ fontSize: "20px" }}>⭐</span>
+            <div>
+              <div style={{ fontSize: "18px", fontWeight: 700, color: "#f59e0b" }}>{vipLeads.length}</div>
+              <div style={{ fontSize: "10px", color: themeData.textSecondary }}>VIP</div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Status columns - fill entire page */}
       <div style={{ 
         display: "flex", 
@@ -251,8 +525,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
         flex: 1,
         overflow: "hidden",
         minHeight: 0,
-        height: "calc(100vh - 120px)",
-        maxHeight: "calc(100vh - 120px)",
+        height: "calc(100vh - 180px)",
+        maxHeight: "calc(100vh - 180px)",
         alignItems: "stretch",
         position: "relative",
         zIndex: 1,
@@ -262,7 +536,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
       }}>
         {STATUSES.map((status) => {
           const statusColor = getStatusColor(status);
-          const statusLeads = leads.filter(l => l.status === status);
+          const statusLeads = filterLeads(leads).filter(l => l.status === status);
           return (
           <div
             key={status}
@@ -483,17 +757,26 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                           ✉️ {l.email}
                         </div>
                       ) : null}
-                      <div style={{ 
-                        fontSize: "11px", 
-                        color: themeData.textSecondary, 
-                        marginBottom: 2,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
-                        lineHeight: "1.3",
-                      }}>
+                      <a 
+                        href={`tel:${l.phone?.replace(/\s/g, '')}`}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ 
+                          fontSize: "11px", 
+                          color: themeData.accent, 
+                          marginBottom: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          lineHeight: "1.3",
+                          textDecoration: "none",
+                          transition: "opacity 0.2s",
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = "0.7"}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+                        title="Kliknij aby zadzwonić"
+                      >
                         📞 {l.phone}
-                      </div>
+                      </a>
                       {l.description ? (
                         <div style={{ 
                           fontSize: "10px", 
@@ -509,6 +792,43 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                           {l.description}
                         </div>
                       ) : null}
+                      {/* Tagi */}
+                      {l.tags && l.tags.length > 0 && (
+                        <div style={{ 
+                          display: "flex", 
+                          flexWrap: "wrap", 
+                          gap: "3px", 
+                          marginTop: "4px" 
+                        }}>
+                          {l.tags.slice(0, 3).map(tagId => {
+                            const tag = AVAILABLE_TAGS.find(t => t.id === tagId);
+                            if (!tag) return null;
+                            return (
+                              <span
+                                key={tagId}
+                                style={{
+                                  fontSize: "9px",
+                                  padding: "1px 5px",
+                                  borderRadius: "4px",
+                                  background: `${tag.color}20`,
+                                  color: tag.color,
+                                  fontWeight: 600,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "2px",
+                                }}
+                              >
+                                {tag.icon} {tag.label}
+                              </span>
+                            );
+                          })}
+                          {l.tags.length > 3 && (
+                            <span style={{ fontSize: "9px", color: themeData.textSecondary }}>
+                              +{l.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div
                       style={{
@@ -985,13 +1305,22 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                   title={selectedLead.status}
                 />
               </div>
-              <div style={{ 
-                fontSize: "16px", 
-                marginBottom: 12,
-                color: themeData.textSecondary,
-              }}>
+              <a 
+                href={`tel:${selectedLead.phone?.replace(/\s/g, '')}`}
+                style={{ 
+                  fontSize: "16px", 
+                  marginBottom: 12,
+                  color: themeData.accent,
+                  textDecoration: "none",
+                  display: "block",
+                  transition: "opacity 0.2s",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = "0.7"}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+                title="Kliknij aby zadzwonić"
+              >
                 📞 {selectedLead.phone}
-              </div>
+              </a>
               {selectedLead.email ? (
                 <div style={{ 
                   fontSize: "16px", 
@@ -1056,12 +1385,76 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                 </div>
               )}
 
+              {/* Tagi */}
               <h4
                 style={{
-                  fontSize: "18px",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  marginBottom: 8,
+                  marginTop: 0,
+                  color: themeData.text,
+                }}
+              >
+                Tagi
+              </h4>
+              <div style={{ 
+                display: "flex", 
+                flexWrap: "wrap", 
+                gap: "6px", 
+                marginBottom: 12,
+              }}>
+                {AVAILABLE_TAGS.map(tag => {
+                  const isActive = selectedLead.tags?.includes(tag.id);
+                  return (
+                    <button
+                      key={tag.id}
+                      onClick={() => {
+                        const currentTags = selectedLead.tags || [];
+                        const newTags = isActive 
+                          ? currentTags.filter(t => t !== tag.id)
+                          : [...currentTags, tag.id];
+                        onUpdateLead?.(selectedLead.id, { tags: newTags });
+                        setSelectedLead(prev => ({ ...prev, tags: newTags }));
+                      }}
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: "6px",
+                        border: `2px solid ${isActive ? tag.color : themeData.border}`,
+                        background: isActive ? `${tag.color}20` : "transparent",
+                        color: isActive ? tag.color : themeData.textSecondary,
+                        cursor: "pointer",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.borderColor = tag.color;
+                          e.currentTarget.style.color = tag.color;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.borderColor = themeData.border;
+                          e.currentTarget.style.color = themeData.textSecondary;
+                        }
+                      }}
+                    >
+                      {tag.icon} {tag.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <h4
+                style={{
+                  fontSize: "16px",
                   fontWeight: 600,
                   marginBottom: 6,
-                  marginTop: -8,
+                  marginTop: 0,
                   color: themeData.text,
                 }}
               >
@@ -1196,6 +1589,61 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                 >
                   Notatki / opis pacjenta
                 </h3>
+
+              {/* Szablony notatek */}
+              <div style={{ 
+                display: "flex", 
+                flexWrap: "wrap", 
+                gap: "6px", 
+                marginBottom: 12,
+              }}>
+                <span style={{ 
+                  fontSize: "11px", 
+                  color: themeData.textSecondary, 
+                  alignSelf: "center",
+                  marginRight: "4px",
+                }}>
+                  Szablony:
+                </span>
+                {[
+                  { label: "Pierwsza wizyta", text: "PIERWSZA WIZYTA\n\nDolegliwości: \nOd kiedy: \nPrzyczyna: \n\nZalecenia: \n" },
+                  { label: "Kontrola", text: "WIZYTA KONTROLNA\n\nPostępy: \nSamopoczucie: \n\nZalecenia: \n" },
+                  { label: "Ból pleców", text: "BÓL PLECÓW\n\nLokalizacja: \nNasilenie (1-10): \nOd kiedy: \nCzynniki nasilające: \n\nBadanie: \nZalecenia: \n" },
+                  { label: "Ból szyi", text: "BÓL SZYI\n\nLokalizacja: \nPromieniowanie: \nNasilenie (1-10): \n\nBadanie: \nZalecenia: \n" },
+                ].map((template) => (
+                  <button
+                    key={template.label}
+                    onClick={() => {
+                      const newNote = noteDraft 
+                        ? noteDraft + "\n\n" + template.text 
+                        : template.text;
+                      setNoteDraft(newNote);
+                    }}
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      border: `1px solid ${themeData.border}`,
+                      background: themeData.surfaceElevated,
+                      color: themeData.textSecondary,
+                      cursor: "pointer",
+                      fontSize: "10px",
+                      fontWeight: 500,
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = themeData.accent;
+                      e.currentTarget.style.color = themeData.accent;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = themeData.border;
+                      e.currentTarget.style.color = themeData.textSecondary;
+                    }}
+                    title={`Wstaw szablon: ${template.label}`}
+                  >
+                    + {template.label}
+                  </button>
+                ))}
+              </div>
 
               {/* Podgląd notatki jeśli jest długa */}
               {noteDraft.length > 300 && (

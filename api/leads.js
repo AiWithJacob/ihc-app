@@ -65,6 +65,8 @@ export default async function handler(req, res) {
         chiropractor: lead.chiropractor,
         source: lead.source || 'manual',
         createdAt: lead.created_at || new Date().toISOString(),
+        // Tagi
+        tags: lead.tags || [],
         // Informacje o rezerwacji (z cache)
         lastBookingId: lead.last_booking_id || null,
         lastBookingDate: lead.last_booking_date || null,
@@ -111,6 +113,7 @@ export default async function handler(req, res) {
       if (leadData.description !== undefined) toUpdate.description = leadData.description || null;
       if (leadData.notes !== undefined) toUpdate.notes = leadData.notes || null;
       if (leadData.status !== undefined) toUpdate.status = leadData.status || 'Nowy kontakt';
+      if (leadData.tags !== undefined) toUpdate.tags = leadData.tags || [];
 
       if (Object.keys(toUpdate).length === 0) {
         return res.status(400).json({ error: 'Bad request', message: 'Brak pól do aktualizacji.' });
@@ -136,6 +139,7 @@ export default async function handler(req, res) {
         chiropractor: updated.chiropractor,
         source: updated.source || 'manual',
         createdAt: updated.created_at || new Date().toISOString(),
+        tags: updated.tags || [],
         lastBookingId: updated.last_booking_id || null,
         lastBookingDate: updated.last_booking_date || null,
         lastBookingStatus: updated.last_booking_status || null,
@@ -206,6 +210,7 @@ export default async function handler(req, res) {
         status: leadData.status || 'Nowy kontakt',
         chiropractor: leadData.chiropractor || 'default',
         source: leadData.source || 'manual',
+        tags: leadData.tags || [],
         created_at: leadData.createdAt || new Date().toISOString()
       };
       
@@ -236,6 +241,7 @@ export default async function handler(req, res) {
         chiropractor: insertedLead.chiropractor,
         source: insertedLead.source,
         createdAt: insertedLead.created_at,
+        tags: insertedLead.tags || [],
         lastBookingId: null,
         lastBookingDate: null,
         lastBookingStatus: null,

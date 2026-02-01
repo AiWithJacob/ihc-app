@@ -21,9 +21,31 @@ function LoginPage({ onLogin }) {
     setTimeout(() => setIsAnimating(true), 100);
   }, []);
 
+  // Walidacja siły hasła
+  const validatePassword = (password) => {
+    const errors = [];
+    if (password.length < 8) {
+      errors.push("minimum 8 znaków");
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push("jedna duża litera");
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push("jedna cyfra");
+    }
+    return errors;
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     if (isRegistering) return;
+
+    // Walidacja hasła
+    const passwordErrors = validatePassword(formData.password);
+    if (passwordErrors.length > 0) {
+      setLoginError(`Hasło musi zawierać: ${passwordErrors.join(", ")}`);
+      return;
+    }
 
     const API_URL = import.meta.env.VITE_API_URL ||
       (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"

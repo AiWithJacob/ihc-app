@@ -33,6 +33,18 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Login i email nie mogą być puste' });
     }
 
+    // Walidacja siły hasła
+    const passwordStr = String(password);
+    if (passwordStr.length < 8) {
+      return res.status(400).json({ error: 'Hasło musi mieć minimum 8 znaków' });
+    }
+    if (!/[A-Z]/.test(passwordStr)) {
+      return res.status(400).json({ error: 'Hasło musi zawierać jedną dużą literę' });
+    }
+    if (!/[0-9]/.test(passwordStr)) {
+      return res.status(400).json({ error: 'Hasło musi zawierać jedną cyfrę' });
+    }
+
     if (!supabase) {
       return res.status(503).json({ error: 'Baza nie skonfigurowana' });
     }
