@@ -275,110 +275,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               boxShadow: `0 0 10px ${themeData.glow}`,
             }} />
           </h1>
-          
-          {/* Wyszukiwarka */}
-          <div style={{ 
-            display: "flex", 
-            alignItems: "center", 
-            gap: "8px",
-            marginLeft: "16px",
-          }}>
-            {showSearch ? (
-              <div style={{ position: "relative" }}>
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="Szukaj po imieniu, telefonie, notatce..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    padding: "8px 12px 8px 36px",
-                    borderRadius: "8px",
-                    border: `2px solid ${themeData.accent}`,
-                    background: themeData.surfaceElevated,
-                    color: themeData.text,
-                    fontSize: "14px",
-                    width: "280px",
-                    outline: "none",
-                    boxShadow: `0 0 0 3px ${themeData.glow}`,
-                  }}
-                  autoFocus
-                />
-                <svg 
-                  style={{ 
-                    position: "absolute", 
-                    left: "10px", 
-                    top: "50%", 
-                    transform: "translateY(-50%)",
-                    color: themeData.textSecondary,
-                  }}
-                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                >
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="m21 21-4.35-4.35"/>
-                </svg>
-                {searchQuery && (
-                  <button
-                    onClick={() => { setSearchQuery(""); setShowSearch(false); }}
-                    style={{
-                      position: "absolute",
-                      right: "8px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "none",
-                      border: "none",
-                      color: themeData.textSecondary,
-                      cursor: "pointer",
-                      padding: "2px",
-                      fontSize: "16px",
-                    }}
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            ) : (
-              <button
-                onClick={() => { setShowSearch(true); setTimeout(() => searchInputRef.current?.focus(), 100); }}
-                title="Szukaj (Ctrl+K)"
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: "8px",
-                  border: `2px solid ${themeData.border}`,
-                  background: themeData.surfaceElevated,
-                  color: themeData.textSecondary,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  fontSize: "13px",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = themeData.accent;
-                  e.currentTarget.style.color = themeData.text;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = themeData.border;
-                  e.currentTarget.style.color = themeData.textSecondary;
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="m21 21-4.35-4.35"/>
-                </svg>
-                <span className="mobile-hidden">Szukaj</span>
-                <kbd style={{
-                  padding: "2px 5px",
-                  borderRadius: "4px",
-                  background: themeData.surface,
-                  border: `1px solid ${themeData.border}`,
-                  fontSize: "10px",
-                  fontFamily: "monospace",
-                }} className="mobile-hidden">Ctrl+K</kbd>
-              </button>
-            )}
-          </div>
         </div>
         <button
           onClick={() => navigate("/calendar")}
@@ -412,110 +308,159 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
         </button>
       </div>
 
-      {/* Dashboard "Dziś" - kompaktowe podsumowanie */}
+      {/* Dashboard "Dziś" - kompaktowe podsumowanie z wyszukiwarką */}
       <div style={{
         display: "flex",
-        gap: "12px",
+        gap: "8px",
         padding: "0 clamp(8px, 2vw, 16px)",
-        marginBottom: "12px",
+        marginBottom: "10px",
+        alignItems: "center",
         flexWrap: "wrap",
       }}>
-        {/* Wizyty dziś */}
-        <div style={{
-          padding: "10px 16px",
-          borderRadius: "10px",
-          background: `linear-gradient(135deg, ${themeData.accent}20 0%, ${themeData.accent}10 100%)`,
-          border: `1px solid ${themeData.accent}40`,
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          cursor: "pointer",
-          transition: "all 0.2s",
-        }}
-        onClick={() => navigate("/calendar")}
-        onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-        onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
-        title="Przejdź do kalendarza"
+        {/* Mini kafelki statystyk */}
+        <div 
+          style={{
+            padding: "6px 10px",
+            borderRadius: "8px",
+            background: `${themeData.accent}15`,
+            border: `1px solid ${themeData.accent}30`,
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+          onClick={() => navigate("/calendar")}
+          onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-1px)"}
+          onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+          title="Przejdź do kalendarza"
         >
-          <span style={{ fontSize: "20px" }}>📅</span>
-          <div>
-            <div style={{ fontSize: "18px", fontWeight: 700, color: themeData.accent }}>{todayBookings.length}</div>
-            <div style={{ fontSize: "10px", color: themeData.textSecondary }}>Wizyty dziś</div>
-          </div>
+          <span style={{ fontSize: "14px" }}>📅</span>
+          <span style={{ fontSize: "13px", fontWeight: 600, color: themeData.accent }}>{todayBookings.length}</span>
+          <span style={{ fontSize: "10px", color: themeData.textSecondary }}>dziś</span>
         </div>
 
-        {/* Nowe leady */}
         <div style={{
-          padding: "10px 16px",
-          borderRadius: "10px",
-          background: `linear-gradient(135deg, #3b82f620 0%, #3b82f610 100%)`,
-          border: `1px solid #3b82f640`,
+          padding: "6px 10px",
+          borderRadius: "8px",
+          background: "#3b82f615",
+          border: "1px solid #3b82f630",
           display: "flex",
           alignItems: "center",
-          gap: "10px",
+          gap: "6px",
         }}>
-          <span style={{ fontSize: "20px" }}>✨</span>
-          <div>
-            <div style={{ fontSize: "18px", fontWeight: 700, color: "#3b82f6" }}>{newLeadsLast24h.length}</div>
-            <div style={{ fontSize: "10px", color: themeData.textSecondary }}>Nowe (24h)</div>
-          </div>
+          <span style={{ fontSize: "14px" }}>✨</span>
+          <span style={{ fontSize: "13px", fontWeight: 600, color: "#3b82f6" }}>{newLeadsLast24h.length}</span>
+          <span style={{ fontSize: "10px", color: themeData.textSecondary }}>nowe</span>
         </div>
 
-        {/* Do oddzwonienia */}
         <div style={{
-          padding: "10px 16px",
-          borderRadius: "10px",
-          background: `linear-gradient(135deg, #f59e0b20 0%, #f59e0b10 100%)`,
-          border: `1px solid #f59e0b40`,
+          padding: "6px 10px",
+          borderRadius: "8px",
+          background: "#f59e0b15",
+          border: "1px solid #f59e0b30",
           display: "flex",
           alignItems: "center",
-          gap: "10px",
+          gap: "6px",
         }}>
-          <span style={{ fontSize: "20px" }}>📞</span>
-          <div>
-            <div style={{ fontSize: "18px", fontWeight: 700, color: "#f59e0b" }}>{leadsToCallback.length}</div>
-            <div style={{ fontSize: "10px", color: themeData.textSecondary }}>Do oddzw.</div>
-          </div>
+          <span style={{ fontSize: "14px" }}>📞</span>
+          <span style={{ fontSize: "13px", fontWeight: 600, color: "#f59e0b" }}>{leadsToCallback.length}</span>
+          <span style={{ fontSize: "10px", color: themeData.textSecondary }}>oddzw.</span>
         </div>
 
-        {/* Pilne */}
         {urgentLeads.length > 0 && (
           <div style={{
-            padding: "10px 16px",
-            borderRadius: "10px",
-            background: `linear-gradient(135deg, #ef444420 0%, #ef444410 100%)`,
-            border: `1px solid #ef444440`,
+            padding: "6px 10px",
+            borderRadius: "8px",
+            background: "#ef444415",
+            border: "1px solid #ef444430",
             display: "flex",
             alignItems: "center",
-            gap: "10px",
-            animation: "pulse 2s infinite",
+            gap: "6px",
           }}>
-            <span style={{ fontSize: "20px" }}>🔥</span>
-            <div>
-              <div style={{ fontSize: "18px", fontWeight: 700, color: "#ef4444" }}>{urgentLeads.length}</div>
-              <div style={{ fontSize: "10px", color: themeData.textSecondary }}>Pilne</div>
-            </div>
+            <span style={{ fontSize: "14px" }}>🔥</span>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: "#ef4444" }}>{urgentLeads.length}</span>
           </div>
         )}
 
-        {/* VIP */}
         {vipLeads.length > 0 && (
           <div style={{
-            padding: "10px 16px",
-            borderRadius: "10px",
-            background: `linear-gradient(135deg, #f59e0b20 0%, #f59e0b10 100%)`,
-            border: `1px solid #f59e0b40`,
+            padding: "6px 10px",
+            borderRadius: "8px",
+            background: "#f59e0b15",
+            border: "1px solid #f59e0b30",
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "6px",
           }}>
-            <span style={{ fontSize: "20px" }}>⭐</span>
-            <div>
-              <div style={{ fontSize: "18px", fontWeight: 700, color: "#f59e0b" }}>{vipLeads.length}</div>
-              <div style={{ fontSize: "10px", color: themeData.textSecondary }}>VIP</div>
-            </div>
+            <span style={{ fontSize: "14px" }}>⭐</span>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: "#f59e0b" }}>{vipLeads.length}</span>
           </div>
         )}
+
+        {/* Separator */}
+        <div style={{ 
+          width: "1px", 
+          height: "24px", 
+          background: themeData.border, 
+          margin: "0 4px",
+        }} />
+
+        {/* Wyszukiwarka */}
+        <div style={{ position: "relative", flex: 1, maxWidth: "300px", minWidth: "150px" }}>
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Szukaj... (Ctrl+K)"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setShowSearch(true)}
+            style={{
+              width: "100%",
+              padding: "6px 10px 6px 32px",
+              borderRadius: "8px",
+              border: `1px solid ${searchQuery ? themeData.accent : themeData.border}`,
+              background: themeData.surfaceElevated,
+              color: themeData.text,
+              fontSize: "13px",
+              outline: "none",
+              transition: "all 0.2s",
+            }}
+          />
+          <svg 
+            style={{ 
+              position: "absolute", 
+              left: "10px", 
+              top: "50%", 
+              transform: "translateY(-50%)",
+              color: themeData.textSecondary,
+            }}
+            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{
+                position: "absolute",
+                right: "6px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                color: themeData.textSecondary,
+                cursor: "pointer",
+                padding: "2px",
+                fontSize: "14px",
+                lineHeight: 1,
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Status columns - fill entire page */}
@@ -525,8 +470,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
         flex: 1,
         overflow: "hidden",
         minHeight: 0,
-        height: "calc(100vh - 180px)",
-        maxHeight: "calc(100vh - 180px)",
+        height: "calc(100vh - 150px)",
+        maxHeight: "calc(100vh - 150px)",
         alignItems: "stretch",
         position: "relative",
         zIndex: 1,
