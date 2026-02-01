@@ -609,26 +609,26 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                           ✉️ {l.email}
                         </div>
                       ) : null}
-                      <a 
-                        href={`tel:${l.phone?.replace(/\s/g, '')}`}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ 
-                          fontSize: "11px", 
-                          color: themeData.accent, 
-                          marginBottom: 2,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4,
-                          lineHeight: "1.3",
-                          textDecoration: "none",
-                          transition: "opacity 0.2s",
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.opacity = "0.7"}
-                        onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
-                        title="Kliknij aby zadzwonić"
-                      >
-                        📞 {l.phone}
-                      </a>
+                      <div style={{ 
+                        fontSize: "11px", 
+                        marginBottom: 2,
+                        lineHeight: "1.3",
+                      }}>
+                        📞 <a 
+                          href={`tel:${l.phone?.replace(/\s/g, '')}`}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ 
+                            color: themeData.accent, 
+                            textDecoration: "none",
+                            transition: "opacity 0.2s",
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = "0.7"}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+                          title="Kliknij aby zadzwonić"
+                        >
+                          {l.phone}
+                        </a>
+                      </div>
                       {l.description ? (
                         <div style={{ 
                           fontSize: "10px", 
@@ -1120,22 +1120,25 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                   title={selectedLead.status}
                 />
               </div>
-              <a 
-                href={`tel:${selectedLead.phone?.replace(/\s/g, '')}`}
-                style={{ 
-                  fontSize: "16px", 
-                  marginBottom: 12,
-                  color: themeData.accent,
-                  textDecoration: "none",
-                  display: "block",
-                  transition: "opacity 0.2s",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = "0.7"}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
-                title="Kliknij aby zadzwonić"
-              >
-                📞 {selectedLead.phone}
-              </a>
+              <div style={{ 
+                fontSize: "16px", 
+                marginBottom: 12,
+                color: themeData.textSecondary,
+              }}>
+                📞 <a 
+                  href={`tel:${selectedLead.phone?.replace(/\s/g, '')}`}
+                  style={{ 
+                    color: themeData.accent,
+                    textDecoration: "none",
+                    transition: "opacity 0.2s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = "0.7"}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+                  title="Kliknij aby zadzwonić"
+                >
+                  {selectedLead.phone}
+                </a>
+              </div>
               {selectedLead.email ? (
                 <div style={{ 
                   fontSize: "16px", 
