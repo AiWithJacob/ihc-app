@@ -249,7 +249,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
           gap: "8px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 1 }}>
           <h1
             style={{
               margin: 0,
@@ -259,6 +259,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               color: themeData.text,
               textShadow: `0 0 30px ${themeData.glow}`,
               position: "relative",
+              flexShrink: 0,
             }}
           >
             Kontakty
@@ -273,6 +274,62 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               boxShadow: `0 0 10px ${themeData.glow}`,
             }} />
           </h1>
+          
+          {/* Wyszukiwarka w nagłówku */}
+          <div style={{ position: "relative", flex: 1, maxWidth: "280px" }}>
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Szukaj... (Ctrl+K)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setShowSearch(true)}
+              style={{
+                width: "100%",
+                padding: "6px 10px 6px 32px",
+                borderRadius: "6px",
+                border: `1px solid ${searchQuery ? themeData.accent : themeData.border}`,
+                background: themeData.surfaceElevated,
+                color: themeData.text,
+                fontSize: "12px",
+                outline: "none",
+                transition: "all 0.2s",
+              }}
+            />
+            <svg 
+              style={{ 
+                position: "absolute", 
+                left: "10px", 
+                top: "50%", 
+                transform: "translateY(-50%)",
+                color: themeData.textSecondary,
+              }}
+              width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            >
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                style={{
+                  position: "absolute",
+                  right: "6px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  color: themeData.textSecondary,
+                  cursor: "pointer",
+                  padding: "2px",
+                  fontSize: "12px",
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
         <button
           onClick={() => navigate("/calendar")}
@@ -306,70 +363,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
         </button>
       </div>
 
-      {/* Wyszukiwarka */}
-      <div style={{
-        display: "flex",
-        gap: "8px",
-        padding: "0 clamp(8px, 2vw, 16px)",
-        marginBottom: "10px",
-        alignItems: "center",
-      }}>
-        <div style={{ position: "relative", flex: 1, maxWidth: "350px" }}>
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Szukaj po imieniu, telefonie, notatce... (Ctrl+K)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setShowSearch(true)}
-            style={{
-              width: "100%",
-              padding: "8px 12px 8px 36px",
-              borderRadius: "8px",
-              border: `1px solid ${searchQuery ? themeData.accent : themeData.border}`,
-              background: themeData.surfaceElevated,
-              color: themeData.text,
-              fontSize: "13px",
-              outline: "none",
-              transition: "all 0.2s",
-            }}
-          />
-          <svg 
-            style={{ 
-              position: "absolute", 
-              left: "12px", 
-              top: "50%", 
-              transform: "translateY(-50%)",
-              color: themeData.textSecondary,
-            }}
-            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-          >
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              style={{
-                position: "absolute",
-                right: "8px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "none",
-                border: "none",
-                color: themeData.textSecondary,
-                cursor: "pointer",
-                padding: "2px",
-                fontSize: "14px",
-                lineHeight: 1,
-              }}
-            >
-              ×
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Status columns - fill entire page */}
       <div style={{ 
         display: "flex", 
@@ -377,8 +370,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
         flex: 1,
         overflow: "hidden",
         minHeight: 0,
-        height: "calc(100vh - 130px)",
-        maxHeight: "calc(100vh - 130px)",
+        height: "calc(100vh - 100px)",
+        maxHeight: "calc(100vh - 100px)",
         alignItems: "stretch",
         position: "relative",
         zIndex: 1,
