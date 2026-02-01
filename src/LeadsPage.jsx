@@ -308,116 +308,25 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
         </button>
       </div>
 
-      {/* Dashboard "Dziś" - kompaktowe podsumowanie z wyszukiwarką */}
+      {/* Wyszukiwarka */}
       <div style={{
         display: "flex",
         gap: "8px",
         padding: "0 clamp(8px, 2vw, 16px)",
         marginBottom: "10px",
         alignItems: "center",
-        flexWrap: "wrap",
       }}>
-        {/* Mini kafelki statystyk */}
-        <div 
-          style={{
-            padding: "6px 10px",
-            borderRadius: "8px",
-            background: `${themeData.accent}15`,
-            border: `1px solid ${themeData.accent}30`,
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
-          onClick={() => navigate("/calendar")}
-          onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-1px)"}
-          onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
-          title="Przejdź do kalendarza"
-        >
-          <span style={{ fontSize: "14px" }}>📅</span>
-          <span style={{ fontSize: "13px", fontWeight: 600, color: themeData.accent }}>{todayBookings.length}</span>
-          <span style={{ fontSize: "10px", color: themeData.textSecondary }}>dziś</span>
-        </div>
-
-        <div style={{
-          padding: "6px 10px",
-          borderRadius: "8px",
-          background: "#3b82f615",
-          border: "1px solid #3b82f630",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-        }}>
-          <span style={{ fontSize: "14px" }}>✨</span>
-          <span style={{ fontSize: "13px", fontWeight: 600, color: "#3b82f6" }}>{newLeadsLast24h.length}</span>
-          <span style={{ fontSize: "10px", color: themeData.textSecondary }}>nowe</span>
-        </div>
-
-        <div style={{
-          padding: "6px 10px",
-          borderRadius: "8px",
-          background: "#f59e0b15",
-          border: "1px solid #f59e0b30",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-        }}>
-          <span style={{ fontSize: "14px" }}>📞</span>
-          <span style={{ fontSize: "13px", fontWeight: 600, color: "#f59e0b" }}>{leadsToCallback.length}</span>
-          <span style={{ fontSize: "10px", color: themeData.textSecondary }}>oddzw.</span>
-        </div>
-
-        {urgentLeads.length > 0 && (
-          <div style={{
-            padding: "6px 10px",
-            borderRadius: "8px",
-            background: "#ef444415",
-            border: "1px solid #ef444430",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-          }}>
-            <span style={{ fontSize: "14px" }}>🔥</span>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: "#ef4444" }}>{urgentLeads.length}</span>
-          </div>
-        )}
-
-        {vipLeads.length > 0 && (
-          <div style={{
-            padding: "6px 10px",
-            borderRadius: "8px",
-            background: "#f59e0b15",
-            border: "1px solid #f59e0b30",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-          }}>
-            <span style={{ fontSize: "14px" }}>⭐</span>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: "#f59e0b" }}>{vipLeads.length}</span>
-          </div>
-        )}
-
-        {/* Separator */}
-        <div style={{ 
-          width: "1px", 
-          height: "24px", 
-          background: themeData.border, 
-          margin: "0 4px",
-        }} />
-
-        {/* Wyszukiwarka */}
-        <div style={{ position: "relative", flex: 1, maxWidth: "300px", minWidth: "150px" }}>
+        <div style={{ position: "relative", flex: 1, maxWidth: "350px" }}>
           <input
             ref={searchInputRef}
             type="text"
-            placeholder="Szukaj... (Ctrl+K)"
+            placeholder="Szukaj po imieniu, telefonie, notatce... (Ctrl+K)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setShowSearch(true)}
             style={{
               width: "100%",
-              padding: "6px 10px 6px 32px",
+              padding: "8px 12px 8px 36px",
               borderRadius: "8px",
               border: `1px solid ${searchQuery ? themeData.accent : themeData.border}`,
               background: themeData.surfaceElevated,
@@ -430,7 +339,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
           <svg 
             style={{ 
               position: "absolute", 
-              left: "10px", 
+              left: "12px", 
               top: "50%", 
               transform: "translateY(-50%)",
               color: themeData.textSecondary,
@@ -445,7 +354,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               onClick={() => setSearchQuery("")}
               style={{
                 position: "absolute",
-                right: "6px",
+                right: "8px",
                 top: "50%",
                 transform: "translateY(-50%)",
                 background: "none",
@@ -470,8 +379,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
         flex: 1,
         overflow: "hidden",
         minHeight: 0,
-        height: "calc(100vh - 150px)",
-        maxHeight: "calc(100vh - 150px)",
+        height: "calc(100vh - 130px)",
+        maxHeight: "calc(100vh - 130px)",
         alignItems: "stretch",
         position: "relative",
         zIndex: 1,

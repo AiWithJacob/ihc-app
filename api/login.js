@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     // Pobierz użytkownika z bazy (z password_hash)
     const { data: user, error: fetchError } = await supabase
       .from('app_users')
-      .select('id, login, email, password_hash, created_at')
+      .select('id, login, email, password_hash, chiropractor, created_at')
       .eq('login', loginS)
       .maybeSingle();
 
@@ -76,6 +76,7 @@ export default async function handler(req, res) {
         id: user.id,
         login: user.login,
         email: user.email,
+        chiropractor: user.chiropractor || 'default',
         created_at: user.created_at
       }
     });
