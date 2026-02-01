@@ -1233,9 +1233,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                     boxShadow: `0 4px 12px ${themeData.glow}`,
                   }}
                 >
-                  <strong>Umówiony:</strong>
-                  <br />
-                  {formatDateDDMMRR(leadBooking.date)} {leadBooking.time}
+                  <strong>Umówiony:</strong> {formatDateDDMMRR(leadBooking.date)} {leadBooking.time}
                 </div>
               )}
 
