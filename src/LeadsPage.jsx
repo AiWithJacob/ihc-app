@@ -12,13 +12,12 @@ const STATUSES = [
   "Sam się skontaktuje",
 ];
 
-// Dostępne tagi
-const AVAILABLE_TAGS = [
-  { id: "VIP", label: "VIP", color: "#f59e0b", icon: "⭐" },
-  { id: "Pilne", label: "Pilne", color: "#ef4444", icon: "🔥" },
-  { id: "Polecenie", label: "Polecenie", color: "#22c55e", icon: "👥" },
-  { id: "Ubezpieczenie", label: "Ubezpieczenie", color: "#3b82f6", icon: "🏥" },
-  { id: "Powracający", label: "Powracający", color: "#8b5cf6", icon: "🔄" },
+// Domyślne szablony notatek (można edytować w localStorage)
+const DEFAULT_TEMPLATES = [
+  { id: "1", label: "Pierwsza wizyta", text: "PIERWSZA WIZYTA\n\nDolegliwości: \nOd kiedy: \nPrzyczyna: \n\nZalecenia: " },
+  { id: "2", label: "Kontrola", text: "WIZYTA KONTROLNA\n\nPostępy: \nSamopoczucie: \n\nZalecenia: " },
+  { id: "3", label: "Ból pleców", text: "BÓL PLECÓW\n\nLokalizacja: \nNasilenie (1-10): \nOd kiedy: \nCzynniki nasilające: \n\nBadanie: \nZalecenia: " },
+  { id: "4", label: "Ból szyi", text: "BÓL SZYI\n\nLokalizacja: \nPromieniowanie: \nNasilenie (1-10): \n\nBadanie: \nZalecenia: " },
 ];
 
 // Helper function for status colors
@@ -56,8 +55,20 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
   const [dragOverStatus, setDragOverStatus] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [templates, setTemplates] = useState(() => {
+    const saved = localStorage.getItem('noteTemplates');
+    return saved ? JSON.parse(saved) : DEFAULT_TEMPLATES;
+  });
+  const [editingTemplate, setEditingTemplate] = useState(null);
   const searchInputRef = useRef(null);
   const scrollRefs = useRef({});
+
+  // Zapisz szablony do localStorage
+  const saveTemplates = (newTemplates) => {
+    setTemplates(newTemplates);
+    localStorage.setItem('noteTemplates', JSON.stringify(newTemplates));
+  };
 
   // Filtrowanie leadów na podstawie wyszukiwania
   const filterLeads = (leadsToFilter) => {
@@ -68,8 +79,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
       (lead.phone && lead.phone.toLowerCase().includes(query)) ||
       (lead.email && lead.email.toLowerCase().includes(query)) ||
       (lead.notes && lead.notes.toLowerCase().includes(query)) ||
-      (lead.description && lead.description.toLowerCase().includes(query)) ||
-      (lead.tags && lead.tags.some(tag => tag.toLowerCase().includes(query)))
+      (lead.description && lead.description.toLowerCase().includes(query))
     );
   };
 
@@ -96,18 +106,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  // Dashboard "Dziś" - obliczenia
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  
-  const todayBookings = bookings.filter(b => b.date === today);
-  const newLeadsLast24h = leads.filter(l => l.createdAt && l.createdAt > yesterday);
-  const leadsToCallback = leads.filter(l => 
-    l.status === "Zadzwoń później" || l.status === "Nie odebrał"
-  );
-  const urgentLeads = leads.filter(l => l.tags?.includes("Pilne"));
-  const vipLeads = leads.filter(l => l.tags?.includes("VIP"));
 
   const navigate = useNavigate();
 
@@ -646,43 +644,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                           {l.description}
                         </div>
                       ) : null}
-                      {/* Tagi */}
-                      {l.tags && l.tags.length > 0 && (
-                        <div style={{ 
-                          display: "flex", 
-                          flexWrap: "wrap", 
-                          gap: "3px", 
-                          marginTop: "4px" 
-                        }}>
-                          {l.tags.slice(0, 3).map(tagId => {
-                            const tag = AVAILABLE_TAGS.find(t => t.id === tagId);
-                            if (!tag) return null;
-                            return (
-                              <span
-                                key={tagId}
-                                style={{
-                                  fontSize: "9px",
-                                  padding: "1px 5px",
-                                  borderRadius: "4px",
-                                  background: `${tag.color}20`,
-                                  color: tag.color,
-                                  fontWeight: 600,
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "2px",
-                                }}
-                              >
-                                {tag.icon} {tag.label}
-                              </span>
-                            );
-                          })}
-                          {l.tags.length > 3 && (
-                            <span style={{ fontSize: "9px", color: themeData.textSecondary }}>
-                              +{l.tags.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </div>
                     <div
                       style={{
@@ -1237,70 +1198,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                 </div>
               )}
 
-              {/* Tagi */}
-              <h4
-                style={{
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  marginBottom: 8,
-                  marginTop: 0,
-                  color: themeData.text,
-                }}
-              >
-                Tagi
-              </h4>
-              <div style={{ 
-                display: "flex", 
-                flexWrap: "wrap", 
-                gap: "6px", 
-                marginBottom: 12,
-              }}>
-                {AVAILABLE_TAGS.map(tag => {
-                  const isActive = selectedLead.tags?.includes(tag.id);
-                  return (
-                    <button
-                      key={tag.id}
-                      onClick={() => {
-                        const currentTags = selectedLead.tags || [];
-                        const newTags = isActive 
-                          ? currentTags.filter(t => t !== tag.id)
-                          : [...currentTags, tag.id];
-                        onUpdateLead?.(selectedLead.id, { tags: newTags });
-                        setSelectedLead(prev => ({ ...prev, tags: newTags }));
-                      }}
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: "6px",
-                        border: `2px solid ${isActive ? tag.color : themeData.border}`,
-                        background: isActive ? `${tag.color}20` : "transparent",
-                        color: isActive ? tag.color : themeData.textSecondary,
-                        cursor: "pointer",
-                        fontSize: "11px",
-                        fontWeight: 600,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        transition: "all 0.2s",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isActive) {
-                          e.currentTarget.style.borderColor = tag.color;
-                          e.currentTarget.style.color = tag.color;
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive) {
-                          e.currentTarget.style.borderColor = themeData.border;
-                          e.currentTarget.style.color = themeData.textSecondary;
-                        }
-                      }}
-                    >
-                      {tag.icon} {tag.label}
-                    </button>
-                  );
-                })}
-              </div>
-
               <h4
                 style={{
                   fontSize: "16px",
@@ -1442,61 +1339,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                   Notatki / opis pacjenta
                 </h3>
 
-              {/* Szablony notatek */}
-              <div style={{ 
-                display: "flex", 
-                flexWrap: "wrap", 
-                gap: "6px", 
-                marginBottom: 12,
-              }}>
-                <span style={{ 
-                  fontSize: "11px", 
-                  color: themeData.textSecondary, 
-                  alignSelf: "center",
-                  marginRight: "4px",
-                }}>
-                  Szablony:
-                </span>
-                {[
-                  { label: "Pierwsza wizyta", text: "PIERWSZA WIZYTA\n\nDolegliwości: \nOd kiedy: \nPrzyczyna: \n\nZalecenia: \n" },
-                  { label: "Kontrola", text: "WIZYTA KONTROLNA\n\nPostępy: \nSamopoczucie: \n\nZalecenia: \n" },
-                  { label: "Ból pleców", text: "BÓL PLECÓW\n\nLokalizacja: \nNasilenie (1-10): \nOd kiedy: \nCzynniki nasilające: \n\nBadanie: \nZalecenia: \n" },
-                  { label: "Ból szyi", text: "BÓL SZYI\n\nLokalizacja: \nPromieniowanie: \nNasilenie (1-10): \n\nBadanie: \nZalecenia: \n" },
-                ].map((template) => (
-                  <button
-                    key={template.label}
-                    onClick={() => {
-                      const newNote = noteDraft 
-                        ? noteDraft + "\n\n" + template.text 
-                        : template.text;
-                      setNoteDraft(newNote);
-                    }}
-                    style={{
-                      padding: "4px 8px",
-                      borderRadius: "6px",
-                      border: `1px solid ${themeData.border}`,
-                      background: themeData.surfaceElevated,
-                      color: themeData.textSecondary,
-                      cursor: "pointer",
-                      fontSize: "10px",
-                      fontWeight: 500,
-                      transition: "all 0.2s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = themeData.accent;
-                      e.currentTarget.style.color = themeData.accent;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = themeData.border;
-                      e.currentTarget.style.color = themeData.textSecondary;
-                    }}
-                    title={`Wstaw szablon: ${template.label}`}
-                  >
-                    + {template.label}
-                  </button>
-                ))}
-              </div>
-
               {/* Podgląd notatki jeśli jest długa */}
               {noteDraft.length > 300 && (
                 <div style={{ marginBottom: 12 }}>
@@ -1594,6 +1436,178 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                   e.currentTarget.style.boxShadow = "none";
                 }}
               />
+
+              {/* Szablony notatek - pod textarea */}
+              <div style={{ 
+                marginTop: 12,
+                padding: "10px",
+                background: themeData.surface,
+                borderRadius: "8px",
+                border: `1px solid ${themeData.border}`,
+              }}>
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "center",
+                  marginBottom: 8,
+                }}>
+                  <span style={{ 
+                    fontSize: "12px", 
+                    fontWeight: 600,
+                    color: themeData.text,
+                  }}>
+                    📋 Szablony notatek
+                  </span>
+                  <button
+                    onClick={() => setShowTemplateEditor(!showTemplateEditor)}
+                    style={{
+                      padding: "3px 8px",
+                      borderRadius: "4px",
+                      border: `1px solid ${themeData.border}`,
+                      background: "transparent",
+                      color: themeData.textSecondary,
+                      cursor: "pointer",
+                      fontSize: "10px",
+                    }}
+                  >
+                    {showTemplateEditor ? "Zamknij edytor" : "✏️ Edytuj szablony"}
+                  </button>
+                </div>
+
+                {/* Lista szablonów do wstawienia */}
+                {!showTemplateEditor && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    {templates.map((template) => (
+                      <button
+                        key={template.id}
+                        onClick={() => {
+                          const newNote = noteDraft 
+                            ? noteDraft + "\n\n" + template.text 
+                            : template.text;
+                          setNoteDraft(newNote);
+                        }}
+                        style={{
+                          padding: "5px 10px",
+                          borderRadius: "6px",
+                          border: `1px solid ${themeData.accent}40`,
+                          background: `${themeData.accent}10`,
+                          color: themeData.accent,
+                          cursor: "pointer",
+                          fontSize: "11px",
+                          fontWeight: 500,
+                          transition: "all 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = `${themeData.accent}20`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = `${themeData.accent}10`;
+                        }}
+                        title={template.text.substring(0, 100) + "..."}
+                      >
+                        + {template.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Edytor szablonów */}
+                {showTemplateEditor && (
+                  <div style={{ marginTop: 8 }}>
+                    {templates.map((template, index) => (
+                      <div 
+                        key={template.id} 
+                        style={{ 
+                          marginBottom: 10,
+                          padding: "8px",
+                          background: themeData.surfaceElevated,
+                          borderRadius: "6px",
+                          border: `1px solid ${themeData.border}`,
+                        }}
+                      >
+                        <div style={{ display: "flex", gap: "8px", marginBottom: 6 }}>
+                          <input
+                            type="text"
+                            value={template.label}
+                            onChange={(e) => {
+                              const newTemplates = [...templates];
+                              newTemplates[index] = { ...template, label: e.target.value };
+                              saveTemplates(newTemplates);
+                            }}
+                            placeholder="Nazwa szablonu"
+                            style={{
+                              flex: 1,
+                              padding: "4px 8px",
+                              borderRadius: "4px",
+                              border: `1px solid ${themeData.border}`,
+                              background: themeData.surface,
+                              color: themeData.text,
+                              fontSize: "12px",
+                            }}
+                          />
+                          <button
+                            onClick={() => {
+                              if (confirm("Usunąć ten szablon?")) {
+                                saveTemplates(templates.filter((_, i) => i !== index));
+                              }
+                            }}
+                            style={{
+                              padding: "4px 8px",
+                              borderRadius: "4px",
+                              border: "none",
+                              background: "#ef444420",
+                              color: "#ef4444",
+                              cursor: "pointer",
+                              fontSize: "11px",
+                            }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                        <textarea
+                          value={template.text}
+                          onChange={(e) => {
+                            const newTemplates = [...templates];
+                            newTemplates[index] = { ...template, text: e.target.value };
+                            saveTemplates(newTemplates);
+                          }}
+                          placeholder="Treść szablonu..."
+                          style={{
+                            width: "100%",
+                            minHeight: "60px",
+                            padding: "6px 8px",
+                            borderRadius: "4px",
+                            border: `1px solid ${themeData.border}`,
+                            background: themeData.surface,
+                            color: themeData.text,
+                            fontSize: "11px",
+                            resize: "vertical",
+                            fontFamily: "inherit",
+                          }}
+                        />
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => {
+                        const newId = String(Date.now());
+                        saveTemplates([...templates, { id: newId, label: "Nowy szablon", text: "" }]);
+                      }}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "6px",
+                        border: `1px dashed ${themeData.accent}`,
+                        background: "transparent",
+                        color: themeData.accent,
+                        cursor: "pointer",
+                        fontSize: "11px",
+                        width: "100%",
+                      }}
+                    >
+                      + Dodaj nowy szablon
+                    </button>
+                  </div>
+                )}
+              </div>
 
               </div>
               <div style={{ marginTop: "auto", paddingTop: 12 }}>
