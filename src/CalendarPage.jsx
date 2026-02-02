@@ -67,6 +67,8 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
 
   const leadFromState = location.state?.lead || null;
   const highlightBookingId = location.state?.highlightBookingId || null;
+  const scrollToTime = location.state?.scrollToTime || null;
+  const scrollToDate = location.state?.scrollToDate || null;
   const [selectedDate, setSelectedDate] = useState(todayISO());
   const [viewMode, setViewMode] = useState('week'); // 'week' lub 'single'
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -244,73 +246,6 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
 
     return () => clearInterval(interval);
   }, [bookings, setBookings]); // Uruchamiaj przy każdej zmianie bookings
-
-  // Funkcja do obliczania pozycji paska zbliżającej się godziny (nieużywana, ale zachowana dla przyszłego użycia)
-  // eslint-disable-next-line no-unused-vars
-  const getUpcomingTimePosition = () => {
-    if (!currentTime || currentTime.hours === undefined || currentTime.minutes === undefined) {
-      return null;
-    }
-    
-    const weekDays = getWeekDays(selectedDate);
-    const todayDate = todayISO();
-    const isTodayInView = weekDays.includes(todayDate);
-    if (!isTodayInView) return null;
-
-    const currentHour = currentTime.hours;
-    const currentMinute = currentTime.minutes;
-    
-    // Sprawdź czy aktualna godzina jest w zakresie 0:00-23:00
-    if (currentHour < 0 || currentHour > 23) return null;
-
-    // Znajdź najbliższą rezerwację w ciągu następnych 2 godzin
-    const upcomingBookings = bookings.filter(booking => {
-      if (booking.date !== todayDate) return false;
-      const timePart = booking.time.split(" - ")[0];
-      const [bookingHour, bookingMinute] = timePart.split(":").map(Number);
-      const bookingTime = bookingHour * 60 + bookingMinute;
-      const currentTimeMinutes = currentHour * 60 + currentMinute;
-      const timeDiff = bookingTime - currentTimeMinutes;
-      return timeDiff > 0 && timeDiff <= 120; // W ciągu 2 godzin
-    });
-
-    if (upcomingBookings.length === 0) return null;
-
-    // Znajdź najbliższą rezerwację
-    const nearestBooking = upcomingBookings.reduce((nearest, booking) => {
-      const nearestTimePart = nearest.time.split(" - ")[0];
-      const bookingTimePart = booking.time.split(" - ")[0];
-      const [nearestHour, nearestMinute] = nearestTimePart.split(":").map(Number);
-      const [bookingHour, bookingMinute] = bookingTimePart.split(":").map(Number);
-      const nearestTime = nearestHour * 60 + nearestMinute;
-      const bookingTime = bookingHour * 60 + bookingMinute;
-      const currentTimeMinutes = currentHour * 60 + currentMinute;
-      return (bookingTime - currentTimeMinutes) < (nearestTime - currentTimeMinutes) ? booking : nearest;
-    });
-
-    const bookingTimePart = nearestBooking.time.split(" - ")[0];
-    const [bookingHour, bookingMinute] = bookingTimePart.split(":").map(Number);
-    const hourIndex = bookingHour;
-    const cellHeight = 60; // zgodne z wysokością wiersza w widoku tygodnia
-    const positionFromTop = (hourIndex * cellHeight) + (bookingMinute / 60) * cellHeight;
-
-    const todayIndex = weekDays.indexOf(todayDate);
-    if (todayIndex === -1) return null;
-
-    const currentTimeMinutes = currentHour * 60 + currentMinute;
-    const bookingTimeMinutes = bookingHour * 60 + bookingMinute;
-    const minutesUntil = bookingTimeMinutes - currentTimeMinutes;
-
-    return {
-      top: positionFromTop,
-      hour: bookingHour,
-      minute: bookingMinute,
-      todayIndex: todayIndex,
-      minutesUntil: minutesUntil,
-      booking: nearestBooking,
-    };
-  };
-
 
   const months = [
     "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
@@ -775,7 +710,24 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
         // Podświetl wydarzenie (błysk na zielono)
         setTimeout(() => {
           setHighlightedBookingId(highlightBookingId);
-        }, 0);
+        }, 100);
+        
+        // Przewiń do godziny wizyty
+        setTimeout(() => {
+          const timeToScroll = scrollToTime || booking.time;
+          if (timeToScroll) {
+            // Parsuj godzinę (np. "14:30" -> 14)
+            const hour = parseInt(timeToScroll.split(':')[0], 10);
+            // Znajdź kontener kalendarza i przewiń do odpowiedniej pozycji
+            const calendarContainer = document.querySelector('.calendar-scroll-container');
+            if (calendarContainer) {
+              // Każda godzina ma około 60px wysokości, przewiń trochę wyżej żeby było widać
+              const scrollPosition = Math.max(0, (hour - 1) * 60);
+              calendarContainer.scrollTo({ top: scrollPosition, behavior: 'smooth' });
+            }
+          }
+        }, 300);
+        
         // Po 2 sekundach usuń podświetlenie
         setTimeout(() => {
           setHighlightedBookingId(null);
@@ -784,7 +736,7 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
         navigate("/calendar", { replace: true, state: {} });
       }
     }
-  }, [highlightBookingId, bookings, navigate]);
+  }, [highlightBookingId, bookings, navigate, scrollToTime]);
 
   // Automatyczne przewijanie do wybranej godziny w selektorze czasu
   useEffect(() => {
@@ -1835,7 +1787,7 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
         {/* Kontener kalendarza z ramką - główny kontener do scrollowania */}
         <div 
           ref={scrollContainerRef}
-          className="hide-scrollbar"
+          className="hide-scrollbar calendar-scroll-container"
           style={{
             width: "95%",
             maxWidth: "clamp(100%, 95vw, 1200px)",
@@ -3668,7 +3620,6 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
       {showAddEventModal && (
         <div
           onClick={(e) => {
-            console.log("Modal backdrop clicked, showAddEventModal:", showAddEventModal);
             // Jeśli kliknięto w tło (nie w zawartość modalu), zamknij wszystko
             if (e.target === e.currentTarget) {
               setShowAddEventModal(false);
@@ -3691,7 +3642,6 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
             backdropFilter: "blur(4px)",
           }}
         >
-          {console.log("Modal is rendering, showAddEventModal:", showAddEventModal)}
           <div
             onClick={(e) => {
               // Jeśli kliknięto w zawartość modalu, ale poza kalendarzem, zamknij tylko kalendarz

@@ -147,10 +147,7 @@ export default function App() {
       try {
         const apiUrl = `${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}`;
         const response = await fetch(apiUrl);
-        if (!response.ok) {
-          console.log('⚠️ API nie jest dostępne (może być w trybie dev):', response.status, response.statusText);
-          return;
-        }
+        if (!response.ok) return;
         const data = await response.json();
         if (data.success && Array.isArray(data.leads)) {
           const list = data.leads.map(l => ({ ...l, chiropractor: l.chiropractor || user.chiropractor }));
@@ -158,7 +155,6 @@ export default function App() {
             const localOnly = prev.filter(p => !list.some(l => l.id === p.id));
             return [...localOnly, ...list];
           });
-          if (list.length > 0) console.log('📥 Zsynchronizowano leady z Supabase:', list.length);
         }
       } catch (error) {
         console.error('❌ Błąd synchronizacji leadów z Supabase:', error.message);
@@ -169,7 +165,6 @@ export default function App() {
       try {
         const url = `${API_URL}/api/leads?chiropractor=${encodeURIComponent(user.chiropractor)}`;
         const body = { ...lead, chiropractor: lead.chiropractor || user.chiropractor, user_id: user.id, user_login: user.login, user_email: user.email, source: 'ui' };
-        console.log('📤 POST /api/leads:', lead.name, '→', url);
         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         if (res.ok) {
           const d = await res.json();
@@ -255,10 +250,7 @@ export default function App() {
         if (typeof window !== 'undefined' && window.skipBookingsSyncUntil != null && Date.now() < window.skipBookingsSyncUntil) return;
         const apiUrl = `${API_URL}/api/bookings?chiropractor=${encodeURIComponent(user.chiropractor)}`;
         const response = await fetch(apiUrl);
-        if (!response.ok) {
-          console.log('⚠️ API nie jest dostępne (może być w trybie dev):', response.status, response.statusText);
-          return;
-        }
+        if (!response.ok) return;
         const data = await response.json();
         if (data.success && Array.isArray(data.bookings)) {
           const list = data.bookings.map(b => ({
@@ -270,7 +262,6 @@ export default function App() {
             const localOnly = prev.filter(p => !list.some(l => String(l.id) === String(p.id)));
             return [...localOnly, ...list];
           });
-          if (list.length > 0) console.log('📥 Zsynchronizowano rezerwacje z Supabase:', list.length);
         }
       } catch (error) {
         console.error('❌ Błąd synchronizacji rezerwacji z Supabase:', error.message);

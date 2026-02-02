@@ -54,13 +54,11 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
   const [draggedLead, setDraggedLead] = useState(null);
   const [dragOverStatus, setDragOverStatus] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showSearch, setShowSearch] = useState(false);
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   const [templates, setTemplates] = useState(() => {
     const saved = localStorage.getItem('noteTemplates');
     return saved ? JSON.parse(saved) : DEFAULT_TEMPLATES;
   });
-  const [editingTemplate, setEditingTemplate] = useState(null);
   const searchInputRef = useRef(null);
   const scrollRefs = useRef({});
 
@@ -86,20 +84,18 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
   // Skróty klawiszowe
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl+K lub Cmd+K - otwórz wyszukiwarkę
+      // Ctrl+K lub Cmd+K - focus na wyszukiwarkę
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        setShowSearch(true);
-        setTimeout(() => searchInputRef.current?.focus(), 100);
+        searchInputRef.current?.focus();
       }
       // Ctrl+N lub Cmd+N - nowy lead
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault();
         setShowAddLeadModal(true);
       }
-      // Escape - zamknij wyszukiwarkę
+      // Escape - wyczyść wyszukiwarkę
       if (e.key === 'Escape') {
-        setShowSearch(false);
         setSearchQuery("");
       }
     };
@@ -108,6 +104,20 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
   }, []);
 
   const navigate = useNavigate();
+
+  // Automatycznie zmień status leadów na "Umówiony", jeśli mają wizytę w kalendarzu
+  useEffect(() => {
+    if (!leads || !bookings || !onUpdateLead) return;
+    
+    // Znajdź wszystkie leady, które mają wizytę w kalendarzu
+    leads.forEach(lead => {
+      const hasBooking = bookings.some(booking => booking.leadId === lead.id);
+      if (hasBooking && lead.status !== "Umówiony") {
+        // Aktualizuj status
+        onUpdateLead(lead.id, { status: "Umówiony" });
+      }
+    });
+  }, [bookings, leads, onUpdateLead]);
 
   // Register the modal opening function with App.jsx
   useEffect(() => {
@@ -176,8 +186,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
     if (!selectedLead) return;
     const booking = getLeadBooking(selectedLead.id);
     if (booking) {
-      // Jeśli lead ma booking, przejdź do kalendarza i podświetl wydarzenie
-      navigate("/calendar", { state: { highlightBookingId: booking.id } });
+      // Jeśli lead ma booking, przejdź do kalendarza i podświetl wydarzenie + przewiń do godziny
+      navigate("/calendar", { state: { highlightBookingId: booking.id, scrollToTime: booking.time, scrollToDate: booking.date } });
     } else {
       // Jeśli nie ma booking, otwórz modal dodawania
       navigate("/calendar", { state: { lead: selectedLead } });
@@ -283,7 +293,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               placeholder="Szukaj... (Ctrl+K)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setShowSearch(true)}
               style={{
                 width: "100%",
                 padding: "6px 10px 6px 32px",
@@ -370,8 +379,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
         flex: 1,
         overflow: "hidden",
         minHeight: 0,
-        height: "calc(100vh - 100px)",
-        maxHeight: "calc(100vh - 100px)",
+        height: "calc(100vh - 120px)",
+        maxHeight: "calc(100vh - 120px)",
         alignItems: "stretch",
         position: "relative",
         zIndex: 1,
@@ -1321,7 +1330,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               </button>
             </div>
 
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: "clamp(300px, 50vw, 600px)", minWidth: "clamp(250px, 30vw, 300px)", overflowY: "auto", overflowX: "hidden", maxHeight: "100%", justifyContent: "space-between" }}>
+            <div className="hide-scrollbar" style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: "clamp(300px, 50vw, 600px)", minWidth: "clamp(250px, 30vw, 300px)", overflowY: "auto", overflowX: "hidden", maxHeight: "100%", justifyContent: "space-between" }}>
               <div>
                 {/* Nagłówek z szablonami */}
                 <div style={{ 
@@ -1864,11 +1873,21 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
             alignItems: "center",
             justifyContent: "center",
             zIndex: 1000,
+            overflow: "hidden",
           }}
           onClick={() => setShowTemplateEditor(false)}
+          onWheel={(e) => {
+            // Przekieruj scroll do kontenera szablonów
+            const container = e.currentTarget.querySelector('.template-scroll-container');
+            if (container) {
+              container.scrollTop += e.deltaY;
+            }
+          }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            onWheel={(e) => e.stopPropagation()}
+            className="hide-scrollbar"
             style={{
               background: themeData.cardBackground,
               borderRadius: 16,
@@ -1880,6 +1899,8 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               flexDirection: "column",
               boxShadow: `0 12px 48px ${themeData.shadow}`,
               border: `2px solid ${themeData.border}`,
+              overflowY: "auto",
+              overflowX: "hidden",
             }}
           >
             <div style={{
@@ -1918,7 +1939,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
             </div>
 
             <div 
-              className="hide-scrollbar"
+              className="hide-scrollbar template-scroll-container"
               style={{ 
                 flex: 1, 
                 overflowY: "auto", 
@@ -1977,6 +1998,7 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                     </button>
                   </div>
                   <textarea
+                    className="hide-scrollbar"
                     value={template.text}
                     onChange={(e) => {
                       const newTemplates = [...templates];
@@ -1986,12 +2008,14 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                     placeholder="Treść szablonu..."
                     style={{
                       width: "100%",
-                      minHeight: "80px",
+                      minHeight: "120px",
+                      maxHeight: "200px",
                       padding: "10px 12px",
                       borderRadius: "6px",
                       border: `1px solid ${themeData.border}`,
                       background: themeData.surface,
                       color: themeData.text,
+                      boxSizing: "border-box",
                       fontSize: "13px",
                       resize: "vertical",
                       fontFamily: "inherit",
