@@ -844,11 +844,27 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
     // Zmień status na "Umówiony" dla leadów, które mają wizytę, ale nie mają statusu "Umówiony"
     leadsWithBookings.forEach(lead => {
       if (lead.status !== "Umówiony") {
+        // Aktualizuj lokalnie
         setLeads((prev) =>
           prev.map((l) =>
             l.id === lead.id ? { ...l, status: "Umówiony" } : l
           )
         );
+        
+        // Zapisz też do API
+        const u = getUser();
+        if (u.chiropractor && lead.id) {
+          const API_URL = import.meta.env.VITE_API_URL || 
+                          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                            ? 'https://ihc-app.vercel.app'
+                            : window.location.origin);
+          
+          fetch(`${API_URL}/api/leads?id=${lead.id}&chiropractor=${encodeURIComponent(u.chiropractor)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: "Umówiony" })
+          }).catch(err => console.error('Błąd aktualizacji statusu leada:', err));
+        }
       }
     });
   }, [bookings, leads, setLeads]);

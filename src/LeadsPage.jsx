@@ -729,9 +729,9 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               display: "flex",
               flexDirection: "column",
               overflowY: "auto",
+              overflowX: "hidden",
               border: `2px solid ${themeData.border}`,
               position: "relative",
-              overflow: "hidden",
             }}
           >
             {/* Efekt świetlny na górze modala */}
@@ -1323,17 +1323,83 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
 
             <div style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: "clamp(300px, 50vw, 600px)", minWidth: "clamp(250px, 30vw, 300px)", overflowY: "auto", overflowX: "hidden", maxHeight: "100%", justifyContent: "space-between" }}>
               <div>
-                <h3
-                  style={{
+                {/* Nagłówek z szablonami */}
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "flex-start",
+                  marginBottom: 12,
+                  gap: 8,
+                }}>
+                  <h3 style={{
                     marginTop: 0,
+                    marginBottom: 0,
                     fontSize: "18px",
                     fontWeight: 600,
-                    marginBottom: 12,
                     color: themeData.text,
-                  }}
-                >
-                  Notatki / opis pacjenta
-                </h3>
+                    flexShrink: 0,
+                  }}>
+                    Notatki / opis pacjenta
+                  </h3>
+                  
+                  {/* Szablony obok nagłówka */}
+                  <div style={{ 
+                    display: "flex", 
+                    flexWrap: "wrap", 
+                    gap: "4px",
+                    alignItems: "center",
+                  }}>
+                    {templates.map((template) => (
+                      <button
+                        key={template.id}
+                        onClick={() => {
+                          // Dodaj szablon na końcu notatki
+                          const trimmed = noteDraft.trimEnd();
+                          const newNote = trimmed 
+                            ? trimmed + "\n\n" + template.text 
+                            : template.text;
+                          setNoteDraft(newNote);
+                        }}
+                        style={{
+                          padding: "3px 8px",
+                          borderRadius: "4px",
+                          border: `1px solid ${themeData.accent}40`,
+                          background: `${themeData.accent}10`,
+                          color: themeData.accent,
+                          cursor: "pointer",
+                          fontSize: "10px",
+                          fontWeight: 500,
+                          transition: "all 0.2s",
+                          whiteSpace: "nowrap",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = `${themeData.accent}20`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = `${themeData.accent}10`;
+                        }}
+                        title={`Wstaw: ${template.label}`}
+                      >
+                        + {template.label}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setShowTemplateEditor(true)}
+                      style={{
+                        padding: "3px 6px",
+                        borderRadius: "4px",
+                        border: `1px solid ${themeData.border}`,
+                        background: "transparent",
+                        color: themeData.textSecondary,
+                        cursor: "pointer",
+                        fontSize: "10px",
+                      }}
+                      title="Edytuj szablony"
+                    >
+                      ✏️
+                    </button>
+                  </div>
+                </div>
 
               {/* Podgląd notatki jeśli jest długa */}
               {noteDraft.length > 300 && (
@@ -1432,178 +1498,6 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                   e.currentTarget.style.boxShadow = "none";
                 }}
               />
-
-              {/* Szablony notatek - pod textarea */}
-              <div style={{ 
-                marginTop: 12,
-                padding: "10px",
-                background: themeData.surface,
-                borderRadius: "8px",
-                border: `1px solid ${themeData.border}`,
-              }}>
-                <div style={{ 
-                  display: "flex", 
-                  justifyContent: "space-between", 
-                  alignItems: "center",
-                  marginBottom: 8,
-                }}>
-                  <span style={{ 
-                    fontSize: "12px", 
-                    fontWeight: 600,
-                    color: themeData.text,
-                  }}>
-                    📋 Szablony notatek
-                  </span>
-                  <button
-                    onClick={() => setShowTemplateEditor(!showTemplateEditor)}
-                    style={{
-                      padding: "3px 8px",
-                      borderRadius: "4px",
-                      border: `1px solid ${themeData.border}`,
-                      background: "transparent",
-                      color: themeData.textSecondary,
-                      cursor: "pointer",
-                      fontSize: "10px",
-                    }}
-                  >
-                    {showTemplateEditor ? "Zamknij edytor" : "✏️ Edytuj szablony"}
-                  </button>
-                </div>
-
-                {/* Lista szablonów do wstawienia */}
-                {!showTemplateEditor && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    {templates.map((template) => (
-                      <button
-                        key={template.id}
-                        onClick={() => {
-                          const newNote = noteDraft 
-                            ? noteDraft + "\n\n" + template.text 
-                            : template.text;
-                          setNoteDraft(newNote);
-                        }}
-                        style={{
-                          padding: "5px 10px",
-                          borderRadius: "6px",
-                          border: `1px solid ${themeData.accent}40`,
-                          background: `${themeData.accent}10`,
-                          color: themeData.accent,
-                          cursor: "pointer",
-                          fontSize: "11px",
-                          fontWeight: 500,
-                          transition: "all 0.2s",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = `${themeData.accent}20`;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = `${themeData.accent}10`;
-                        }}
-                        title={template.text.substring(0, 100) + "..."}
-                      >
-                        + {template.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Edytor szablonów */}
-                {showTemplateEditor && (
-                  <div style={{ marginTop: 8 }}>
-                    {templates.map((template, index) => (
-                      <div 
-                        key={template.id} 
-                        style={{ 
-                          marginBottom: 10,
-                          padding: "8px",
-                          background: themeData.surfaceElevated,
-                          borderRadius: "6px",
-                          border: `1px solid ${themeData.border}`,
-                        }}
-                      >
-                        <div style={{ display: "flex", gap: "8px", marginBottom: 6 }}>
-                          <input
-                            type="text"
-                            value={template.label}
-                            onChange={(e) => {
-                              const newTemplates = [...templates];
-                              newTemplates[index] = { ...template, label: e.target.value };
-                              saveTemplates(newTemplates);
-                            }}
-                            placeholder="Nazwa szablonu"
-                            style={{
-                              flex: 1,
-                              padding: "4px 8px",
-                              borderRadius: "4px",
-                              border: `1px solid ${themeData.border}`,
-                              background: themeData.surface,
-                              color: themeData.text,
-                              fontSize: "12px",
-                            }}
-                          />
-                          <button
-                            onClick={() => {
-                              if (confirm("Usunąć ten szablon?")) {
-                                saveTemplates(templates.filter((_, i) => i !== index));
-                              }
-                            }}
-                            style={{
-                              padding: "4px 8px",
-                              borderRadius: "4px",
-                              border: "none",
-                              background: "#ef444420",
-                              color: "#ef4444",
-                              cursor: "pointer",
-                              fontSize: "11px",
-                            }}
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                        <textarea
-                          value={template.text}
-                          onChange={(e) => {
-                            const newTemplates = [...templates];
-                            newTemplates[index] = { ...template, text: e.target.value };
-                            saveTemplates(newTemplates);
-                          }}
-                          placeholder="Treść szablonu..."
-                          style={{
-                            width: "100%",
-                            minHeight: "60px",
-                            padding: "6px 8px",
-                            borderRadius: "4px",
-                            border: `1px solid ${themeData.border}`,
-                            background: themeData.surface,
-                            color: themeData.text,
-                            fontSize: "11px",
-                            resize: "vertical",
-                            fontFamily: "inherit",
-                          }}
-                        />
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => {
-                        const newId = String(Date.now());
-                        saveTemplates([...templates, { id: newId, label: "Nowy szablon", text: "" }]);
-                      }}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "6px",
-                        border: `1px dashed ${themeData.accent}`,
-                        background: "transparent",
-                        color: themeData.accent,
-                        cursor: "pointer",
-                        fontSize: "11px",
-                        width: "100%",
-                      }}
-                    >
-                      + Dodaj nowy szablon
-                    </button>
-                  </div>
-                )}
-              </div>
 
               </div>
               <div style={{ marginTop: "auto", paddingTop: 12 }}>
@@ -1949,6 +1843,198 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
                 }}
               >
                 Zamknij
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal edycji szablonów */}
+      {showTemplateEditor && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.7)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowTemplateEditor(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: themeData.cardBackground,
+              borderRadius: 16,
+              padding: 24,
+              width: "90%",
+              maxWidth: 500,
+              maxHeight: "80vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: `0 12px 48px ${themeData.shadow}`,
+              border: `2px solid ${themeData.border}`,
+            }}
+          >
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 16,
+            }}>
+              <h2 style={{ 
+                margin: 0, 
+                fontSize: "18px", 
+                fontWeight: 700,
+                color: themeData.text,
+              }}>
+                ✏️ Edytuj szablony notatek
+              </h2>
+              <button
+                onClick={() => setShowTemplateEditor(false)}
+                style={{
+                  background: themeData.surfaceElevated,
+                  border: `1px solid ${themeData.border}`,
+                  color: themeData.text,
+                  fontSize: "18px",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                  borderRadius: 8,
+                  width: "28px",
+                  height: "28px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ 
+              flex: 1, 
+              overflowY: "auto", 
+              paddingRight: 8,
+            }}
+            className="hide-scrollbar"
+            >
+              {templates.map((template, index) => (
+                <div 
+                  key={template.id} 
+                  style={{ 
+                    marginBottom: 12,
+                    padding: "12px",
+                    background: themeData.surfaceElevated,
+                    borderRadius: "8px",
+                    border: `1px solid ${themeData.border}`,
+                  }}
+                >
+                  <div style={{ display: "flex", gap: "8px", marginBottom: 8 }}>
+                    <input
+                      type="text"
+                      value={template.label}
+                      onChange={(e) => {
+                        const newTemplates = [...templates];
+                        newTemplates[index] = { ...template, label: e.target.value };
+                        saveTemplates(newTemplates);
+                      }}
+                      placeholder="Nazwa szablonu"
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        borderRadius: "6px",
+                        border: `1px solid ${themeData.border}`,
+                        background: themeData.surface,
+                        color: themeData.text,
+                        fontSize: "14px",
+                        fontWeight: 600,
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        if (confirm("Usunąć ten szablon?")) {
+                          saveTemplates(templates.filter((_, i) => i !== index));
+                        }
+                      }}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: "6px",
+                        border: "none",
+                        background: "#ef444420",
+                        color: "#ef4444",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                      }}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                  <textarea
+                    value={template.text}
+                    onChange={(e) => {
+                      const newTemplates = [...templates];
+                      newTemplates[index] = { ...template, text: e.target.value };
+                      saveTemplates(newTemplates);
+                    }}
+                    placeholder="Treść szablonu..."
+                    style={{
+                      width: "100%",
+                      minHeight: "80px",
+                      padding: "10px 12px",
+                      borderRadius: "6px",
+                      border: `1px solid ${themeData.border}`,
+                      background: themeData.surface,
+                      color: themeData.text,
+                      fontSize: "13px",
+                      resize: "vertical",
+                      fontFamily: "inherit",
+                      lineHeight: "1.5",
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+              <button
+                onClick={() => {
+                  const newId = String(Date.now());
+                  saveTemplates([...templates, { id: newId, label: "Nowy szablon", text: "" }]);
+                }}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  borderRadius: "8px",
+                  border: `2px dashed ${themeData.accent}`,
+                  background: "transparent",
+                  color: themeData.accent,
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                }}
+              >
+                + Dodaj nowy szablon
+              </button>
+              <button
+                onClick={() => setShowTemplateEditor(false)}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)`,
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                }}
+              >
+                Zapisz i zamknij
               </button>
             </div>
           </div>
