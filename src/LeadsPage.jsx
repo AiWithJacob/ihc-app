@@ -1917,12 +1917,13 @@ function LeadsPage({ leads, setLeads, bookings, onOpenAddLeadModal, onAddLead, o
               </button>
             </div>
 
-            <div style={{ 
-              flex: 1, 
-              overflowY: "auto", 
-              paddingRight: 8,
-            }}
-            className="hide-scrollbar"
+            <div 
+              className="hide-scrollbar"
+              style={{ 
+                flex: 1, 
+                overflowY: "auto", 
+                overflowX: "hidden",
+              }}
             >
               {templates.map((template, index) => (
                 <div 
