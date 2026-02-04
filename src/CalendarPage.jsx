@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext.jsx";
 import { IconCalendar } from "./Icons.jsx";
@@ -88,7 +89,11 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
   const timeFromPickerRef = useRef(null);
   const timeToPickerRef = useRef(null);
   const [showDatePickerInEdit, setShowDatePickerInEdit] = useState(false);
+  const dateFieldRef = useRef(null);
+  const [datePickerPos, setDatePickerPos] = useState(null);
   const [showTimeFromPickerInEdit, setShowTimeFromPickerInEdit] = useState(false);
+  const timeFieldRef = useRef(null);
+  const [timePickerPos, setTimePickerPos] = useState(null);
   // eslint-disable-next-line no-unused-vars
   const [showTimeToPickerInEdit, setShowTimeToPickerInEdit] = useState(false);
   const [showMonthPickerInEdit, setShowMonthPickerInEdit] = useState(false);
@@ -112,6 +117,7 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
   const [draggedBooking, setDraggedBooking] = useState(null);
   const [dragOverCell, setDragOverCell] = useState(null);
   const [showChangeNotification, setShowChangeNotification] = useState(false);
+  const [calendarSearchQuery, setCalendarSearchQuery] = useState("");
   const [changeNotificationData, setChangeNotificationData] = useState(null);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -268,15 +274,28 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
     setShowMonthPicker(false);
   };
 
+  // Lista rezerwacji po filtracji wyszukiwarką (po imieniu, telefonie, opisie)
+  const displayBookings = useMemo(() => {
+    const q = (calendarSearchQuery || "").trim().toLowerCase();
+    if (!q) return bookings;
+    return bookings.filter((b) => {
+      const name = (b.name || "").toLowerCase();
+      const phone = (b.phone || "").replace(/\s/g, "");
+      const desc = (b.description || "").toLowerCase();
+      const qNorm = q.replace(/\s/g, "");
+      return name.includes(q) || (qNorm && phone.includes(qNorm)) || desc.includes(q);
+    });
+  }, [bookings, calendarSearchQuery]);
+
   const getBooking = (date, time) => {
     const d = String(date || '').slice(0, 10);
-    return bookings.find((b) => String(b.date || '').slice(0, 10) === d && toHHMM(b.time) === toHHMM(time));
+    return displayBookings.find((b) => String(b.date || '').slice(0, 10) === d && toHHMM(b.time) === toHHMM(time));
   };
 
   // Czy w danej komórce jest wydarzenie (date YYYY-MM-DD; toHHMM: "12:00:00" z API = "12:00" w slotach)
   const getBookingsForCell = (date, time) => {
     const d = String(date || '').slice(0, 10);
-    return bookings.filter((b) => {
+    return displayBookings.filter((b) => {
       if (String(b.date || '').slice(0, 10) !== d || !b.time) return false;
       const timeParts = (b.time || '').split(" - ");
       const startTime = toHHMM(timeParts[0]);
@@ -616,6 +635,14 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
       return;
     }
 
+    // Zamknij modal od razu, żeby uniknąć podwójnego zapisu przy wielokrotnym kliknięciu
+    setShowAddEventModal(false);
+    setShowDatePicker(false);
+    setShowMonthPickerInModal(false);
+    setShowYearPickerInModal(false);
+    setShowTimeFromPicker(false);
+    setShowTimeToPicker(false);
+
     const timeDisplay = newEventData.timeFrom;
 
     const newBooking = {
@@ -682,13 +709,7 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
         )
       );
     }
-    
-    setShowAddEventModal(false);
-    setShowDatePicker(false);
-    setShowMonthPickerInModal(false);
-    setShowYearPickerInModal(false);
-    setShowTimeFromPicker(false);
-    setShowTimeToPicker(false);
+
     setNewEventData({ date: "", timeFrom: "", description: "" });
     
     // Wyczyść stan rezerwacji (banner "Rezerwujesz: ...")
@@ -737,6 +758,37 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
       }
     }
   }, [highlightBookingId, bookings, navigate, scrollToTime]);
+
+  // Po wpisaniu w wyszukiwarkę — przejdź do pierwszej pasującej wizyty (jak "Pokaż w kalendarzu")
+  useEffect(() => {
+    const q = (calendarSearchQuery || "").trim();
+    if (!q || displayBookings.length === 0) return;
+    // Pierwsza w kolejności chronologicznej (najbliższa)
+    const sorted = [...displayBookings].sort((a, b) => {
+      const d = String(a.date || "").slice(0, 10).localeCompare(String(b.date || "").slice(0, 10));
+      if (d !== 0) return d;
+      const tA = String((a.time || "").split(" - ")[0] || "00:00").slice(0, 5);
+      const tB = String((b.time || "").split(" - ")[0] || "00:00").slice(0, 5);
+      return tA.localeCompare(tB);
+    });
+    const booking = sorted[0];
+    if (!booking || !booking.date) return;
+    setSelectedDate(String(booking.date).slice(0, 10));
+    setHighlightedBookingId(booking.id);
+    const timeToScroll = booking.time;
+    if (timeToScroll) {
+      const hour = parseInt(String(timeToScroll).split(":")[0], 10);
+      setTimeout(() => {
+        const calendarContainer = document.querySelector(".calendar-scroll-container");
+        if (calendarContainer) {
+          const scrollPosition = Math.max(0, (hour - 1) * 60);
+          calendarContainer.scrollTo({ top: scrollPosition, behavior: "smooth" });
+        }
+      }, 200);
+    }
+    const t = setTimeout(() => setHighlightedBookingId(null), 2000);
+    return () => clearTimeout(t);
+  }, [calendarSearchQuery, displayBookings]);
 
   // Automatyczne przewijanie do wybranej godziny w selektorze czasu
   useEffect(() => {
@@ -1432,6 +1484,37 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
           </button>
       </div>
 
+        {/* Wyszukiwarka wizyt — na wysokości przycisku Dzisiaj, przy prawej krawędzi */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", height: "32px", position: "relative" }}>
+          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: themeData.textSecondary, fontSize: "12px", zIndex: 1 }} aria-hidden>🔍</span>
+          <input
+            type="text"
+            placeholder="Szukaj (pacjent, telefon, opis)"
+            value={calendarSearchQuery}
+            onChange={(e) => setCalendarSearchQuery(e.target.value)}
+            style={{
+              padding: "6px 12px 6px 30px",
+              height: "32px",
+              width: "clamp(160px, 20vw, 260px)",
+              borderRadius: 6,
+              border: `2px solid ${themeData.border}`,
+              background: themeData.surfaceElevated,
+              color: themeData.text,
+              fontSize: "12px",
+              boxSizing: "border-box",
+              transition: "all 0.2s ease",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = themeData.accent;
+              e.currentTarget.style.boxShadow = `0 0 0 2px ${themeData.glow}`;
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = themeData.border;
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          />
+        </div>
+
         {/* Informacja o rezerwacji po prawej */}
       {leadFromState && (
         <div
@@ -1587,7 +1670,7 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
               {getMonthDays(datePickerViewDate).map((dayObj, index) => {
                 const isSelected = dayObj.date === selectedDate;
                 const isToday = dayObj.date === todayISO();
-                const dayBookings = bookings.filter(b => b.date === dayObj.date);
+                const dayBookings = displayBookings.filter(b => b.date === dayObj.date);
                 const hasBookings = dayBookings.length > 0;
           return (
                       <button
@@ -1879,7 +1962,7 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
           {weekDays.map((day) => {
             const { dayName, dayNum } = formatDayName(day);
             const isToday = day === todayISO();
-            const dayBookings = bookings.filter(b => b.date === day);
+            const dayBookings = displayBookings.filter(b => b.date === day);
             const hasBookings = dayBookings.length > 0;
             return (
               <div
@@ -2347,7 +2430,7 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
         />
       )}
 
-      {/* Modal szczegółów wizyty */}
+      {/* Modal szczegółów wizyty - styl jak w karcie leada */}
       {selectedBooking && (
         <div
           onClick={(e) => {
@@ -2366,26 +2449,46 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
           style={{
             position: "fixed",
             inset: 0,
-            background: `rgba(0,0,0,${theme === 'night' ? '0.95' : '0.85'})`,
+            background: "rgba(0,0,0,0.7)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             zIndex: 1000,
-            backdropFilter: "blur(4px)",
+            overflow: "hidden",
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            draggable={false}
+            onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDrag={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDragEnd={(e) => { e.preventDefault(); e.stopPropagation(); }}
             style={{
-              padding: editMode ? "20px" : "32px",
+              paddingTop: "21px",
+              paddingBottom: "21px",
+              paddingLeft: "clamp(16px, 3vw, 24px)",
+              paddingRight: "clamp(16px, 3vw, 24px)",
               background: themeData.surface,
-              borderRadius: 16,
-              width: editMode ? "90%" : "95%",
-              maxWidth: editMode ? 600 : 800,
-              boxShadow: `0 12px 48px ${themeData.shadow}`,
+              borderRadius: 12,
+              width: "clamp(90vw, 95vw, 1000px)",
+              maxWidth: "1000px",
+              height: "clamp(70vh, 80vh, 600px)",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              gap: "clamp(12px, 2vw, 20px)",
               border: `2px solid ${themeData.border}`,
-              position: "relative",
+              boxShadow: `0 12px 48px ${themeData.shadow}`,
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
               overflow: "hidden",
+              boxSizing: "border-box",
+              userSelect: "text",
+              WebkitUserSelect: "text",
+              touchAction: "pan-y",
+              pointerEvents: "auto",
             }}
           >
             {/* Efekt świetlny na górze modala */}
@@ -2394,9 +2497,9 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
               top: "-2px",
               left: "-2px",
               right: "-2px",
-              height: "4px",
+              height: "3px",
               background: `linear-gradient(90deg, ${themeData.accent} 0%, transparent 100%)`,
-              borderRadius: "16px 16px 0 0",
+              borderRadius: "12px 12px 0 0",
             }} />
             
             <h2 style={{ 
@@ -2405,11 +2508,309 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
               fontSize: editMode ? "20px" : "28px", 
               fontWeight: 700,
               color: themeData.text,
+              flexShrink: 0,
             }}>
               Szczegóły wizyty
             </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: editMode ? 12 : 20 }}>
-              {/* Data */}
+            <div style={{ display: "flex", flexDirection: "column", gap: editMode ? 12 : 20, flex: 1, minHeight: 0, overflowY: "auto" }}>
+              {/* W trybie edycji: data i godzina w jednym rzędzie z natywnymi polami */}
+              {editMode && editedBooking && (
+                <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-end", paddingBottom: 4, borderBottom: `1px solid ${themeData.border}`, marginBottom: 4 }}>
+                  <div ref={dateFieldRef} style={{ flex: "1 1 200px", minWidth: 0, position: "relative" }}>
+                    <strong style={{ color: themeData.textSecondary, display: "block", marginBottom: 8, fontSize: "15px", fontWeight: 600 }}>Data</strong>
+                    <div
+                      onClick={() => {
+                        setShowTimeFromPickerInEdit(false);
+                        setDatePickerViewDateForEdit(editedBooking.date ? String(editedBooking.date).slice(0, 10) : todayISO());
+                        if (!showDatePickerInEdit && dateFieldRef.current) {
+                          const r = dateFieldRef.current.getBoundingClientRect();
+                          setDatePickerPos({ top: r.bottom + 8, left: r.left });
+                        } else if (showDatePickerInEdit) {
+                          setDatePickerPos(null);
+                        }
+                        setShowDatePickerInEdit(!showDatePickerInEdit);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        background: themeData.surfaceElevated,
+                        color: themeData.text,
+                        border: `2px solid ${themeData.border}`,
+                        borderRadius: 10,
+                        fontSize: "16px",
+                        transition: "all 0.3s ease",
+                        boxSizing: "border-box",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = themeData.accent;
+                        e.currentTarget.style.boxShadow = `0 0 0 3px ${themeData.glow}`;
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = themeData.border;
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    >
+                      <span>{editedBooking.date ? formatDateDDMMRR(editedBooking.date) : "Wybierz datę"}</span>
+                      <span style={{ opacity: 0.7 }}>📅</span>
+                    </div>
+                    {showDatePickerInEdit && datePickerPos && createPortal(
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          position: "fixed",
+                          top: datePickerPos.top,
+                          left: datePickerPos.left,
+                          background: themeData.surface,
+                          border: `2px solid ${themeData.border}`,
+                          borderRadius: 12,
+                          padding: 16,
+                          zIndex: 10002,
+                          minWidth: 280,
+                          maxWidth: 320,
+                          boxShadow: `0 4px 16px ${themeData.shadow}`,
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const date = new Date(datePickerViewDateForEdit + "T12:00:00");
+                              const year = date.getFullYear();
+                              const month = date.getMonth();
+                              const newMonth = month === 0 ? 11 : month - 1;
+                              const newYear = month === 0 ? year - 1 : year;
+                              setDatePickerViewDateForEdit(`${newYear}-${String(newMonth + 1).padStart(2, "0")}-01`);
+                            }}
+                            style={{ padding: "8px 12px", background: themeData.surfaceElevated, border: `1px solid ${themeData.border}`, borderRadius: 8, color: themeData.text, cursor: "pointer", fontSize: "14px" }}
+                          >
+                            ←
+                          </button>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setShowMonthPickerInEdit(!showMonthPickerInEdit); setShowYearPickerInEdit(false); }}
+                              style={{ padding: "8px 12px", background: themeData.surfaceElevated, border: `1px solid ${themeData.border}`, borderRadius: 8, color: themeData.text, cursor: "pointer", fontSize: "14px", fontWeight: 600, minWidth: 90 }}
+                            >
+                              {formatMonthName(datePickerViewDateForEdit)}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setShowYearPickerInEdit(!showYearPickerInEdit); setShowMonthPickerInEdit(false); }}
+                              style={{ padding: "8px 12px", background: themeData.surfaceElevated, border: `1px solid ${themeData.border}`, borderRadius: 8, color: themeData.text, cursor: "pointer", fontSize: "14px", fontWeight: 600, minWidth: 60 }}
+                            >
+                              {new Date(datePickerViewDateForEdit + "T12:00:00").getFullYear()}
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const date = new Date(datePickerViewDateForEdit + "T12:00:00");
+                              const year = date.getFullYear();
+                              const month = date.getMonth();
+                              const newMonth = month === 11 ? 0 : month + 1;
+                              const newYear = month === 11 ? year + 1 : year;
+                              setDatePickerViewDateForEdit(`${newYear}-${String(newMonth + 1).padStart(2, "0")}-01`);
+                            }}
+                            style={{ padding: "8px 12px", background: themeData.surfaceElevated, border: `1px solid ${themeData.border}`, borderRadius: 8, color: themeData.text, cursor: "pointer", fontSize: "14px" }}
+                          >
+                            →
+                          </button>
+                        </div>
+                        {showMonthPickerInEdit && (
+                          <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 50, left: 16, right: 16, background: themeData.surface, border: `2px solid ${themeData.border}`, borderRadius: 12, padding: 8, zIndex: 1003, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4, boxShadow: `0 4px 16px ${themeData.shadow}` }}>
+                            {months.map((month, index) => {
+                              const viewDate = new Date(datePickerViewDateForEdit + "T12:00:00");
+                              const isSelected = index === viewDate.getMonth();
+                              return (
+                                <button
+                                  key={index}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const year = viewDate.getFullYear();
+                                    setDatePickerViewDateForEdit(`${year}-${String(index + 1).padStart(2, "0")}-01`);
+                                    setShowMonthPickerInEdit(false);
+                                  }}
+                                  style={{ padding: "6px 8px", borderRadius: 6, border: `1px solid ${themeData.border}`, background: isSelected ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)` : themeData.surfaceElevated, color: isSelected ? "white" : themeData.text, cursor: "pointer", fontSize: "12px", textAlign: "center" }}
+                                >
+                                  {month}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {showYearPickerInEdit && (
+                          <div onClick={(e) => e.stopPropagation()} className="hide-scrollbar" style={{ position: "absolute", top: 50, left: 16, right: 16, background: themeData.surface, border: `2px solid ${themeData.border}`, borderRadius: 12, padding: 8, zIndex: 1003, maxHeight: 200, overflowY: "auto", boxShadow: `0 4px 16px ${themeData.shadow}` }}>
+                            {Array.from({ length: 20 }, (_, i) => {
+                              const year = new Date().getFullYear() - 10 + i;
+                              const viewDate = new Date(datePickerViewDateForEdit + "T12:00:00");
+                              const isSelected = year === viewDate.getFullYear();
+                              const month = viewDate.getMonth() + 1;
+                              return (
+                                <button
+                                  key={year}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDatePickerViewDateForEdit(`${year}-${String(month).padStart(2, "0")}-01`);
+                                    setShowYearPickerInEdit(false);
+                                  }}
+                                  style={{ width: "100%", padding: "8px", borderRadius: 6, border: `1px solid ${themeData.border}`, background: isSelected ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)` : themeData.surfaceElevated, color: isSelected ? "white" : themeData.text, cursor: "pointer", fontSize: "13px", textAlign: "center", marginBottom: 4 }}
+                                >
+                                  {year}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 8 }}>
+                          {["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"].map((day) => (
+                            <div key={day} style={{ textAlign: "center", fontSize: "12px", color: themeData.textSecondary, fontWeight: 600, padding: "6px 0" }}>{day}</div>
+                          ))}
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+                          {getMonthDays(datePickerViewDateForEdit).map((dayObj, index) => {
+                            const isSelected = dayObj.date === editedBooking.date;
+                            const isToday = dayObj.date === todayISO();
+                            return (
+                              <button
+                                key={index}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditedBooking((prev) => ({ ...prev, date: dayObj.date }));
+                                  setShowDatePickerInEdit(false);
+                                  setDatePickerPos(null);
+                                }}
+                                style={{
+                                  padding: "8px 4px",
+                                  background: isSelected ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)` : isToday ? themeData.surfaceElevated : dayObj.isCurrentMonth ? themeData.surfaceElevated : themeData.surface,
+                                  border: isSelected ? `2px solid ${themeData.accent}` : `1px solid ${themeData.border}`,
+                                  borderRadius: 8,
+                                  color: isSelected ? "white" : (dayObj.isCurrentMonth ? themeData.text : themeData.textSecondary),
+                                  cursor: "pointer",
+                                  fontSize: "12px",
+                                  fontWeight: isSelected || isToday ? 700 : 400,
+                                  aspectRatio: "1",
+                                  minHeight: 32,
+                                  boxSizing: "border-box",
+                                }}
+                              >
+                                {dayObj.day}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    , document.body)}
+                  </div>
+                  <div ref={timeFieldRef} style={{ flex: "1 1 160px", minWidth: 0, position: "relative" }}>
+                    <strong style={{ color: themeData.textSecondary, display: "block", marginBottom: 8, fontSize: "15px", fontWeight: 600 }}>Godzina</strong>
+                    <div
+                      onClick={() => {
+                        if (!showTimeFromPickerInEdit && timeFieldRef.current) {
+                          const r = timeFieldRef.current.getBoundingClientRect();
+                          setTimePickerPos({ top: r.bottom + 8, left: r.left });
+                        } else if (showTimeFromPickerInEdit) {
+                          setTimePickerPos(null);
+                        }
+                        setShowTimeFromPickerInEdit(!showTimeFromPickerInEdit);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        background: themeData.surfaceElevated,
+                        color: themeData.text,
+                        border: `2px solid ${themeData.border}`,
+                        borderRadius: 10,
+                        fontSize: "16px",
+                        cursor: "pointer",
+                        boxSizing: "border-box",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = themeData.accent;
+                        e.currentTarget.style.boxShadow = `0 0 0 3px ${themeData.glow}`;
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = themeData.border;
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    >
+                      <span>{editedBooking.timeFrom ? String(editedBooking.timeFrom).slice(0, 5) : "00:00"}</span>
+                      <span style={{ opacity: 0.7 }}>▼</span>
+                    </div>
+                    {showTimeFromPickerInEdit && timePickerPos && createPortal(
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="hide-scrollbar"
+                        style={{
+                          position: "fixed",
+                          top: timePickerPos.top,
+                          left: timePickerPos.left,
+                          background: themeData.surface,
+                          border: `2px solid ${themeData.border}`,
+                          borderRadius: 10,
+                          padding: "6px 0",
+                          zIndex: 10002,
+                          minWidth: 80,
+                          maxWidth: 100,
+                          maxHeight: 280,
+                          overflowY: "auto",
+                          boxShadow: `0 4px 16px ${themeData.shadow}`,
+                        }}
+                      >
+                        {(() => {
+                          const slots = [];
+                          for (let h = 0; h <= 23; h++) {
+                            slots.push(`${String(h).padStart(2, "0")}:00`);
+                          }
+                          return slots.map((t) => {
+                            const isSelected = (editedBooking.timeFrom ? String(editedBooking.timeFrom).slice(0, 5) : "00:00") === t;
+                            return (
+                              <div
+                                key={t}
+                                onClick={() => {
+                                  setEditedBooking((prev) => ({ ...prev, timeFrom: t }));
+                                  setShowTimeFromPickerInEdit(false);
+                                  setTimePickerPos(null);
+                                }}
+                                style={{
+                                  padding: "8px 12px",
+                                  fontSize: "14px",
+                                  cursor: "pointer",
+                                  background: isSelected ? `linear-gradient(135deg, ${themeData.accent} 0%, ${themeData.accentHover} 100%)` : "transparent",
+                                  color: isSelected ? "white" : themeData.text,
+                                  fontWeight: isSelected ? 600 : 400,
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isSelected) e.currentTarget.style.background = themeData.surfaceElevated;
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isSelected) e.currentTarget.style.background = "transparent";
+                                }}
+                              >
+                                {t}
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    , document.body)}
+                  </div>
+                </div>
+              )}
+
+              {/* Data (tylko w widoku) */}
+              {(!editMode || !editedBooking) && (
               <div style={{ fontSize: editMode ? "13px" : "16px" }}>
                 <strong style={{ color: themeData.textSecondary, display: "block", marginBottom: editMode ? 6 : 8, fontSize: editMode ? "12px" : "15px", fontWeight: 600 }}>Data:</strong>
                 {editMode && editedBooking ? (
@@ -2821,8 +3222,10 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
                   <span style={{ fontSize: "18px", color: themeData.text, fontWeight: 500 }}>{selectedBooking.date}</span>
                 )}
               </div>
-              
-              {/* Godzina */}
+              )}
+
+              {/* Godzina (tylko w widoku – w edycji jest w górnym rzędzie) */}
+              {(!editMode || !editedBooking) && (
               <div style={{ fontSize: editMode ? "13px" : "16px" }}>
                 <strong style={{ color: themeData.textSecondary, display: "block", marginBottom: editMode ? 6 : 8, fontSize: editMode ? "12px" : "15px", fontWeight: 600 }}>Godzina:</strong>
                 {editMode && editedBooking ? (
@@ -2938,7 +3341,8 @@ export default function CalendarPage({ user, bookings, setBookings, leads, setLe
                   <span style={{ fontSize: "18px", color: themeData.text, fontWeight: 500 }}>{selectedBooking.time}</span>
                 )}
               </div>
-              
+              )}
+
               {/* Pacjent */}
               <div style={{ fontSize: editMode ? "13px" : "16px" }}>
                 <strong style={{ color: themeData.textSecondary, display: "block", marginBottom: editMode ? 6 : 8, fontSize: editMode ? "12px" : "15px", fontWeight: 600 }}>Pacjent:</strong>
